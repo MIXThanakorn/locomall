@@ -1,0 +1,100 @@
+﻿import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
+import { HeaderGradient } from "../../src/components/HeaderGradient";
+import { Button } from "../../src/components/Button";
+
+export default function SuccessPasswordScreen() {
+  const router = useRouter();
+
+  return (
+    <View style={styles.container}>
+      <HeaderGradient
+        title=""
+        variant="green"
+        showBack
+        onBackPress={() => router.replace("/(auth)/sign-in" as any)}
+        style={styles.header}
+      />
+
+      <View style={styles.content}>
+        <View style={styles.card}>
+          <Text style={styles.title}>Password Changed</Text>
+          <Text style={styles.subtitle}>
+            Congratulations! You've successfully changed your password.
+          </Text>
+
+          <View style={styles.checkCircle}>
+            <Ionicons name="checkmark" size={54} color="#06B6D4" />
+          </View>
+
+          <Button
+            title="Back to Sign in"
+            variant="green"
+            size="lg"
+            style={styles.backBtn}
+            textStyle={{ color: Colors.textWhite }}
+            onPress={() => router.replace("/(auth)/sign-in" as any)}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  header: {
+    paddingTop: 50,
+    paddingBottom: 60,
+  },
+  content: {
+    flex: 1,
+    marginTop: -40,
+    paddingHorizontal: Spacing.lg,
+  },
+  card: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    alignItems: "center",
+    shadowColor: Colors.shadowColor,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  title: {
+    fontSize: Typography.fontSizeXl,
+    fontWeight: "700",
+    color: Colors.greenDark,
+    marginTop: Spacing.md,
+  },
+  subtitle: {
+    fontSize: Typography.fontSizeSm,
+    color: Colors.textMuted,
+    textAlign: "center",
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xl,
+  },
+  checkCircle: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 4,
+    borderColor: "#06B6D4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: Spacing.xl,
+  },
+  backBtn: {
+    width: "100%",
+    backgroundColor: Colors.greenDark,
+    marginTop: Spacing.xl,
+  },
+});
