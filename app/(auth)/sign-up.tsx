@@ -1,12 +1,15 @@
-﻿import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
 import { ImagePlaceholder } from "../../src/components/ImagePlaceholder";
 import { GenderType } from "../../src/types";
+import { supabase } from "../../src/lib/supabase";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -24,8 +27,94 @@ export default function SignUpScreen() {
   const [subDistrict, setSubDistrict] = useState("Select Sub-district");
   const [houseDetails, setHouseDetails] = useState("");
 
-  const handleSignUp = () => {
-    router.replace("/(tabs)" as any);
+  const [avatar, setAvatar] = useState<{ uri: string, base64: string, ext: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0].base64) {
+      const uri = result.assets[0].uri;
+      const ext = uri.substring(uri.lastIndexOf(".") + 1);
+      setAvatar({
+        uri,
+        base64: result.assets[0].base64,
+        ext,
+      });
+    }
+  };
+
+  const handleSignUp = async () => {
+    if (!email || !password || !fullName || !username) {
+      Alert.alert("Error", "Please fill in all required fields (Email, Password, Full Name, Username).");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Upload Avatar if selected (Use a temporary unique filename since we don't have user.id yet)
+      let avatarUrl = "";
+      if (avatar) {
+        const filePath = `public/temp_${Date.now()}.${avatar.ext}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, decode(avatar.base64), {
+            contentType: `image/${avatar.ext}`,
+          });
+
+        if (uploadError) {
+          // If upload fails due to RLS, we just ignore it for now or alert
+          console.warn("Avatar upload failed, might need Anon RLS policy:", uploadError);
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(filePath);
+          avatarUrl = publicUrlData.publicUrl;
+        }
+      }
+
+      // 2. Sign Up with Email and pass ALL data to Supabase Database Trigger
+      const { makeRedirectUri } = require("expo-auth-session");
+      const redirectUrl = makeRedirectUri({
+        path: '/(auth)/sign-in' // ให้พากลับมาหน้า sign-in หลังจากยืนยันอีเมล
+      });
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl, // ส่ง IP ของเครื่องคนที่กดให้ Supabase
+          data: {
+            full_name: fullName,
+            avatar_url: avatarUrl,
+            username: username,
+            phone_num: phone,
+            age: age ? parseInt(age) : null,
+            gender: gender,
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // 3. No need to manually update `profiles` table!
+      // The Database Trigger (handle_new_user) will do it automatically in the background
+      // even while the user is waiting to confirm their email.
+
+      Alert.alert("Success", "Account created successfully!", [
+        { text: "OK", onPress: () => router.replace("/(tabs)" as any) }
+      ]);
+    } catch (error: any) {
+      Alert.alert("Sign Up Failed", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -37,17 +126,27 @@ export default function SignUpScreen() {
         onBackPress={() => router.back()}
         style={styles.header}
       >
-        <View style={styles.avatarContainer}>
-          <ImagePlaceholder
-            width={90}
-            height={90}
-            borderRadius={45}
-            label="PHOTO"
-            iconName="person"
-            iconSize={36}
-            backgroundColor="#E2E8F0"
-          />
-        </View>
+        <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} activeOpacity={0.8}>
+          {avatar ? (
+            <Image 
+              source={{ uri: avatar.uri }} 
+              style={{ width: 90, height: 90, borderRadius: 45, borderWidth: 3, borderColor: Colors.cardBackground }} 
+            />
+          ) : (
+            <ImagePlaceholder
+              width={90}
+              height={90}
+              borderRadius={45}
+              label="PHOTO"
+              iconName="person"
+              iconSize={36}
+              backgroundColor="#E2E8F0"
+            />
+          )}
+          <View style={styles.editBadge}>
+            <Ionicons name="camera" size={12} color={Colors.textWhite} />
+          </View>
+        </TouchableOpacity>
       </HeaderGradient>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -145,6 +244,7 @@ export default function SignUpScreen() {
             variant="green"
             size="lg"
             style={styles.signUpBtn}
+            loading={loading}
             onPress={handleSignUp}
           />
         </View>
@@ -166,6 +266,20 @@ const styles = StyleSheet.create({
   avatarContainer: {
     alignSelf: "center",
     marginTop: -10,
+    position: "relative",
+  },
+  editBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: Colors.greenPrimary,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: Colors.cardBackground,
   },
   content: {
     flex: 1,
