@@ -1,15 +1,50 @@
-﻿import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
+import { supabase } from "../../src/lib/supabase";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
-  const [currentPassword, setCurrentPassword] = useState("********");
-  const [newPassword, setNewPassword] = useState("********");
-  const [confirmPassword, setConfirmPassword] = useState("********");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Error", "New passwords do not match.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) throw error;
+
+      Alert.alert("Success", "Password updated successfully!", [
+        { text: "OK", onPress: () => router.back() }
+      ]);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -29,14 +64,11 @@ export default function ChangePasswordScreen() {
           </Text>
         </View>
 
-        <Text style={styles.inputLabel}>Current Password</Text>
-        <TextInput style={styles.input} value={currentPassword} onChangeText={setCurrentPassword} secureTextEntry />
-
         <Text style={styles.inputLabel}>New Password</Text>
-        <TextInput style={styles.input} value={newPassword} onChangeText={setNewPassword} secureTextEntry />
+        <TextInput style={styles.input} value={newPassword} onChangeText={setNewPassword} secureTextEntry placeholder="Enter new password" />
 
         <Text style={styles.inputLabel}>Confirm New Password</Text>
-        <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry />
+        <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry placeholder="Confirm new password" />
 
         <Button
           title="Update Password"
@@ -44,7 +76,8 @@ export default function ChangePasswordScreen() {
           size="lg"
           style={styles.updateBtn}
           textStyle={{ color: Colors.textWhite }}
-          onPress={() => router.back()}
+          loading={loading}
+          onPress={handleUpdatePassword}
         />
       </View>
     </View>

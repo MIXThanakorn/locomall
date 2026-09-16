@@ -1,19 +1,141 @@
-﻿import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from "react-native";
 import { useRouter } from "expo-router";
+import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { ImagePlaceholder } from "../../src/components/ImagePlaceholder";
 import { Button } from "../../src/components/Button";
+import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../../src/lib/supabase";
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const [fullName, setFullName] = useState("Hello World");
-  const [username, setUsername] = useState("Hello");
-  const [personalDetails, setPersonalDetails] = useState("Local community marketplace member and seller.");
-  const [email, setEmail] = useState("Hello@gmail.com");
-  const [phone, setPhone] = useState("087*******");
-  const [age, setAge] = useState("25");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [age, setAge] = useState("");
+  
+  const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null);
+  const [newAvatar, setNewAvatar] = useState<{ uri: string, base64: string, ext: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        setEmail(user.email || "");
+        
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        if (data && !error) {
+          setFullName(data.full_name || "");
+          setUsername(data.username || "");
+          setPhone(data.phone_num || "");
+          setAge(data.age ? data.age.toString() : "");
+          setExistingAvatarUrl(data.user_img_url || null);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading user data", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0].base64) {
+      const uri = result.assets[0].uri;
+      const ext = uri.substring(uri.lastIndexOf(".") + 1);
+      setNewAvatar({
+        uri,
+        base64: result.assets[0].base64,
+        ext,
+      });
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!userId) return;
+    
+    setUpdating(true);
+    try {
+      let finalAvatarUrl = existingAvatarUrl;
+
+      // ถ้ามีการเลือกรูปใหม่
+      if (newAvatar) {
+        const filePath = `public/${userId}_${Date.now()}.${newAvatar.ext}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, decode(newAvatar.base64), {
+            contentType: `image/${newAvatar.ext}`,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(filePath);
+
+        finalAvatarUrl = publicUrlData.publicUrl;
+
+        // ลบรูปเก่าทิ้งเพื่อประหยัดพื้นที่ (ถ้ามีรูปเก่า)
+        if (existingAvatarUrl) {
+          // สกัดเอาเฉพาะชื่อไฟล์ออกจาก Public URL
+          // URL จะมีรูปแบบ: .../storage/v1/object/public/avatars/public/ชื่อไฟล์
+          const urlParts = existingAvatarUrl.split('/avatars/');
+          if (urlParts.length > 1) {
+            const oldFilePath = urlParts[1];
+            await supabase.storage.from("avatars").remove([oldFilePath]);
+          }
+        }
+      }
+
+      // อัปเดตข้อมูลตาราง Profiles
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: fullName,
+          username,
+          phone_num: phone,
+          age: parseInt(age) || null,
+          user_img_url: finalAvatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+
+      if (updateError) throw updateError;
+
+      Alert.alert("Success", "Profile updated successfully!", [
+        { text: "OK", onPress: () => router.back() }
+      ]);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -24,19 +146,29 @@ export default function EditProfileScreen() {
         onBackPress={() => router.back()}
         style={styles.header}
       >
-        <View style={styles.avatarContainer}>
-          <ImagePlaceholder
-            width={84}
-            height={84}
-            borderRadius={42}
-            label=""
-            iconName="person"
-            iconSize={36}
-            backgroundColor="#FFFFFF"
-          />
-          <Text style={styles.headerName}>Hello World</Text>
-          <Text style={styles.headerEmail}>Hello@gmail.com</Text>
-        </View>
+        <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} activeOpacity={0.8}>
+          {newAvatar || existingAvatarUrl ? (
+            <Image 
+              source={{ uri: newAvatar ? newAvatar.uri : existingAvatarUrl! }} 
+              style={{ width: 84, height: 84, borderRadius: 42, borderWidth: 3, borderColor: Colors.cardBackground }} 
+            />
+          ) : (
+            <ImagePlaceholder
+              width={84}
+              height={84}
+              borderRadius={42}
+              label=""
+              iconName="person"
+              iconSize={36}
+              backgroundColor="#FFFFFF"
+            />
+          )}
+          <View style={styles.editBadge}>
+            <Ionicons name="camera" size={14} color={Colors.textWhite} />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.headerName}>{fullName || username || "Your Profile"}</Text>
+        <Text style={styles.headerEmail}>{email}</Text>
       </HeaderGradient>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -47,11 +179,8 @@ export default function EditProfileScreen() {
           <Text style={styles.inputLabel}>Username</Text>
           <TextInput style={styles.input} value={username} onChangeText={setUsername} />
 
-          <Text style={styles.inputLabel}>Personal Details</Text>
-          <TextInput style={styles.input} value={personalDetails} onChangeText={setPersonalDetails} />
-
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
+          <Text style={styles.inputLabel}>Email (Read Only)</Text>
+          <TextInput style={[styles.input, { opacity: 0.7 }]} value={email} editable={false} />
 
           <Text style={styles.inputLabel}>Phone Number</Text>
           <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
@@ -65,7 +194,8 @@ export default function EditProfileScreen() {
             size="lg"
             style={styles.updateBtn}
             textStyle={{ color: Colors.textWhite }}
-            onPress={() => router.back()}
+            loading={updating}
+            onPress={handleUpdateProfile}
           />
         </View>
       </ScrollView>
@@ -86,6 +216,20 @@ const styles = StyleSheet.create({
   avatarContainer: {
     alignItems: "center",
     marginTop: -10,
+    position: "relative",
+  },
+  editBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: Colors.greenPrimary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: Colors.cardBackground,
   },
   headerName: {
     fontSize: Typography.fontSizeLg,

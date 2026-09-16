@@ -1,7 +1,8 @@
-﻿import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator } from "react-native";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { supabase } from "../../src/lib/supabase";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { ImagePlaceholder } from "../../src/components/ImagePlaceholder";
@@ -10,29 +11,81 @@ import { useLanguage } from "../../src/context/LanguageContext";
 export default function ProfileScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  const [profile, setProfile] = useState<any>(null);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProfile();
+    }, [])
+  );
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setEmail(user.email || "");
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+          
+        if (data && !error) {
+          setProfile(data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace("/(auth)/sign-in" as any);
+  };
 
   return (
     <View style={styles.container}>
       {/* Profile Header */}
       <HeaderGradient variant="gold" style={styles.header}>
-        <View style={styles.headerProfileRow}>
-          <ImagePlaceholder
-            width={64}
-            height={64}
-            borderRadius={32}
-            label=""
-            iconName="person"
-            iconSize={32}
-            backgroundColor="#FFFFFF"
-          />
-          <View style={styles.headerInfo}>
-            <Text style={styles.userName}>Hello World</Text>
-            <Text style={styles.userEmail}>Hello@gmail.com</Text>
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{language === "th" ? "สมาชิกตลาดและผู้ขาย" : "SELLER & MARKET MEMBER"}</Text>
+        {loading ? (
+          <ActivityIndicator size="large" color={Colors.textWhite} style={{ marginVertical: Spacing.xl }} />
+        ) : (
+          <View style={styles.headerProfileRow}>
+            {profile?.user_img_url ? (
+              <Image 
+                source={{ uri: profile.user_img_url }} 
+                style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: Colors.textWhite }} 
+              />
+            ) : (
+              <ImagePlaceholder
+                width={64}
+                height={64}
+                borderRadius={32}
+                label=""
+                iconName="person"
+                iconSize={32}
+                backgroundColor="#FFFFFF"
+              />
+            )}
+            
+            <View style={styles.headerInfo}>
+              <Text style={styles.userName}>{profile?.full_name || profile?.username || "Hello User"}</Text>
+              <Text style={styles.userEmail}>{email}</Text>
+              <View style={styles.roleBadge}>
+                <Text style={styles.roleText}>
+                  {profile?.role === "seller" 
+                    ? (language === "th" ? "ผู้ขายและตลาดชุมชน" : "SELLER & MARKET OWNER")
+                    : (language === "th" ? "ผู้ซื้อ" : "BUYER")}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Order Status Badges */}
         <View style={styles.badgeRow}>
@@ -195,7 +248,7 @@ export default function ProfileScreen() {
 
           <TouchableOpacity
             style={styles.menuRow}
-            onPress={() => router.replace("/(auth)/sign-in" as any)}
+            onPress={handleSignOut}
           >
             <Ionicons name="log-out-outline" size={18} color={Colors.danger} style={styles.menuIcon} />
             <Text style={[styles.menuTitle, { color: Colors.danger }]}>{t("signOut")}</Text>

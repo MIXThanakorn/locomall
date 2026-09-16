@@ -1,10 +1,15 @@
-﻿import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
+import { supabase } from "../../src/lib/supabase";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -12,8 +17,64 @@ export default function SignInScreen() {
   const [password, setPassword] = useState("********");
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSignIn = () => {
-    router.replace("/(tabs)" as any);
+  const [loading, setLoading] = useState(false);
+
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in email and password");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Sign In Failed", error.message);
+    } else {
+      router.replace("/(tabs)" as any);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      const { makeRedirectUri } = require("expo-auth-session");
+      const redirectUrl = makeRedirectUri({
+        path: '/(auth)/sign-in'
+      });
+      
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+
+      const res = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+      if (res.type === 'success') {
+        // Parse url to get the session from the hash
+        const urlObj = new URL(res.url);
+        const hashParams = new URLSearchParams(urlObj.hash.substring(1));
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (sessionError) throw sessionError;
+          router.replace("/(tabs)" as any);
+        } else {
+          // Check if there's an error in URL
+          const errorDesc = hashParams.get("error_description");
+          if (errorDesc) throw new Error(errorDesc);
+        }
+      }
+    } catch (error: any) {
+      Alert.alert("Google Sign In Failed", error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,7 +127,25 @@ export default function SignInScreen() {
             size="lg"
             style={styles.signInBtn}
             textStyle={{ color: Colors.textWhite }}
+            loading={loading}
             onPress={handleSignIn}
+          />
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.divider} />
+          </View>
+
+          <Button
+            title="Sign in with Google"
+            variant="white"
+            size="lg"
+            style={styles.googleBtn}
+            icon={<Ionicons name="logo-google" size={20} color={Colors.textDark} />}
+            textStyle={{ color: Colors.textDark }}
+            loading={loading}
+            onPress={handleGoogleSignIn}
           />
 
           <Button
@@ -150,6 +229,28 @@ const styles = StyleSheet.create({
   signInBtn: {
     backgroundColor: Colors.goldDeep,
     marginBottom: Spacing.md,
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: Spacing.md,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.divider,
+  },
+  dividerText: {
+    marginHorizontal: Spacing.md,
+    color: Colors.textMuted,
+    fontSize: Typography.fontSizeSm,
+    fontWeight: "500",
+  },
+  googleBtn: {
+    backgroundColor: Colors.cardBackground,
+    borderColor: Colors.divider,
+    borderWidth: 1,
+    marginBottom: Spacing.lg,
   },
   signUpBtn: {
     borderColor: Colors.goldDeep,
