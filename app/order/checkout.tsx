@@ -1,25 +1,44 @@
-﻿import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
-import { mockAddresses, mockMarketProducts } from "../../src/mock/data";
+import { mockAddresses, mockMarketProducts, mockSellerListings } from "../../src/mock/data";
+import { calculateOrderAllocation } from "../../src/lib/allocation";
 
 export default function CheckoutScreen() {
   const router = useRouter();
   const [selectedAddress, setSelectedAddress] = useState(mockAddresses[0]);
   const [paymentMethod, setPaymentMethod] = useState<"wallet" | "promptpay" | "bank">("wallet");
 
-  const orderItems = [
-    { product: mockMarketProducts[0], quantity: 30, unit_price: 20.0 },
-  ];
+  const targetProduct = mockMarketProducts[0];
+  const requestedQuantity = 30;
 
-  const totalAmount = orderItems.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+  // Gather participating sellers from listings
+  const candidates = mockSellerListings
+    .filter((l) => l.market_product_id === targetProduct.id)
+    .map((l) => ({
+      listingId: l.id,
+      sellerId: l.seller_id,
+      sellerName: l.seller_name,
+      availableStock: l.initial_quantity - l.reserved_quantity - (l.fulfilled_quantity || 0),
+      unitPrice: l.price || targetProduct.unit_price,
+    }));
+
+  const allocationResult = useMemo(() => {
+    return calculateOrderAllocation(requestedQuantity, candidates, targetProduct.unit_price);
+  }, [requestedQuantity]);
+
+  const totalAmount = allocationResult.totalAmount;
 
   const handlePlaceOrder = () => {
-    alert("Order Created! Automatic allocation distribution completed across 3 eligible sellers.");
+    alert(
+      `Order Created! Equal capacity-aware allocation completed:\n` +
+      allocationResult.allocations.map((a) => `• ${a.sellerName}: ${a.allocatedQuantity} units (฿${a.sellerAmount.toFixed(2)})`).join("\n") +
+      `\n\nTotal: ฿${totalAmount.toFixed(2)}`
+    );
     router.replace("/order" as any);
   };
 
@@ -52,16 +71,14 @@ export default function CheckoutScreen() {
         {/* Order Items & Allocation Preview */}
         <Text style={styles.sectionTitle}>ORDER ITEMS</Text>
         <View style={styles.card}>
-          {orderItems.map((item, idx) => (
-            <View key={idx} style={styles.itemRow}>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemTitle}>{item.product.name}</Text>
-                <Text style={styles.marketName}>Market: {item.product.market_name}</Text>
-                <Text style={styles.itemQty}>Quantity: {item.quantity} {item.product.unit_label}</Text>
-              </View>
-              <Text style={styles.itemTotal}>฿{(item.unit_price * item.quantity).toFixed(2)}</Text>
+          <View style={styles.itemRow}>
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemTitle}>{targetProduct.name}</Text>
+              <Text style={styles.marketName}>Market: {targetProduct.market_name}</Text>
+              <Text style={styles.itemQty}>Quantity: {requestedQuantity} {targetProduct.unit_label}</Text>
             </View>
-          ))}
+            <Text style={styles.itemTotal}>฿{totalAmount.toFixed(2)}</Text>
+          </View>
 
           {/* Allocation Distribution Notice */}
           <View style={styles.allocationBox}>
@@ -70,11 +87,14 @@ export default function CheckoutScreen() {
               <Text style={styles.allocationTitle}>AUTOMATIC EQUAL ALLOCATION</Text>
             </View>
             <Text style={styles.allocationDesc}>
-              This order of 30 units will be allocated equally across 3 participating sellers:
+              This order of {requestedQuantity} {targetProduct.unit_label} is distributed equally across {allocationResult.allocations.length} participating community sellers:
             </Text>
-            <Text style={styles.allocationItem}>• สวนมะพร้าว ลุงสมหมาย: 10 units</Text>
-            <Text style={styles.allocationItem}>• สวนมะพร้าว ป้าอารี: 10 units</Text>
-            <Text style={styles.allocationItem}>• สวนมะพร้าว พี่ชัย: 10 units</Text>
+            {allocationResult.allocations.map((alloc) => (
+              <View key={alloc.listingId} style={{ flexDirection: "row", justifyContent: "space-between", marginVertical: 2 }}>
+                <Text style={styles.allocationItem}>• {alloc.sellerName}: {alloc.allocatedQuantity} {targetProduct.unit_label} (@ ฿{alloc.unitPrice.toFixed(2)})</Text>
+                <Text style={[styles.allocationItem, { fontWeight: "700" }]}>฿{alloc.sellerAmount.toFixed(2)}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
