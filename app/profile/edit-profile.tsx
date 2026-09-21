@@ -1,14 +1,14 @@
+/* eslint-disable react-hooks/immutability */
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from "react-native";
 import { useRouter } from "expo-router";
-import * as ImagePicker from 'expo-image-picker';
-import { decode } from 'base64-arraybuffer';
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { ImagePlaceholder } from "../../src/components/ImagePlaceholder";
 import { Button } from "../../src/components/Button";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../../src/lib/supabase";
+import { ownObjectPathFromPublicUrl, selectSquareImage, SelectedImage, uploadPublicImage } from "../../src/lib/storage";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function EditProfileScreen() {
   const [age, setAge] = useState("");
   
   const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null);
-  const [newAvatar, setNewAvatar] = useState<{ uri: string, base64: string, ext: string } | null>(null);
+  const [newAvatar, setNewAvatar] = useState<SelectedImage | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
@@ -57,23 +57,8 @@ export default function EditProfileScreen() {
   };
 
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets[0].base64) {
-      const uri = result.assets[0].uri;
-      const ext = uri.substring(uri.lastIndexOf(".") + 1);
-      setNewAvatar({
-        uri,
-        base64: result.assets[0].base64,
-        ext,
-      });
-    }
+    try { setNewAvatar(await selectSquareImage()); }
+    catch (error: any) { Alert.alert("เลือกรูปไม่สำเร็จ", error.message); }
   };
 
   const handleUpdateProfile = async () => {
@@ -85,30 +70,13 @@ export default function EditProfileScreen() {
 
       // ถ้ามีการเลือกรูปใหม่
       if (newAvatar) {
-        const filePath = `public/${userId}_${Date.now()}.${newAvatar.ext}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(filePath, decode(newAvatar.base64), {
-            contentType: `image/${newAvatar.ext}`,
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: publicUrlData } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(filePath);
-
-        finalAvatarUrl = publicUrlData.publicUrl;
+        const uploaded = await uploadPublicImage("avatars", userId, newAvatar, "avatar");
+        finalAvatarUrl = uploaded.publicUrl;
 
         // ลบรูปเก่าทิ้งเพื่อประหยัดพื้นที่ (ถ้ามีรูปเก่า)
         if (existingAvatarUrl) {
-          // สกัดเอาเฉพาะชื่อไฟล์ออกจาก Public URL
-          // URL จะมีรูปแบบ: .../storage/v1/object/public/avatars/public/ชื่อไฟล์
-          const urlParts = existingAvatarUrl.split('/avatars/');
-          if (urlParts.length > 1) {
-            const oldFilePath = urlParts[1];
-            await supabase.storage.from("avatars").remove([oldFilePath]);
-          }
+          const oldFilePath = ownObjectPathFromPublicUrl("avatars", existingAvatarUrl, userId);
+          if (oldFilePath) await supabase.storage.from("avatars").remove([oldFilePath]);
         }
       }
 

@@ -1,30 +1,6 @@
-﻿import { useEffect } from "react";
-import { useRouter } from "expo-router";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { Redirect } from "expo-router";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Colors } from "../src/constants/theme";
-
-export default function Index() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace("/(auth)/splash");
-    }, 200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={Colors.goldDark} />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.goldPrimary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+import { useAuth } from "../src/context/AuthContext";
+export default function Index(){const{session,loading,hasLocation}=useAuth();if(loading||(session&&hasLocation===null))return <View style={s.root}><ActivityIndicator color={Colors.greenPrimary}/></View>;if(!session)return <Redirect href="/(auth)/splash"/>;if(!hasLocation)return <Redirect href={"/(auth)/location-onboarding" as any}/>;return <Redirect href="/(tabs)"/>}
+const s=StyleSheet.create({root:{flex:1,alignItems:"center",justifyContent:"center",backgroundColor:Colors.background}});

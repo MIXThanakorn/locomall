@@ -23,7 +23,7 @@ export default function SuccessPasswordScreen() {
         <View style={styles.card}>
           <Text style={styles.title}>Password Changed</Text>
           <Text style={styles.subtitle}>
-            Congratulations! You've successfully changed your password.
+            Congratulations! You have successfully changed your password.
           </Text>
 
           <View style={styles.checkCircle}>

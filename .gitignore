@@ -2,44 +2,63 @@
 
 # dependencies
 node_modules/
+.pnp
+.pnp.js
 
 # Expo
 .expo/
 dist/
+dist-smoke/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native / Keystores / Certificates
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
+*.pem
 *.mobileprovision
 
 # Metro
 .metro-health-check*
 
-# debug
+# Logs & debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+pnpm-debug.log*
+*.log
 
-# macOS
+# OS files
 .DS_Store
-*.pem
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# local env files
+# Local env files (NEVER commit secrets)
 .env
 .env*.local
 .env.local
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
 app-example
 
-# generated native folders
+# Generated native folders
 /ios
 /android
+
+# Supabase
+supabase/.temp/
+
+# Project outputs & temporary files
+outputs/
+.codex-spreadsheet/

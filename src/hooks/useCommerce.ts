@@ -1,0 +1,40 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+
+export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number };
+
+export function useNearby(query = "", kind = "all") {
+  const [items, setItems] = useState<NearbyResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const { data, error: requestError } = await supabase.rpc("discover_nearby", { p_query: query || undefined, p_kind: kind, p_limit: 40 });
+    setItems((data ?? []) as NearbyResult[]); setError(requestError?.message ?? null); setLoading(false);
+  }, [query, kind]);
+  useEffect(() => { const timer = setTimeout(() => void refresh(), 250); return () => clearTimeout(timer); }, [refresh]);
+  return { items, loading, error, refresh };
+}
+
+export function useOrders() {
+  const [orders, setOrders] = useState<any[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const result = await supabase.from("orders").select("*, order_items(*)").order("created_at", { ascending: false });
+    setOrders(result.data ?? []); setError(result.error?.message ?? null); setLoading(false);
+  }, []);
+  useEffect(() => { void refresh(); }, [refresh]);
+  return { orders, loading, error, refresh };
+}
+
+export function useNotifications() {
+  const [items, setItems] = useState<any[]>([]); const [loading, setLoading] = useState(true);
+  const refresh = useCallback(async () => { const r = await supabase.from("notifications").select("*").order("created_at", { ascending: false }); setItems(r.data ?? []); setLoading(false); }, []);
+  useEffect(() => {
+    void refresh();
+    const channel = supabase.channel("my-notifications").on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => void refresh()).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [refresh]);
+  return { items, loading, refresh };
+}

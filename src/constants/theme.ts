@@ -1,18 +1,18 @@
 ﻿export const Colors = {
   // Brand Primary & Gradients (Gold/Yellow)
-  goldPrimary: "#F5B718",
-  goldDark: "#EEAF0E",
-  goldLight: "#F7BD17",
+  goldPrimary: "#F3BE38",
+  goldDark: "#C99412",
+  goldLight: "#F8D77F",
   goldDeep: "#C49102",
 
   // Brand Secondary & Accents (Forest Green)
-  greenPrimary: "#15803D",
-  greenDark: "#166534",
+  greenPrimary: "#154C2B",
+  greenDark: "#103B22",
   greenLight: "#22C55E",
   greenDeep: "#14532D",
 
   // Neutral Colors
-  background: "#F8FAFC",
+  background: "#FAFAF5",
   cardBackground: "#FFFFFF",
   inputBackground: "#F1F5F9",
   inputBorder: "#E2E8F0",

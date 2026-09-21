@@ -1,141 +1,22 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, Alert } from "react-native";
+import { useState } from "react";
+import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
-import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
+import { HeaderGradient } from "../../src/components/HeaderGradient";
+import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
+import { passwordValidationError } from "../../src/lib/password";
 import { supabase } from "../../src/lib/supabase";
 
 export default function ChangePasswordScreen() {
-  const router = useRouter();
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleUpdatePassword = async () => {
-    if (!newPassword || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields.");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "New passwords do not match.");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-
-      if (error) throw error;
-
-      Alert.alert("Success", "Password updated successfully!", [
-        { text: "OK", onPress: () => router.back() }
-      ]);
-    } catch (error: any) {
-      Alert.alert("Error", error.message);
-    } finally {
-      setLoading(false);
-    }
+  const router = useRouter(); const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState(""); const [nonce, setNonce] = useState(""); const [nonceSent, setNonceSent] = useState(false); const [loading, setLoading] = useState(false);
+  const requestNonce = async () => { setLoading(true); const { error } = await supabase.auth.reauthenticate(); setLoading(false); if (error) Alert.alert("ส่งรหัสไม่สำเร็จ", error.message); else { setNonceSent(true); Alert.alert("ตรวจสอบอีเมล", "กรอกรหัสยืนยันที่ได้รับก่อนเปลี่ยนรหัสผ่าน"); } };
+  const update = async () => {
+    const validation = passwordValidationError(password); if (validation) return Alert.alert("รหัสผ่านไม่ปลอดภัย", validation);
+    if (password !== confirmation) return Alert.alert("รหัสผ่านไม่ตรงกัน");
+    setLoading(true); const { error } = await supabase.auth.updateUser({ password, ...(nonce.trim() ? { nonce: nonce.trim() } : {}) }); setLoading(false);
+    if (error) return Alert.alert("เปลี่ยนรหัสผ่านไม่สำเร็จ", error.message);
+    Alert.alert("สำเร็จ", "เปลี่ยนรหัสผ่านแล้ว", [{ text: "ตกลง", onPress: () => router.back() }]);
   };
-
-  return (
-    <View style={styles.container}>
-      <HeaderGradient
-        title="Change Password"
-        variant="white"
-        showBack
-        onBackPress={() => router.back()}
-        style={styles.header}
-      />
-
-      <View style={styles.content}>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>Security Update</Text>
-          <Text style={styles.infoDesc}>
-            Your new password must be at least 8 characters long and include a mix of letters, numbers, and symbols.
-          </Text>
-        </View>
-
-        <Text style={styles.inputLabel}>New Password</Text>
-        <TextInput style={styles.input} value={newPassword} onChangeText={setNewPassword} secureTextEntry placeholder="Enter new password" />
-
-        <Text style={styles.inputLabel}>Confirm New Password</Text>
-        <TextInput style={styles.input} value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry placeholder="Confirm new password" />
-
-        <Button
-          title="Update Password"
-          variant="gold"
-          size="lg"
-          style={styles.updateBtn}
-          textStyle={{ color: Colors.textWhite }}
-          loading={loading}
-          onPress={handleUpdatePassword}
-        />
-      </View>
-    </View>
-  );
+  return <View style={styles.container}><HeaderGradient title="เปลี่ยนรหัสผ่าน" variant="white" showBack onBackPress={() => router.back()} style={styles.header} /><View style={styles.content}><Text style={styles.note}>อย่างน้อย 10 ตัว พร้อมตัวพิมพ์เล็ก/ใหญ่ ตัวเลข และสัญลักษณ์ หาก session เก่ากว่า 24 ชั่วโมงให้ขอรหัสยืนยันทางอีเมล</Text><Text style={styles.label}>รหัสผ่านใหม่</Text><TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry /><Text style={styles.label}>ยืนยันรหัสผ่าน</Text><TextInput style={styles.input} value={confirmation} onChangeText={setConfirmation} secureTextEntry />{nonceSent ? <><Text style={styles.label}>รหัสยืนยันจากอีเมล</Text><TextInput style={styles.input} value={nonce} onChangeText={setNonce} keyboardType="number-pad" /></> : <Button title="ขอรหัสยืนยันสำหรับ session เก่า" variant="outline" onPress={requestNonce} loading={loading} style={styles.secondary} />}<Button title="เปลี่ยนรหัสผ่าน" onPress={update} loading={loading} style={styles.button} /></View></View>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    paddingTop: 54,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.inputBorder,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-  },
-  content: {
-    flex: 1,
-    padding: Spacing.lg,
-  },
-  infoBox: {
-    backgroundColor: Colors.inputBackground,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  infoTitle: {
-    fontSize: Typography.fontSizeMd,
-    fontWeight: "700",
-    color: Colors.textDark,
-  },
-  infoDesc: {
-    fontSize: Typography.fontSizeXs,
-    color: Colors.textMuted,
-    marginTop: 4,
-    lineHeight: 18,
-  },
-  inputLabel: {
-    fontSize: Typography.fontSizeSm,
-    fontWeight: "500",
-    color: Colors.textMuted,
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.md,
-  },
-  input: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontSize: Typography.fontSizeMd,
-    borderWidth: 1,
-    borderColor: Colors.inputBorder,
-  },
-  updateBtn: {
-    backgroundColor: Colors.goldDeep,
-    marginTop: Spacing.xxl,
-  },
-});
+const styles = StyleSheet.create({ container: { flex: 1, backgroundColor: Colors.background }, header: { paddingTop: 54, paddingBottom: 20 }, content: { flex: 1, padding: Spacing.lg }, note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, backgroundColor: Colors.inputBackground, borderRadius: BorderRadius.md, padding: 14 }, label: { fontFamily: "Kanit_500Medium", color: Colors.textMuted, marginTop: 14, marginBottom: 6 }, input: { backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 14 }, secondary: { marginTop: 18 }, button: { backgroundColor: Colors.goldDeep, marginTop: 14 } });

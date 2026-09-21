@@ -12,7 +12,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.goldDark,
+        tabBarActiveTintColor: Colors.greenPrimary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarStyle: {
           backgroundColor: Colors.cardBackground,
@@ -31,28 +31,30 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "หน้าแรก",
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen name="nearby" options={{title:"ใกล้ฉัน",tabBarIcon:({color,size})=><Ionicons name="location-outline" size={size} color={color}/>}} />
+      <Tabs.Screen name="orders" options={{title:"คำสั่งซื้อ",tabBarIcon:({color,size})=><Ionicons name="receipt-outline" size={size} color={color}/>}} />
       <Tabs.Screen
         name="notification"
         options={{
-          title: "Notification",
+          title: "แจ้งเตือน",
           tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="chat"
         options={{
-          title: "Chat",
+          href: null,
           tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Me",
+          title: "โปรไฟล์",
           tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
         }}
       />

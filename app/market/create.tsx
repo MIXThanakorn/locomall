@@ -1,123 +1,75 @@
-﻿import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView } from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
-import { HeaderGradient } from "../../src/components/HeaderGradient";
-import { ImagePlaceholder } from "../../src/components/ImagePlaceholder";
 import { Button } from "../../src/components/Button";
+import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
+import { supabase } from "../../src/lib/supabase";
+import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../src/lib/storage";
 
-export default function CreateMarketScreen() {
+export default function CreateMarket() {
   const router = useRouter();
-  const [marketName, setMarketName] = useState("");
-  const [category, setCategory] = useState("");
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [hub, setHub] = useState("");
+  const [subdistrict, setSubdistrict] = useState<string>();
+  const [area, setArea] = useState("");
+  const [image, setImage] = useState<SelectedImage | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleCreate = () => {
-    alert(`Market "${marketName}" created successfully! Now create your shared market products.`);
-    router.replace("/market/manage" as any);
+  useEffect(() => {
+    supabase.from("user_locations")
+      .select("subdistrict_code,thai_subdistricts(name_th,thai_districts(name_th,thai_provinces(name_th)))")
+      .single()
+      .then(({ data }: any) => {
+        setSubdistrict(data?.subdistrict_code);
+        const location = data?.thai_subdistricts;
+        setArea(location ? `${location.name_th} ${location.thai_districts?.name_th} ${location.thai_districts?.thai_provinces?.name_th}` : "");
+      });
+  }, []);
+
+  const chooseImage = async () => {
+    try { setImage(await selectSquareImage()); }
+    catch (error: any) { Alert.alert("เลือกรูปไม่สำเร็จ", error.message); }
   };
 
-  return (
-    <View style={styles.container}>
-      <HeaderGradient
-        title="Create Community Market"
-        subtitle="Establish a local market for multiple community sellers"
-        variant="gold"
-        showBack
-        onBackPress={() => router.back()}
-        style={styles.header}
-      />
+  const submit = async () => {
+    if (!subdistrict) return Alert.alert("กรุณาตั้งค่าพื้นที่หลักก่อน");
+    if (!name.trim() || !hub.trim()) return Alert.alert("กรอกข้อมูลให้ครบ");
+    setLoading(true);
+    try {
+      const { data: marketId, error } = await supabase.rpc("apply_for_market", {
+        p_name: name.trim(), p_description: description.trim(), p_subdistrict_code: subdistrict, p_hub_address: hub.trim(),
+      });
+      if (error) throw error;
+      if (image && marketId) {
+        const uploaded = await uploadPublicImage("market-images", marketId, image);
+        const { error: imageError } = await supabase.rpc("set_market_image", { p_market_id: marketId, p_image_url: uploaded.publicUrl });
+        if (imageError) throw imageError;
+      }
+      Alert.alert("ส่งคำขอแล้ว", "Platform Admin จะตรวจสอบ Market", [{ text: "ตกลง", onPress: () => router.back() }]);
+    } catch (error: any) { Alert.alert("ส่งคำขอไม่สำเร็จ", error.message); }
+    finally { setLoading(false); }
+  };
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.card}>
-          <ImagePlaceholder
-            height={150}
-            label="UPLOAD MARKET BANNER"
-            iconName="camera-outline"
-            backgroundColor="#FEF3C7"
-            style={styles.bannerPicker}
-          />
-
-          <Text style={styles.inputLabel}>Market Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. ตลาดมะพร้าวชุมชน"
-            value={marketName}
-            onChangeText={setMarketName}
-          />
-
-          <Text style={styles.inputLabel}>Category</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Local Farm / Organic, Handicraft"
-            value={category}
-            onChangeText={setCategory}
-          />
-
-          <Text style={styles.inputLabel}>Market Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Describe the purpose and community background of this market..."
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-          />
-
-          <Button
-            title="Create Market"
-            variant="green"
-            size="lg"
-            style={styles.submitBtn}
-            onPress={handleCreate}
-          />
-        </View>
-      </ScrollView>
-    </View>
-  );
+  return <ScrollView contentContainerStyle={styles.root}>
+    <Text style={styles.title}>ขอเปิด Market ชุมชน</Text>
+    <Text style={styles.area}>พื้นที่หลัก: {area || "กำลังโหลด..."}</Text>
+    <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
+      {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูป Market</Text>}
+    </TouchableOpacity>
+    <TextInput style={styles.input} placeholder="ชื่อ Market" value={name} onChangeText={setName} />
+    <TextInput style={[styles.input, styles.multiline]} multiline placeholder="เรื่องราวและรายละเอียดชุมชน" value={description} onChangeText={setDescription} />
+    <TextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} />
+    <Button title="ส่งให้ Platform Admin ตรวจสอบ" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary }} />
+  </ScrollView>;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  header: {
-    paddingTop: 54,
-    paddingBottom: 30,
-  },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: Spacing.lg,
-  },
-  card: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-  },
-  bannerPicker: {
-    marginBottom: Spacing.md,
-  },
-  inputLabel: {
-    fontSize: Typography.fontSizeSm,
-    fontWeight: "500",
-    color: Colors.textMuted,
-    marginBottom: Spacing.xs,
-    marginTop: Spacing.md,
-  },
-  input: {
-    backgroundColor: Colors.inputBackground,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    fontSize: Typography.fontSizeSm,
-  },
-  textArea: {
-    height: 90,
-    textAlignVertical: "top",
-  },
-  submitBtn: {
-    marginTop: Spacing.xl,
-  },
+  root: { padding: Spacing.lg, paddingTop: 58, backgroundColor: Colors.background, flexGrow: 1 },
+  title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary },
+  area: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 16 },
+  imagePicker: { height: 170, borderRadius: BorderRadius.lg, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 14 },
+  image: { width: "100%", height: "100%" }, imageText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary },
+  input: { backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 14, marginBottom: 12, fontFamily: "Kanit_400Regular" },
+  multiline: { minHeight: 92, textAlignVertical: "top" },
 });

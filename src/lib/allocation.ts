@@ -1,5 +1,3 @@
-import { SellerListing } from "../types";
-
 export interface AllocationCandidate {
   listingId: string;
   sellerId: string;

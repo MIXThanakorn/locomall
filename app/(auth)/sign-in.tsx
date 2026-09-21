@@ -13,8 +13,8 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("Hello@gmail.com");
-  const [password, setPassword] = useState("********");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -34,7 +34,7 @@ export default function SignInScreen() {
     if (error) {
       Alert.alert("Sign In Failed", error.message);
     } else {
-      router.replace("/(tabs)" as any);
+      router.replace("/" as any);
     }
   };
 
@@ -63,7 +63,7 @@ export default function SignInScreen() {
             refresh_token: refreshToken,
           });
           if (sessionError) throw sessionError;
-          router.replace("/(tabs)" as any);
+          router.replace("/" as any);
         } else {
           // Check if there's an error in URL
           const errorDesc = hashParams.get("error_description");

@@ -1,0 +1,97 @@
+# Locomall V1 Test Cases
+
+สถานะ `Automated` หมายถึงมีการตรวจด้วย `npm test`; สถานะ `Manual/E2E`
+ต้องรันด้วยบัญชีแยกบทบาทบน preview build ก่อน release.
+
+## Authentication and profile
+
+| ID | Case | Expected | Type |
+|---|---|---|---|
+| AUTH-01 | สมัครด้วยอีเมลใหม่ | สร้าง `auth.users`/`profiles`, ได้ session ทันทีโดยไม่ต้องยืนยันอีเมล และไป Location onboarding | Automated + E2E |
+| AUTH-02 | เข้า route ที่ต้อง login แบบ guest | ถูกส่งไป Sign in | Manual/E2E |
+| AUTH-03 | Logout แล้วเปิดแอปใหม่ | session เดิมใช้ไม่ได้ | Manual/E2E |
+| AUTH-04 | Reset password ผ่าน email link | ตั้งรหัสใหม่และ login ได้ | Manual/E2E |
+| AUTH-05 | ผู้ใช้แก้ role/wallet ใน profile | ค่า authorization ไม่เปลี่ยน | Manual/E2E |
+| AUTH-06 | ผู้ใช้ทั่วไปเปิดหน้า Admin URL ตรง | เห็นหน้าไม่มีสิทธิ์และ RPC ปฏิเสธ | Automated + E2E |
+| AUTH-07 | Admin login ด้วย password แต่ยังไม่ผ่าน TOTP | ไปหน้า MFA และ Admin RPC ปฏิเสธ | Manual/E2E |
+| AUTH-08 | Admin verify TOTP สำเร็จ | session เป็น `aal2` และใช้หน้า Admin ได้ | Manual/E2E |
+
+## Location and address
+
+| ID | Case | Expected | Type |
+|---|---|---|---|
+| LOC-01 | เลือกจังหวัด | แสดงเฉพาะอำเภอของจังหวัดนั้น | Manual/E2E |
+| LOC-02 | เลือกอำเภอ | แสดงเฉพาะตำบลของอำเภอนั้น | Manual/E2E |
+| LOC-03 | ปฏิเสธ GPS | ใช้ centroid ตำบลและบันทึก `gps_consent=false` | Manual/E2E |
+| LOC-04 | อนุญาต GPS | ใช้พิกัดอุปกรณ์แต่ไม่เผยแพร่ใน catalog | Manual/E2E |
+| LOC-05 | อ่านที่อยู่ของผู้ใช้อื่น | RLS ไม่คืนข้อมูล | Manual/E2E |
+| LOC-06 | ตรวจ reference data | 77 จังหวัด, 928 อำเภอ, 7,364 ตำบล | Database |
+
+## Market, store and seller approval
+
+| ID | Case | Expected | Type |
+|---|---|---|---|
+| APR-01 | ผู้ใช้ขอเปิด Market | สถานะ `pending`; Admin ได้ notification | Manual/E2E |
+| APR-02 | ผู้ใช้ทั่วไป review Market | RPC ปฏิเสธ | Manual/E2E |
+| APR-03 | Admin approve/reject Market | เปลี่ยนสถานะและเขียน audit/event | Manual/E2E |
+| APR-04 | เปิดร้านใน Market ที่ไม่ active | RPC ปฏิเสธ | Manual/E2E |
+| APR-05 | เจ้าของ Market เปิดร้านตนเอง | เข้าคิว Platform Admin | Manual/E2E |
+| APR-06 | เจ้าของ Market approve ร้านของผู้อื่น | ร้าน active และ manager เป็น seller แรก | Manual/E2E |
+| APR-07 | ผู้ขายต่างตำบลสมัครร้าน | RPC ปฏิเสธ | Manual/E2E |
+| APR-08 | เจ้าของ Market อนุมัติตนเอง | RPC ปฏิเสธ | Manual/E2E |
+| APR-09 | สมัครซ้ำ | unique constraint ป้องกันรายการซ้ำ | Manual/E2E |
+
+## Catalog, Storage and discovery
+
+| ID | Case | Expected | Type |
+|---|---|---|---|
+| CAT-01 | Guest อ่าน Market/Store approved | อ่านได้โดยไม่เห็นข้อมูลส่วนตัว | Manual/E2E |
+| CAT-02 | อัปโหลด avatar ไป path ผู้ใช้อื่น | Storage RLS ปฏิเสธ | Automated + E2E |
+| CAT-03 | อัปโหลด Market/Store image โดยไม่ใช่ owner | Storage RLS ปฏิเสธ | Automated + E2E |
+| CAT-04 | อัปโหลดไฟล์เกิน 5 MB หรือ MIME อื่น | bucket ปฏิเสธ | Automated + E2E |
+| CAT-05 | มีผลลัพธ์ใน 10 กม. | ไม่ขยาย radius | Manual/E2E |
+| CAT-06 | ไม่มีผลลัพธ์ใน 10 กม. | ขยาย 15, 20, ... 100 กม. | Manual/E2E |
+| CAT-07 | ไม่มีผลลัพธ์ใน 100 กม. | คืนรายการใกล้สุดทั่วประเทศ | Manual/E2E |
+
+## Cart, order and allocation
+
+| ID | Case | Expected | Type |
+|---|---|---|---|
+| ORD-01 | เพิ่มร้านเดิมสองครั้ง | จำนวนใน cart เป็น 2 ไม่รีเซ็ตเป็น 1 | Automated + E2E |
+| ORD-02 | เพิ่มสินค้าคนละ Market | RPC ปฏิเสธ | Manual/E2E |
+| ORD-03 | Client ส่งราคา/ผู้ขายปลอม | Server ไม่อ่านค่าเหล่านั้น | Database |
+| ORD-04 | สั่ง 30 จาก stock 100/100/100 | allocation 10/10/10 | Automated |
+| ORD-05 | สั่ง 30 จาก stock 5/100/100 | allocation 5/13/12 หรือ 5/12/13 | Automated |
+| ORD-06 | stock รวมไม่พอ | transaction rollback ทั้งหมด | Automated |
+| ORD-07 | checkout พร้อมกันเกิน stock | มีเพียงปริมาณที่ lock ได้; stock ไม่ติดลบ | Manual/E2E |
+| ORD-08 | เปลี่ยนราคาหลังสั่ง | order snapshot ไม่เปลี่ยน | Manual/E2E |
+| ORD-09 | address ไม่ใช่ของ buyer | RPC ปฏิเสธ | Manual/E2E |
+| ORD-10 | cancellation ซ้ำ | reserved stock ถูกคืนครั้งเดียว | Manual/E2E |
+| ORD-11 | cancel หลัง shipped โดยไม่ใช่ Admin | RPC ปฏิเสธ | Manual/E2E |
+
+## Logistics, chat and notifications
+
+| ID | Case | Expected | Type |
+|---|---|---|---|
+| LOG-01 | Seller เปลี่ยน allocation ของคนอื่น | RPC ปฏิเสธ | Manual/E2E |
+| LOG-02 | รวม order ก่อนทุก allocation ถึง hub | RPC ปฏิเสธ | Manual/E2E |
+| LOG-03 | ส่ง order ก่อน consolidated | RPC ปฏิเสธ | Manual/E2E |
+| LOG-04 | Tracking number | อยู่ระดับ order เพียงรายการเดียว | Manual/E2E |
+| LOG-05 | Buyer ยืนยัน delivery ของผู้อื่น | RPC ปฏิเสธ | Manual/E2E |
+| CHAT-01 | บุคคลที่สามอ่าน chat room | RLS ไม่คืนข้อมูล | Manual/E2E |
+| CHAT-02 | Buyer/manager ส่งข้อความ | อีกฝ่ายได้รับผ่าน Realtime | Manual/E2E |
+| NOTI-01 | Approval เปลี่ยนสถานะ | เจ้าของคำขอได้รับ notification | Manual/E2E |
+
+## Release verification
+
+```bash
+npm test
+npm run typecheck
+npm run lint -- --quiet
+npx expo export --platform web --output-dir dist
+npm audit --omit=dev --audit-level=high
+```
+
+ทดสอบ Manual/E2E ด้วยบัญชีอย่างน้อย 6 บัญชี: Platform Admin, Market owner,
+Store manager, Seller A, Seller B และ Buyer. ห้ามใช้บัญชีเดียวสลับทุกบทบาท เพราะจะ
+ไม่สามารถพิสูจน์ isolation ของ RLS ได้.
