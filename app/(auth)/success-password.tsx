@@ -21,9 +21,9 @@ export default function SuccessPasswordScreen() {
 
       <View style={styles.content}>
         <View style={styles.card}>
-          <Text style={styles.title}>Password Changed</Text>
+          <Text style={styles.title}>เปลี่ยนรหัสผ่านแล้ว</Text>
           <Text style={styles.subtitle}>
-            Congratulations! You have successfully changed your password.
+            ตั้งรหัสผ่านใหม่สำเร็จแล้ว คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที
           </Text>
 
           <View style={styles.checkCircle}>
@@ -31,7 +31,7 @@ export default function SuccessPasswordScreen() {
           </View>
 
           <Button
-            title="Back to Sign in"
+            title="กลับไปหน้าเข้าสู่ระบบ"
             variant="green"
             size="lg"
             style={styles.backBtn}

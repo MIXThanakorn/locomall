@@ -17,6 +17,7 @@
     },
     "android": {
       "package": "com.locomall.app",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

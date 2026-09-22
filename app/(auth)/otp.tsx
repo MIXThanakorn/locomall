@@ -11,8 +11,8 @@ export default function OTPScreen() {
   return (
     <View style={styles.container}>
       <HeaderGradient
-        title="Enter OTP"
-        subtitle="Please enter 6 digit code sent to your registered mobile number"
+        title="กรอกรหัสยืนยัน"
+        subtitle="กรุณากรอกรหัส 6 หลักที่ส่งไปยังหมายเลขโทรศัพท์ของคุณ"
         variant="gold"
         showBack
         onBackPress={() => router.back()}
@@ -30,7 +30,7 @@ export default function OTPScreen() {
           </View>
 
           <Button
-            title="Submit"
+            title="ยืนยัน"
             variant="green"
             size="lg"
             style={styles.submitBtn}
@@ -38,9 +38,9 @@ export default function OTPScreen() {
           />
 
           <View style={styles.resendRow}>
-            <Text style={styles.resendText}>Not received Code? </Text>
+            <Text style={styles.resendText}>ยังไม่ได้รับรหัส? </Text>
             <TouchableOpacity onPress={() => {}}>
-              <Text style={styles.resendLink}>Resend</Text>
+              <Text style={styles.resendLink}>ส่งอีกครั้ง</Text>
             </TouchableOpacity>
           </View>
         </View>

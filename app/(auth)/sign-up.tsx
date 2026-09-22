@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
@@ -9,6 +9,7 @@ import { ImagePlaceholder } from "../../src/components/ImagePlaceholder";
 import { GenderType } from "../../src/types";
 import { supabase } from "../../src/lib/supabase";
 import { passwordValidationError } from "../../src/lib/password";
+import { translateAuthError } from "../../src/lib/authError";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -16,6 +17,9 @@ export default function SignUpScreen() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
   const [phone, setPhone] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState<GenderType>("man");
@@ -31,6 +35,10 @@ export default function SignUpScreen() {
     const passwordError = passwordValidationError(password);
     if (passwordError) {
       Alert.alert("รหัสผ่านไม่ปลอดภัย", passwordError);
+      return;
+    }
+    if (password !== passwordConfirmation) {
+      Alert.alert("รหัสผ่านไม่ตรงกัน", "กรุณากรอกรหัสผ่านและยืนยันรหัสผ่านให้ตรงกัน");
       return;
     }
 
@@ -61,14 +69,14 @@ export default function SignUpScreen() {
         { text: "ตกลง", onPress: () => router.replace("/(auth)/location-onboarding" as any) }
       ]);
     } catch (error: any) {
-      Alert.alert("Sign Up Failed", error.message);
+      Alert.alert("สมัครสมาชิกไม่สำเร็จ", translateAuthError(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <HeaderGradient
         title=""
         variant="green"
@@ -81,28 +89,48 @@ export default function SignUpScreen() {
         </View>
       </HeaderGradient>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      >
         <View style={styles.card}>
-          <Text style={styles.inputLabel}>Full name</Text>
-          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+          <Text style={styles.inputLabel}>ชื่อ–นามสกุล</Text>
+          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="ชื่อและนามสกุลจริง" />
 
-          <Text style={styles.inputLabel}>Username</Text>
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} />
+          <Text style={styles.inputLabel}>ชื่อผู้ใช้</Text>
+          <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="ชื่อที่ใช้แสดงในระบบ" />
 
-          <Text style={styles.inputLabel}>Email</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+          <Text style={styles.inputLabel}>อีเมล</Text>
+          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="name@example.com" />
 
-          <Text style={styles.inputLabel}>Password</Text>
-          <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry />
+          <Text style={styles.inputLabel}>รหัสผ่าน</Text>
+          <Text style={styles.passwordHint}>อย่างน้อย 10 ตัว และต้องมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput style={styles.passwordInput} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" placeholder="สร้างรหัสผ่าน" />
+            <TouchableOpacity onPress={() => setShowPassword((value) => !value)} accessibilityLabel={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
+              <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
+            </TouchableOpacity>
+          </View>
 
-          <Text style={styles.inputLabel}>Phone Number</Text>
-          <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          <Text style={styles.inputLabel}>ยืนยันรหัสผ่าน</Text>
+          <View style={styles.passwordContainer}>
+            <TextInput style={styles.passwordInput} value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry={!showPasswordConfirmation} autoCapitalize="none" placeholder="กรอกรหัสผ่านอีกครั้ง" />
+            <TouchableOpacity onPress={() => setShowPasswordConfirmation((value) => !value)} accessibilityLabel={showPasswordConfirmation ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
+              <Ionicons name={showPasswordConfirmation ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
+            </TouchableOpacity>
+          </View>
 
-          <Text style={styles.inputLabel}>Age</Text>
-          <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
+          <Text style={styles.inputLabel}>เบอร์โทรศัพท์</Text>
+          <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="เช่น 0812345678" />
+
+          <Text style={styles.inputLabel}>อายุ</Text>
+          <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholder="อายุ (ปี)" />
 
           {/* Gender Selector with Vector Icons */}
-          <Text style={styles.sectionTitle}>Gender</Text>
+          <Text style={styles.sectionTitle}>เพศ</Text>
           <View style={styles.genderRow}>
             <TouchableOpacity
               style={[
@@ -113,7 +141,7 @@ export default function SignUpScreen() {
               onPress={() => setGender("man")}
             >
               <Ionicons name="male" size={18} color={Colors.genderMan} />
-              <Text style={[styles.genderText, { color: Colors.genderMan }]}>Man</Text>
+              <Text style={[styles.genderText, { color: Colors.genderMan }]}>ชาย</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -125,7 +153,7 @@ export default function SignUpScreen() {
               onPress={() => setGender("girl")}
             >
               <Ionicons name="female" size={18} color={Colors.genderGirl} />
-              <Text style={[styles.genderText, { color: Colors.genderGirl }]}>Girl</Text>
+              <Text style={[styles.genderText, { color: Colors.genderGirl }]}>หญิง</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -137,12 +165,12 @@ export default function SignUpScreen() {
               onPress={() => setGender("other")}
             >
               <Ionicons name="male-female" size={18} color={Colors.genderOther} />
-              <Text style={[styles.genderText, { color: Colors.genderOther }]}>Other</Text>
+              <Text style={[styles.genderText, { color: Colors.genderOther }]}>อื่น ๆ</Text>
             </TouchableOpacity>
           </View>
 
           <Button
-            title="SIGN UP"
+            title="สมัครสมาชิก"
             variant="green"
             size="lg"
             style={styles.signUpBtn}
@@ -151,7 +179,7 @@ export default function SignUpScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -189,7 +217,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 140,
   },
   card: {
     backgroundColor: Colors.cardBackground,
@@ -213,6 +241,27 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
+    fontSize: Typography.fontSizeMd,
+    color: Colors.textDark,
+  },
+  passwordHint: {
+    fontFamily: "Kanit_400Regular",
+    fontSize: Typography.fontSizeXs,
+    lineHeight: 18,
+    color: Colors.textMuted,
+    marginBottom: Spacing.sm,
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.inputBackground,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: Spacing.sm + 2,
+    fontFamily: "Kanit_400Regular",
     fontSize: Typography.fontSizeMd,
     color: Colors.textDark,
   },

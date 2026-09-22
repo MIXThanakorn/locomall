@@ -1133,7 +1133,13 @@ export type Database = {
         Returns: number
       }
       discover_nearby: {
-        Args: { p_kind?: string; p_limit?: number; p_query?: string }
+        Args: {
+          p_kind?: string
+          p_lat?: number
+          p_limit?: number
+          p_lng?: number
+          p_query?: string
+        }
         Returns: {
           available_stock: number
           description: string

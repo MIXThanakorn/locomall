@@ -1,18 +1,21 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 
 export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number };
 
 export function useNearby(query = "", kind = "all") {
+  const { deviceLocation, deviceLocationReady } = useAuth();
   const [items, setItems] = useState<NearbyResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const refresh = useCallback(async () => {
+    if (!deviceLocationReady) return;
     setLoading(true);
-    const { data, error: requestError } = await supabase.rpc("discover_nearby", { p_query: query || undefined, p_kind: kind, p_limit: 40 });
+    const { data, error: requestError } = await supabase.rpc("discover_nearby", { p_query: query || undefined, p_kind: kind, p_limit: 40, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude });
     setItems((data ?? []) as NearbyResult[]); setError(requestError?.message ?? null); setLoading(false);
-  }, [query, kind]);
+  }, [query, kind, deviceLocation, deviceLocationReady]);
   useEffect(() => { const timer = setTimeout(() => void refresh(), 250); return () => clearTimeout(timer); }, [refresh]);
   return { items, loading, error, refresh };
 }

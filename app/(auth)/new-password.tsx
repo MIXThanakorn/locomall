@@ -7,6 +7,7 @@ import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { passwordValidationError } from "../../src/lib/password";
 import { supabase } from "../../src/lib/supabase";
+import { translateAuthError } from "../../src/lib/authError";
 
 async function acceptRecoveryUrl(url: string | null) {
   if (!url) return;
@@ -25,7 +26,7 @@ export default function NewPasswordScreen() {
     const validation = passwordValidationError(password); if (validation) return Alert.alert("รหัสผ่านไม่ปลอดภัย", validation);
     if (password !== confirmation) return Alert.alert("รหัสผ่านไม่ตรงกัน");
     setLoading(true); const { error } = await supabase.auth.updateUser({ password }); setLoading(false);
-    if (error) return Alert.alert("เปลี่ยนรหัสผ่านไม่สำเร็จ", error.message);
+    if (error) return Alert.alert("เปลี่ยนรหัสผ่านไม่สำเร็จ", translateAuthError(error));
     router.replace("/(auth)/success-password" as never);
   };
   return <View style={styles.container}><HeaderGradient title="สร้างรหัสผ่านใหม่" subtitle="อย่างน้อย 10 ตัว พร้อมตัวพิมพ์เล็ก/ใหญ่ ตัวเลข และสัญลักษณ์" variant="gold" showBack onBackPress={() => router.back()} style={styles.header} /><View style={styles.content}><View style={styles.card}><Text style={styles.label}>รหัสผ่านใหม่</Text><TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry /><Text style={styles.label}>ยืนยันรหัสผ่าน</Text><TextInput style={styles.input} value={confirmation} onChangeText={setConfirmation} secureTextEntry /><Button title="บันทึกรหัสผ่านใหม่" onPress={update} loading={loading} style={styles.button} /></View></View></View>;

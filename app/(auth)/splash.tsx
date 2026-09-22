@@ -20,17 +20,17 @@ export default function SplashScreen() {
             <Feather name="feather" size={24} color={Colors.goldDark} style={styles.leafBadge} />
           </View>
           <Text style={styles.logoTitle}>LOCOMALL</Text>
-          <Text style={styles.logoSubtitle}>Local Community Mall</Text>
+          <Text style={styles.logoSubtitle}>ตลาดออนไลน์ของชุมชน</Text>
         </View>
 
         <Text style={styles.tagline}>
-          Community Marketplace & Shared Order Allocation
+          ซื้อสินค้าชุมชนใกล้ตัว ส่งตรงจากผู้ขายในพื้นที่
         </Text>
       </View>
 
       <View style={styles.footer}>
         <Button
-          title="SIGN IN"
+          title="เข้าสู่ระบบ"
           variant="white"
           size="lg"
           style={styles.btn}
@@ -38,7 +38,7 @@ export default function SplashScreen() {
           onPress={() => router.push("/(auth)/sign-in" as any)}
         />
         <Button
-          title="SIGN UP"
+          title="สมัครสมาชิก"
           variant="outline"
           size="lg"
           style={styles.btnOutline}
@@ -46,7 +46,7 @@ export default function SplashScreen() {
           onPress={() => router.push("/(auth)/sign-up" as any)}
         />
         <Button
-          title="EXPLORE MARKETPLACE"
+          title="เลือกดูตลาดโดยยังไม่เข้าสู่ระบบ"
           variant="ghost"
           size="md"
           textStyle={{ color: Colors.textDark }}

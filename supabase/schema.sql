@@ -7,5 +7,7 @@
 \ir migrations/20260920073812_allocation_canonical.sql
 \ir migrations/20260920073926_authorization_fixes.sql
 \ir migrations/20260920074002_logistics_state_sync.sql
-\ir migrations/20260921020823_v1_release_hardening.sql
-\ir migrations/20260921022510_enforce_admin_mfa.sql
+\ir migrations/20260921021549_v1_release_hardening.sql
+\ir migrations/20260921022618_enforce_admin_mfa.sql
+\ir migrations/20260921080637_runtime_location_and_policy_helpers.sql
+\ir migrations/20260921084304_fix_order_rls_recursion.sql

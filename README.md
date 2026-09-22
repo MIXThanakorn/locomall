@@ -180,7 +180,8 @@ override และถูกบันทึก audit log.
 - เริ่มค้นหาที่ 10 กม. แล้วขยาย 15, 20, ... 100 กม.
 - หากยังไม่พบ คืนรายการใกล้สุดทั่วประเทศ
 - จัดอันดับ radius/distance ก่อนข้อความค้นหาและ stock
-- GPS ต้องได้รับ consent; เมื่อปฏิเสธใช้ centroid ตำบล
+- Onboarding บันทึกจังหวัด/อำเภอ/ตำบลด้วย centroid ก่อนโดยไม่รอ GPS
+- เมื่อเข้าหน้าหลัก แอปขอ GPS เพื่อส่งให้ discovery เฉพาะ request โดยไม่บันทึก exact GPS; หากปฏิเสธจะใช้ centroid ตำบล
 - ข้อมูลอ้างอิง: 77 จังหวัด, 928 อำเภอ, 7,364 ตำบล
 - รายละเอียด provenance อยู่ที่ [`docs/thai-address-data.md`](docs/thai-address-data.md)
 

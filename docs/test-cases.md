@@ -22,10 +22,11 @@
 |---|---|---|---|
 | LOC-01 | เลือกจังหวัด | แสดงเฉพาะอำเภอของจังหวัดนั้น | Manual/E2E |
 | LOC-02 | เลือกอำเภอ | แสดงเฉพาะตำบลของอำเภอนั้น | Manual/E2E |
-| LOC-03 | ปฏิเสธ GPS | ใช้ centroid ตำบลและบันทึก `gps_consent=false` | Manual/E2E |
-| LOC-04 | อนุญาต GPS | ใช้พิกัดอุปกรณ์แต่ไม่เผยแพร่ใน catalog | Manual/E2E |
+| LOC-03 | บันทึกพื้นที่หลัก | บันทึกจังหวัด/อำเภอ/ตำบลทันทีโดยไม่รอ GPS และใช้ centroid เป็น fallback | Automated + E2E |
+| LOC-04 | เข้าหน้าหลักและอนุญาต GPS | ใช้พิกัดอุปกรณ์ค้นหาใกล้ตัวแบบชั่วคราว แต่ไม่บันทึก exact GPS ลงฐานข้อมูล | Automated + E2E |
 | LOC-05 | อ่านที่อยู่ของผู้ใช้อื่น | RLS ไม่คืนข้อมูล | Manual/E2E |
 | LOC-06 | ตรวจ reference data | 77 จังหวัด, 928 อำเภอ, 7,364 ตำบล | Database |
+| LOC-07 | เข้าหน้าหลักและปฏิเสธ GPS | Discovery ใช้ centroid ของตำบลที่บันทึกไว้ | Manual/E2E |
 
 ## Market, store and seller approval
 

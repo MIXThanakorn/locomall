@@ -6,6 +6,7 @@ import { Button } from "../../src/components/Button";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { BorderRadius, Colors, Spacing, Typography } from "../../src/constants/theme";
 import { supabase } from "../../src/lib/supabase";
+import { translateAuthError } from "../../src/lib/authError";
 
 export default function RecoverPasswordScreen() {
   const router = useRouter(); const [email, setEmail] = useState(""); const [loading, setLoading] = useState(false);
@@ -14,7 +15,7 @@ export default function RecoverPasswordScreen() {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: Linking.createURL("/(auth)/new-password") });
     setLoading(false);
-    if (error) return Alert.alert("ส่งอีเมลไม่สำเร็จ", error.message);
+    if (error) return Alert.alert("ส่งอีเมลไม่สำเร็จ", translateAuthError(error));
     Alert.alert("ตรวจสอบอีเมล", "เราได้ส่งลิงก์ตั้งรหัสผ่านใหม่แล้ว", [{ text: "ตกลง", onPress: () => router.back() }]);
   };
   return <View style={styles.container}><HeaderGradient title="กู้คืนรหัสผ่าน" subtitle="ระบบจะส่งลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมลของคุณ" variant="gold" showBack onBackPress={() => router.back()} style={styles.header} /><View style={styles.content}><View style={styles.card}><Text style={styles.label}>อีเมล</Text><TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="name@example.com" /><Button title="ส่งลิงก์กู้คืนรหัสผ่าน" onPress={recover} loading={loading} style={styles.button} /></View></View></View>;

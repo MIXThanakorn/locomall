@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -8,6 +8,7 @@ import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/t
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
 import { supabase } from "../../src/lib/supabase";
+import { translateAuthError } from "../../src/lib/authError";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -21,7 +22,7 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please fill in email and password");
+      Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกอีเมลและรหัสผ่าน");
       return;
     }
     setLoading(true);
@@ -32,7 +33,7 @@ export default function SignInScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert("Sign In Failed", error.message);
+      Alert.alert("เข้าสู่ระบบไม่สำเร็จ", translateAuthError(error));
     } else {
       router.replace("/" as any);
     }
@@ -71,39 +72,41 @@ export default function SignInScreen() {
         }
       }
     } catch (error: any) {
-      Alert.alert("Google Sign In Failed", error.message);
+      Alert.alert("เข้าสู่ระบบด้วย Google ไม่สำเร็จ", translateAuthError(error));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <HeaderGradient
-        title="Hello !"
-        subtitle="Welcome to Locomall"
+        title="สวัสดี!"
+        subtitle="ยินดีต้อนรับสู่ Locomall"
         variant="gold"
         style={styles.header}
       />
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}>
         <View style={styles.card}>
-          <Text style={styles.inputLabel}>Email</Text>
+          <Text style={styles.inputLabel}>อีเมล</Text>
           <TextInput
             style={styles.input}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            placeholder="name@example.com"
           />
 
-          <Text style={styles.inputLabel}>Password</Text>
+          <Text style={styles.inputLabel}>รหัสผ่าน</Text>
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              placeholder="กรอกรหัสผ่าน"
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons
@@ -118,11 +121,11 @@ export default function SignInScreen() {
             style={styles.forgotBtn}
             onPress={() => router.push("/(auth)/recover-password" as any)}
           >
-            <Text style={styles.forgotText}>Forgot Password?</Text>
+            <Text style={styles.forgotText}>ลืมรหัสผ่าน?</Text>
           </TouchableOpacity>
 
           <Button
-            title="SIGN IN"
+            title="เข้าสู่ระบบ"
             variant="gold"
             size="lg"
             style={styles.signInBtn}
@@ -133,12 +136,12 @@ export default function SignInScreen() {
 
           <View style={styles.dividerContainer}>
             <View style={styles.divider} />
-            <Text style={styles.dividerText}>OR</Text>
+            <Text style={styles.dividerText}>หรือ</Text>
             <View style={styles.divider} />
           </View>
 
           <Button
-            title="Sign in with Google"
+            title="เข้าสู่ระบบด้วย Google"
             variant="white"
             size="lg"
             style={styles.googleBtn}
@@ -149,7 +152,7 @@ export default function SignInScreen() {
           />
 
           <Button
-            title="SIGN UP"
+            title="ยังไม่มีบัญชี? สมัครสมาชิก"
             variant="outline"
             size="lg"
             style={styles.signUpBtn}
@@ -157,7 +160,7 @@ export default function SignInScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
