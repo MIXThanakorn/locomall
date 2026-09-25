@@ -5,6 +5,7 @@ import { Button } from "../../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
 import { supabase } from "../../../src/lib/supabase";
 import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../../src/lib/storage";
+import { translateDatabaseError } from "../../../src/lib/databaseError";
 
 export default function CreateStore() {
   const { marketId } = useLocalSearchParams<{ marketId: string }>();
@@ -33,12 +34,16 @@ export default function CreateStore() {
       });
       if (error) throw error;
       if (image && storeId) {
-        const uploaded = await uploadPublicImage("store-images", storeId, image);
-        const { error: imageError } = await supabase.rpc("set_store_image", { p_store_id: storeId, p_image_url: uploaded.publicUrl });
-        if (imageError) throw imageError;
+        try {
+          const uploaded = await uploadPublicImage("store-images", storeId, image);
+          const { error: imageError } = await supabase.rpc("set_store_image", { p_store_id: storeId, p_image_url: uploaded.publicUrl });
+          if (imageError) throw imageError;
+        } catch {
+          return Alert.alert("ส่งคำขอแล้ว แต่รูปยังไม่ถูกบันทึก", "คำขอร้านค้าอยู่ในคิวเรียบร้อยแล้ว การส่งซ้ำจะอัปเดตคำขอเดิม", [{ text: "ตกลง", onPress: () => router.back() }]);
+        }
       }
       Alert.alert("ส่งคำขอแล้ว", "ผู้อนุมัติที่เกี่ยวข้องจะตรวจสอบคำขอของคุณ", [{ text: "ตกลง", onPress: () => router.back() }]);
-    } catch (error: any) { Alert.alert("ส่งคำขอไม่สำเร็จ", error.message); }
+    } catch (error: any) { Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error)); }
     finally { setLoading(false); }
   };
 

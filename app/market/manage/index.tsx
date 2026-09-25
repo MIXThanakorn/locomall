@@ -5,6 +5,7 @@ import { PermissionGate } from "../../../src/components/PermissionGate";
 import { Colors, Spacing } from "../../../src/constants/theme";
 import { useCapabilities } from "../../../src/hooks/useCapabilities";
 import { supabase } from "../../../src/lib/supabase";
+import { translateDatabaseError } from "../../../src/lib/databaseError";
 
 export default function ApprovalQueue() {
   const permissions = useCapabilities();
@@ -29,7 +30,7 @@ export default function ApprovalQueue() {
   }, [permissions.isMarketOwner, permissions.isAdmin]);
   const review = async (kind: "store" | "seller", id: number, approve: boolean) => {
     const result = kind === "store" ? await supabase.rpc("review_store", { p_store_id: id, p_approve: approve }) : await supabase.rpc("review_store_seller", { p_application_id: id, p_approve: approve });
-    if (result.error) Alert.alert(result.error.message); else await load();
+    if (result.error) Alert.alert("ดำเนินการไม่สำเร็จ", translateDatabaseError(result.error)); else await load();
   };
   return <PermissionGate allow={permissions.isMarketOwner || permissions.isAdmin} loading={permissions.loading}>
     <ScrollView contentContainerStyle={styles.root}><Text style={styles.title}>คิวอนุมัติ</Text><Text style={styles.section}>ร้านใหม่</Text>

@@ -10,6 +10,7 @@ type AuthState = {
   session: Session | null;
   loading: boolean;
   hasLocation: boolean | null;
+  isAdmin: boolean | null;
   deviceLocation: DeviceLocation | null;
   deviceLocationReady: boolean;
   refreshLocation: () => Promise<void>;
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasLocation, setHasLocation] = useState<boolean | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [deviceLocation, setDeviceLocation] = useState<DeviceLocation | null>(null);
   const [deviceLocationReady, setDeviceLocationReady] = useState(false);
 
@@ -29,6 +31,12 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     if (!session?.user.id) return setHasLocation(null);
     const { data } = await supabase.from("user_locations").select("user_id").eq("user_id", session.user.id).maybeSingle();
     setHasLocation(Boolean(data));
+  };
+
+  const refreshAdminRole = async () => {
+    if (!session?.user.id) return setIsAdmin(null);
+    const { data } = await supabase.from("platform_roles").select("role").eq("user_id", session.user.id).maybeSingle();
+    setIsAdmin(data?.role === "platform_admin");
   };
 
   const refreshDeviceLocation = useCallback(async () => {
@@ -54,6 +62,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     if (error) throw error;
     setSession(null);
     setHasLocation(null);
+    setIsAdmin(null);
     setDeviceLocation(null);
     setDeviceLocationReady(false);
   }, []);
@@ -64,16 +73,17 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => { void refreshLocation(); }, [session?.user.id]);
+  useEffect(() => { void refreshAdminRole(); }, [session?.user.id]);
   useEffect(() => {
-    if (!hasLocation) return;
+    if (!hasLocation || isAdmin) return;
     void refreshDeviceLocation();
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") void refreshDeviceLocation();
     });
     return () => subscription.remove();
-  }, [hasLocation, refreshDeviceLocation]);
+  }, [hasLocation, isAdmin, refreshDeviceLocation]);
 
-  const value = useMemo(() => ({ session, loading, hasLocation, deviceLocation, deviceLocationReady, refreshLocation, refreshDeviceLocation, signOut }), [session, loading, hasLocation, deviceLocation, deviceLocationReady, refreshDeviceLocation, signOut]);
+  const value = useMemo(() => ({ session, loading, hasLocation, isAdmin, deviceLocation, deviceLocationReady, refreshLocation, refreshDeviceLocation, signOut }), [session, loading, hasLocation, isAdmin, deviceLocation, deviceLocationReady, refreshDeviceLocation, signOut]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

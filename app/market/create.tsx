@@ -5,6 +5,7 @@ import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { supabase } from "../../src/lib/supabase";
 import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../src/lib/storage";
+import { translateDatabaseError } from "../../src/lib/databaseError";
 
 export default function CreateMarket() {
   const router = useRouter();
@@ -42,12 +43,16 @@ export default function CreateMarket() {
       });
       if (error) throw error;
       if (image && marketId) {
-        const uploaded = await uploadPublicImage("market-images", marketId, image);
-        const { error: imageError } = await supabase.rpc("set_market_image", { p_market_id: marketId, p_image_url: uploaded.publicUrl });
-        if (imageError) throw imageError;
+        try {
+          const uploaded = await uploadPublicImage("market-images", marketId, image);
+          const { error: imageError } = await supabase.rpc("set_market_image", { p_market_id: marketId, p_image_url: uploaded.publicUrl });
+          if (imageError) throw imageError;
+        } catch {
+          return Alert.alert("ส่งคำขอแล้ว แต่รูปยังไม่ถูกบันทึก", "คำขอ Market อยู่ในคิวเรียบร้อยแล้ว คุณสามารถกลับมาเลือกรูปและส่งซ้ำได้โดยระบบจะอัปเดตคำขอเดิม", [{ text: "ตกลง", onPress: () => router.back() }]);
+        }
       }
       Alert.alert("ส่งคำขอแล้ว", "Platform Admin จะตรวจสอบ Market", [{ text: "ตกลง", onPress: () => router.back() }]);
-    } catch (error: any) { Alert.alert("ส่งคำขอไม่สำเร็จ", error.message); }
+    } catch (error: any) { Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error)); }
     finally { setLoading(false); }
   };
 

@@ -16,19 +16,41 @@ test("V1 hardening RPCs are authenticated and use an empty search path", () => {
 });
 
 test("Storage policies bind paths to user, market, or store ownership", () => {
-  const sql = read("supabase/migrations/20260921021549_v1_release_hardening.sql");
-  assert.match(sql, /bucket_id='avatars'.*storage\.foldername\(name\).*auth\.uid\(\)/s);
-  assert.match(sql, /bucket_id='market-images'.*m\.owner_id=.*auth\.uid\(\)/s);
-  assert.match(sql, /bucket_id='store-images'.*s\.manager_id=.*auth\.uid\(\)/s);
-  assert.match(sql, /allowed_mime_types/s);
-  assert.match(sql, /5242880/);
+  const original = read("supabase/migrations/20260921021549_v1_release_hardening.sql");
+  const fix = read("supabase/migrations/20260925015236_admin_workspace_and_request_rls_fixes.sql");
+  assert.match(fix, /storage\.foldername\(storage\.objects\.name\)/);
+  assert.match(fix, /bucket_id = 'market-images'[\s\S]*m\.owner_id = \(select auth\.uid\(\)\)/);
+  assert.match(fix, /bucket_id = 'store-images'[\s\S]*s\.manager_id = \(select auth\.uid\(\)\)/);
+  assert.doesNotMatch(fix, /storage\.foldername\(m\.name\)|storage\.foldername\(s\.name\)/);
+  assert.match(original, /allowed_mime_types/s);
+  assert.match(original, /5242880/);
 });
 
-test("Platform Admin authorization requires an AAL2 MFA session", () => {
-  const sql = read("supabase/migrations/20260921022618_enforce_admin_mfa.sql");
-  assert.match(sql, /auth\.jwt\(\)->>'aal'\)='aal2'/);
+test("Platform Admin authorization uses server-controlled roles without email or MFA", () => {
+  const sql = read("supabase/migrations/20260925015236_admin_workspace_and_request_rls_fixes.sql");
   assert.match(sql, /platform_roles/);
-  assert.match(read("app/admin/security.tsx"), /auth\.mfa\.(?:enroll|challenge|verify)/);
+  assert.doesNotMatch(sql, /auth\.jwt\(\)->>'aal'|email/);
+  assert.doesNotMatch(read("app/admin/security.tsx"), /auth\.mfa|reauthenticate|email/i);
+  assert.match(read("app/admin/_layout.tsx"), /Tabs/);
+  assert.match(read("app/index.tsx"), /isAdmin[\s\S]*Redirect href=\{"\/admin"/);
+});
+
+test("Application RPC retries are idempotent and do not duplicate pending requests", () => {
+  const sql = read("supabase/migrations/20260925015236_admin_workspace_and_request_rls_fixes.sql");
+  assert.match(sql, /owner_id = auth\.uid\(\) and approval_status = 'pending'/);
+  assert.match(sql, /manager_id=auth\.uid\(\) and approval_status='pending'/);
+  assert.match(sql, /existing_status='rejected'[\s\S]*status='pending'/);
+  assert.match(read("app/market/create.tsx"), /ส่งคำขอแล้ว แต่รูปยังไม่ถูกบันทึก/);
+  assert.match(read("app/seller/listings/join.tsx"), /ส่งคำขอแล้ว แต่รูปยังไม่ถูกบันทึก/);
+});
+
+test("Admin workspace provides dashboard, approvals, orders, audit, and no user tabs", () => {
+  const layout = read("app/admin/_layout.tsx");
+  for (const route of ["index", "markets", "orders", "audit"]) assert.match(layout, new RegExp(`name="${route}"`));
+  assert.doesNotMatch(layout, /nearby|profile|notification/);
+  assert.match(read("app/admin/index.tsx"), /ศูนย์ควบคุมระบบ/);
+  assert.match(read("app/admin/orders.tsx"), /p_admin_override: true/);
+  assert.match(read("app/admin/audit.tsx"), /admin_audit_logs/);
 });
 
 test("Production routes do not import mock data", () => {

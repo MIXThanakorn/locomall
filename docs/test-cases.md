@@ -13,8 +13,21 @@
 | AUTH-04 | Reset password ผ่าน email link | ตั้งรหัสใหม่และ login ได้ | Manual/E2E |
 | AUTH-05 | ผู้ใช้แก้ role/wallet ใน profile | ค่า authorization ไม่เปลี่ยน | Manual/E2E |
 | AUTH-06 | ผู้ใช้ทั่วไปเปิดหน้า Admin URL ตรง | เห็นหน้าไม่มีสิทธิ์และ RPC ปฏิเสธ | Automated + E2E |
-| AUTH-07 | Admin login ด้วย password แต่ยังไม่ผ่าน TOTP | ไปหน้า MFA และ Admin RPC ปฏิเสธ | Manual/E2E |
-| AUTH-08 | Admin verify TOTP สำเร็จ | session เป็น `aal2` และใช้หน้า Admin ได้ | Manual/E2E |
+| AUTH-07 | Admin login ด้วยรหัสผ่าน | เข้า Admin workspace โดยตรวจ `platform_roles` และไม่ขอ email/MFA | Automated + E2E |
+| AUTH-08 | ผู้ใช้ทั่วไปพยายามเปิด `/admin` | ถูกส่งกลับแอปผู้ใช้และอ่านข้อมูล Admin ไม่ได้ | Automated + E2E |
+
+## Admin workspace
+
+| ID | Case | Expected | Type |
+|---|---|---|---|
+| ADM-01 | Admin login สำเร็จ | เข้า `/admin` อัตโนมัติ ไม่เข้า Home ของผู้ใช้ | Automated + E2E |
+| ADM-02 | เปิด Dashboard | แสดงจำนวน Market, ร้าน, ผู้ขายที่รออนุมัติ และออเดอร์ที่กำลังดำเนินการ | Manual/E2E |
+| ADM-03 | เปิดคิวอนุมัติ | เห็นคำขอ Market, ร้าน และผู้ขายที่รอตรวจ | Manual/E2E |
+| ADM-04 | Approve/reject พร้อมบันทึกหมายเหตุ | สถานะเปลี่ยนครั้งเดียวและเขียน approval event/audit log | Manual/E2E |
+| ADM-05 | เปิดหน้าออเดอร์ Admin | เห็นออเดอร์ที่ยังไม่จบและเปิดรายละเอียดได้ | Manual/E2E |
+| ADM-06 | Admin override ยกเลิกออเดอร์ | ยกเลิกตาม state rule, คืน reserved stock ครั้งเดียว และเขียน audit log | Manual/E2E |
+| ADM-07 | เปิดประวัติการดำเนินการ | แสดง admin audit logs และ approval events ล่าสุด | Manual/E2E |
+| ADM-08 | Admin ใช้งานโดยไม่มี email จริง/MFA | สิทธิ์มาจาก `platform_roles` เท่านั้นและทำงานได้โดยไม่ส่งอีเมล | Automated + E2E |
 
 ## Location and address
 
@@ -40,7 +53,11 @@
 | APR-06 | เจ้าของ Market approve ร้านของผู้อื่น | ร้าน active และ manager เป็น seller แรก | Manual/E2E |
 | APR-07 | ผู้ขายต่างตำบลสมัครร้าน | RPC ปฏิเสธ | Manual/E2E |
 | APR-08 | เจ้าของ Market อนุมัติตนเอง | RPC ปฏิเสธ | Manual/E2E |
-| APR-09 | สมัครซ้ำ | unique constraint ป้องกันรายการซ้ำ | Manual/E2E |
+| APR-09 | คำขอ Market สำเร็จแต่อัปโหลดรูป retry | ใช้ request เดิมและไม่สร้าง pending ซ้ำ | Automated + E2E |
+| APR-10 | อัปโหลดรูป Market/Store ด้วย path ของเจ้าของ | Storage RLS อนุญาต; path ของผู้อื่นถูกปฏิเสธ | Automated + E2E |
+| APR-11 | ส่งคำขอ Market ซ้ำขณะยัง pending | อัปเดตคำขอเดิมและคืน `market_id` เดิม | Automated + E2E |
+| APR-12 | ส่งคำขอเปิดร้านซ้ำขณะยัง pending | อัปเดตคำขอเดิมและไม่สร้างร้านซ้ำ | Automated + E2E |
+| APR-13 | ส่งคำขอร่วมขายซ้ำ | คำขอ pending/approved เดิมถูกนำกลับมาใช้ ส่วน rejected กลับเป็น pending ได้ | Automated + E2E |
 
 ## Catalog, Storage and discovery
 

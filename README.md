@@ -194,11 +194,11 @@ override และถูกบันทึก audit log.
 - ไม่มี Service Role key ในแอป
 - Storage จำกัด JPG/PNG/WebP ขนาดไม่เกิน 5 MB
 - Storage paths: `{user_id}/...`, `{market_id}/...`, `{store_id}/...`
-- Approval/Admin actions มี audit trail และต้องใช้ session `aal2` จาก TOTP MFA
+- Approval/Admin actions มี audit trail และตรวจสิทธิ์จาก `platform_roles` ที่ผู้ใช้แก้เองไม่ได้
 - Security Advisor ไม่มี Critical/High; expected warnings อธิบายใน [`docs/security-advisor.md`](docs/security-advisor.md)
 
-ปิด email confirmation ชั่วคราวตามขอบเขต V1 แต่ยังเปิด secure password change,
-รหัสผ่านขั้นต่ำ 10 ตัวแบบตัวพิมพ์เล็ก/ใหญ่+ตัวเลข+สัญลักษณ์ และ TOTP MFA แล้ว ส่วน CAPTCHA กับ
+ปิด email confirmation และไม่บังคับ MFA สำหรับ Admin ตามขอบเขต V1 โดยยังใช้รหัสผ่านขั้นต่ำ
+10 ตัวแบบตัวพิมพ์เล็ก/ใหญ่+ตัวเลข+สัญลักษณ์ ส่วน CAPTCHA กับ
 leaked-password protection ต้องใส่ provider/เปิดใน Supabase Dashboard ก่อน production
 (leaked-password protection ต้องใช้ Supabase Pro หรือสูงกว่า).
 
@@ -209,7 +209,7 @@ locomall/
 ├─ app/                         Expo Router screens
 │  ├─ (auth)/                  sign in/up, recovery, location onboarding
 │  ├─ (tabs)/                  Home, Nearby, Orders, Notifications, Profile
-│  ├─ admin/                   Platform Admin approval
+│  ├─ admin/                   Admin dashboard, approvals, orders, audit
 │  ├─ market/                  catalog, application, owner approval/logistics
 │  ├─ store/                   one-product store detail
 │  ├─ seller/                  stock and allocation operations

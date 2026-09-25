@@ -11,3 +11,4 @@
 \ir migrations/20260921022618_enforce_admin_mfa.sql
 \ir migrations/20260921080637_runtime_location_and_policy_helpers.sql
 \ir migrations/20260921084304_fix_order_rls_recursion.sql
+\ir migrations/20260925015236_admin_workspace_and_request_rls_fixes.sql
