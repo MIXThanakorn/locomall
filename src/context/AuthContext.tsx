@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Session } from "@supabase/supabase-js";
 import * as Location from "expo-location";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { supabase } from "../lib/supabase";
 
@@ -18,6 +18,17 @@ type AuthState = {
   signOut: () => Promise<void>;
 };
 const AuthContext = createContext<AuthState | null>(null);
+const LOCATION_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("location timeout")), timeoutMs);
+    promise.then(
+      (value) => { clearTimeout(timeout); resolve(value); },
+      (error) => { clearTimeout(timeout); reject(error); },
+    );
+  });
+}
 
 export function AuthProvider({ children }: React.PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -26,6 +37,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [deviceLocation, setDeviceLocation] = useState<DeviceLocation | null>(null);
   const [deviceLocationReady, setDeviceLocationReady] = useState(false);
+  const locationRequestId = useRef(0);
 
   const refreshLocation = async () => {
     if (!session?.user.id) return setHasLocation(null);
@@ -40,20 +52,28 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   };
 
   const refreshDeviceLocation = useCallback(async () => {
+    const requestId = ++locationRequestId.current;
     setDeviceLocationReady(false);
     try {
-      let permission = await Location.getForegroundPermissionsAsync();
-      if (permission.status === "undetermined") permission = await Location.requestForegroundPermissionsAsync();
+      let permission = await withTimeout(Location.getForegroundPermissionsAsync(), LOCATION_TIMEOUT_MS);
+      if (permission.status === "undetermined") {
+        permission = await withTimeout(Location.requestForegroundPermissionsAsync(), LOCATION_TIMEOUT_MS);
+      }
       if (permission.status !== "granted") {
-        setDeviceLocation(null);
+        if (locationRequestId.current === requestId) setDeviceLocation(null);
         return;
       }
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      setDeviceLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      const position = await withTimeout(
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        LOCATION_TIMEOUT_MS,
+      );
+      if (locationRequestId.current === requestId) {
+        setDeviceLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      }
     } catch {
-      setDeviceLocation(null);
+      if (locationRequestId.current === requestId) setDeviceLocation(null);
     } finally {
-      setDeviceLocationReady(true);
+      if (locationRequestId.current === requestId) setDeviceLocationReady(true);
     }
   }, []);
 
@@ -64,6 +84,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     setHasLocation(null);
     setIsAdmin(null);
     setDeviceLocation(null);
+    locationRequestId.current += 1;
     setDeviceLocationReady(false);
   }, []);
 

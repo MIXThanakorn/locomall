@@ -159,3 +159,42 @@ test("Native alerts are presented with the Locomall themed modal", () => {
   assert.match(provider, /Colors\.greenPrimary/);
   assert.match(provider, /Modal/);
 });
+
+test("V1 release blocker migration keeps Guest catalog public without exposing admin helpers", () => {
+  const sql = read("supabase/migrations/20260925082644_fix_v1_release_blockers.sql");
+  assert.match(sql, /create policy markets_public_catalog[\s\S]*to anon[\s\S]*approval_status = 'approved'/i);
+  assert.match(sql, /create policy stores_public_catalog[\s\S]*to anon[\s\S]*approval_status = 'approved'/i);
+  const publicMarketPolicy = sql.match(/create policy markets_public_catalog[\s\S]*?;\s*/i)?.[0] ?? "";
+  const publicStorePolicy = sql.match(/create policy stores_public_catalog[\s\S]*?;\s*/i)?.[0] ?? "";
+  assert.doesNotMatch(publicMarketPolicy, /private\.is_admin|private\.market_owner/);
+  assert.doesNotMatch(publicStorePolicy, /private\.is_admin|private\.market_owner/);
+  assert.match(read("supabase/migrations/20260925015236_admin_workspace_and_request_rls_fixes.sql"), /revoke all on function private\.is_admin\(uuid\) from public, anon/i);
+});
+
+test("Order completion and cancellation aggregate the qualified allocation quantity", () => {
+  const sql = read("supabase/migrations/20260925082644_fix_v1_release_blockers.sql");
+  assert.match(sql, /function public\.confirm_delivery[\s\S]*sum\(oa\.quantity\)/i);
+  assert.match(sql, /function public\.cancel_order[\s\S]*sum\(oa\.quantity\)/i);
+  assert.doesNotMatch(sql, /sum\(quantity\)/i);
+});
+
+test("New Market requests notify Platform Admins once", () => {
+  const sql = read("supabase/migrations/20260925082644_fix_v1_release_blockers.sql");
+  assert.match(sql, /insert into public\.notifications[\s\S]*from public\.platform_roles pr[\s\S]*pr\.role = 'platform_admin'/i);
+  assert.match(sql, /if mid is null then[\s\S]*insert into public\.notifications/i);
+});
+
+test("Protected profile and account tabs redirect Guests to sign in", () => {
+  assert.match(read("app/profile/_layout.tsx"), /if \(!session\) return <Redirect href="\/\(auth\)\/sign-in"/);
+  for (const path of ["app/(tabs)/profile.tsx", "app/(tabs)/orders.tsx", "app/(tabs)/notification.tsx"]) {
+    assert.match(read(path), /if\(!.*session\)return <Redirect href="\/\(auth\)\/sign-in"\/>/, path);
+  }
+});
+
+test("Runtime geolocation always times out to saved-area discovery", () => {
+  const context = read("src/context/AuthContext.tsx");
+  assert.match(context, /LOCATION_TIMEOUT_MS = 5000/);
+  assert.match(context, /withTimeout\(Location\.requestForegroundPermissionsAsync\(\), LOCATION_TIMEOUT_MS\)/);
+  assert.match(context, /withTimeout\([\s\S]*Location\.getCurrentPositionAsync/);
+  assert.match(context, /setDeviceLocationReady\(true\)/);
+});
