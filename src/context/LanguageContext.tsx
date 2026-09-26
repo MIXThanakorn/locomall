@@ -98,8 +98,8 @@ const translations: Record<Language, Record<string, string>> = {
     language: "ภาษา (Language)",
     aboutUs: "เกี่ยวกับเรา",
     signOut: "ออกจากระบบ",
-    sellerDashboard: "แดชบอร์ดผู้ขาย",
-    marketOwnerPortal: "แดชบอร์ดเจ้าของตลาด",
+    sellerDashboard: "งานขายสินค้าของฉัน",
+    marketOwnerPortal: "จัดการตลาดชุมชน",
     toPay: "ที่ต้องชำระ",
     toShip: "ที่ต้องจัดส่ง",
     toReceive: "ที่ต้องได้รับ",
@@ -120,13 +120,13 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  language: "en",
+  language: "th",
   setLanguage: () => {},
   t: (key: string) => key,
 });
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>("en");
+  const [language, setLanguage] = useState<Language>("th");
 
   const t = (key: string): string => {
     return translations[language]?.[key] || translations.en[key] || key;

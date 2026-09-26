@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { AdminGate } from "../../src/components/AdminGate";
 import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -55,8 +56,8 @@ export default function AdminApprovals() {
     const detail = kind === "market"
       ? `${item.description || "ไม่มีรายละเอียด"}\nจุดรวม: ${item.hub_address}`
       : kind === "store"
-        ? `Market: ${item.markets?.name} · ฿${Number(item.unit_price).toLocaleString()} / ${item.unit}`
-        : `Market: ${item.stores?.markets?.name}\nหมายเหตุ: ${item.note || "-"}`;
+        ? `ตลาดชุมชน: ${item.markets?.name} · ฿${Number(item.unit_price).toLocaleString()} / ${item.unit}`
+        : `ตลาดชุมชน: ${item.stores?.markets?.name}\nหมายเหตุ: ${item.note || "-"}`;
     return <View key={key} style={styles.card}>
       <View style={styles.cardHeader}><View style={styles.typeIcon}><Ionicons name={kind === "market" ? "people" : kind === "store" ? "storefront" : "person-add"} size={19} color={Colors.greenPrimary} /></View><View style={styles.cardTitleWrap}><Text style={styles.name}>{title}</Text><Text style={styles.date}>{new Date(item.created_at).toLocaleString("th-TH")}</Text></View></View>
       <Text style={styles.detail}>{detail}</Text>
@@ -71,12 +72,12 @@ export default function AdminApprovals() {
     {data.length ? data.map((item) => queueCard(kind, item)) : <Text style={styles.empty}>ไม่มีรายการรอตรวจสอบ</Text>}
   </View>;
 
-  return <AdminGate><ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />} keyboardShouldPersistTaps="handled">
-    <Text style={styles.eyebrow}>ADMIN APPROVALS</Text><Text style={styles.title}>คิวอนุมัติ</Text><Text style={styles.sub}>ตรวจทุกคำขอจากจุดเดียว การอนุมัติและปฏิเสธจะถูกบันทึกใน Audit log</Text>
-    {section("Market ใหม่", "ตรวจข้อมูลชุมชนและจุดรวมสินค้า", markets, "market")}
-    {section("ร้านค้าใหม่", "รวมคำขอปกติและคำขอที่ต้องยกระดับให้ Admin", stores, "store")}
+  return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
+    <Text style={styles.eyebrow}>ตรวจสอบคำขอ</Text><Text style={styles.title}>คำขอที่รอตรวจสอบ</Text><Text style={styles.sub}>ตรวจทุกคำขอจากจุดเดียว ทุกการอนุมัติและปฏิเสธจะถูกบันทึกไว้เพื่อตรวจสอบย้อนหลัง</Text>
+    {section("คำขอเปิดตลาดชุมชน", "ตรวจข้อมูลชุมชนและที่อยู่จุดรวมสินค้า", markets, "market")}
+    {section("คำขอเปิดร้านค้า", "ตรวจชื่อร้าน สินค้า ราคา และข้อมูลผู้สมัคร", stores, "store")}
     {section("ผู้ขายร่วมร้าน", "ตรวจสิทธิ์และพื้นที่ของผู้สมัคร", sellers, "seller")}
-  </ScrollView></AdminGate>;
+  </KeyboardAwareScrollView></AdminGate>;
 }
 
 const styles = StyleSheet.create({

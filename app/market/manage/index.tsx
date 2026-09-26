@@ -1,42 +1,49 @@
-import { useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { Button } from "../../../src/components/Button";
 import { PermissionGate } from "../../../src/components/PermissionGate";
-import { Colors, Spacing } from "../../../src/constants/theme";
+import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
 import { useCapabilities } from "../../../src/hooks/useCapabilities";
-import { supabase } from "../../../src/lib/supabase";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
+import { supabase } from "../../../src/lib/supabase";
 
 export default function ApprovalQueue() {
-  const permissions = useCapabilities();
-  const [stores, setStores] = useState<any[]>([]);
-  const [sellers, setSellers] = useState<any[]>([]);
-  const load = async () => {
+  const permissions = useCapabilities(); const router = useRouter();
+  const [stores, setStores] = useState<any[]>([]); const [sellers, setSellers] = useState<any[]>([]); const [notes, setNotes] = useState<Record<number, string>>({});
+  const load = useCallback(async () => {
     if (!permissions.isMarketOwner && !permissions.isAdmin) return;
     const [storeResult, sellerResult] = await Promise.all([
-      supabase.from("stores").select("*").eq("approval_status", "pending"),
-      supabase.from("store_seller_applications").select("*,stores(name)").eq("status", "pending"),
+      supabase.from("stores").select("store_id,name,product_name,unit,unit_price,created_at,markets(name)").eq("approval_status", "pending").order("created_at"),
+      supabase.from("store_seller_applications").select("application_id,note,created_at,stores(name,product_name)").eq("status", "pending").order("created_at"),
     ]);
     setStores(storeResult.data ?? []); setSellers(sellerResult.data ?? []);
-  };
-  useEffect(() => {
-    if (!permissions.isMarketOwner && !permissions.isAdmin) return;
-    Promise.all([
-      supabase.from("stores").select("*").eq("approval_status", "pending"),
-      supabase.from("store_seller_applications").select("*,stores(name)").eq("status", "pending"),
-    ]).then(([storeResult, sellerResult]) => {
-      setStores(storeResult.data ?? []); setSellers(sellerResult.data ?? []);
-    });
-  }, [permissions.isMarketOwner, permissions.isAdmin]);
-  const review = async (kind: "store" | "seller", id: number, approve: boolean) => {
-    const result = kind === "store" ? await supabase.rpc("review_store", { p_store_id: id, p_approve: approve }) : await supabase.rpc("review_store_seller", { p_application_id: id, p_approve: approve });
-    if (result.error) Alert.alert("ดำเนินการไม่สำเร็จ", translateDatabaseError(result.error)); else await load();
+  }, [permissions.isAdmin, permissions.isMarketOwner]);
+  useEffect(() => { void load(); }, [load]);
+  const reviewSeller = async (id: number, approve: boolean) => {
+    const note = notes[id]?.trim(); if (!approve && !note) return Alert.alert("กรุณาระบุเหตุผลที่ปฏิเสธ");
+    const { error } = await supabase.rpc("review_store_seller", { p_application_id: id, p_approve: approve, p_note: note || undefined });
+    if (error) Alert.alert("ดำเนินการไม่สำเร็จ", translateDatabaseError(error)); else { setNotes((current) => ({ ...current, [id]: "" })); await load(); }
   };
   return <PermissionGate allow={permissions.isMarketOwner || permissions.isAdmin} loading={permissions.loading}>
-    <ScrollView contentContainerStyle={styles.root}><Text style={styles.title}>คิวอนุมัติ</Text><Text style={styles.section}>ร้านใหม่</Text>
-      {stores.map((item) => <View style={styles.card} key={item.store_id}><Text style={styles.name}>{item.name} · {item.product_name}</Text><View style={styles.actions}><Button title="อนุมัติ" size="sm" onPress={() => review("store", item.store_id, true)} /><Button title="ปฏิเสธ" size="sm" variant="outline" onPress={() => review("store", item.store_id, false)} /></View></View>)}
-      <Text style={styles.section}>ผู้ขายร่วมร้าน</Text>{sellers.map((item) => <View style={styles.card} key={item.application_id}><Text style={styles.name}>{item.stores?.name}</Text><View style={styles.actions}><Button title="อนุมัติ" size="sm" onPress={() => review("seller", item.application_id, true)} /><Button title="ปฏิเสธ" size="sm" variant="outline" onPress={() => review("seller", item.application_id, false)} /></View></View>)}
-    </ScrollView>
+    <KeyboardAwareScrollView contentContainerStyle={styles.root}>
+      <Text style={styles.title}>คิวอนุมัติ</Text><Text style={styles.sub}>แตะคำขอร้านค้าเพื่อดูผู้สมัคร สินค้า ราคา และรายละเอียดทั้งหมด</Text>
+      <Text style={styles.section}>ร้านใหม่</Text>
+      {!stores.length ? <Text style={styles.empty}>ไม่มีร้านรอตรวจสอบ</Text> : null}
+      {stores.map((item) => <TouchableOpacity style={styles.card} key={item.store_id} onPress={() => router.push(`/market/manage/request/${item.store_id}` as never)}>
+        <View style={{ flex: 1 }}><Text style={styles.name}>{item.name}</Text><Text style={styles.detail}>{item.product_name} · ฿{Number(item.unit_price).toLocaleString()}/{item.unit}</Text><Text style={styles.detail}>{item.markets?.name}</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+      </TouchableOpacity>)}
+      <Text style={styles.section}>ผู้ขายร่วมร้าน</Text>
+      {!sellers.length ? <Text style={styles.empty}>ไม่มีผู้ขายร่วมรอตรวจสอบ</Text> : null}
+      {sellers.map((item) => <View style={styles.cardColumn} key={item.application_id}>
+        <Text style={styles.name}>{item.stores?.name} · {item.stores?.product_name}</Text>{item.note ? <Text style={styles.detail}>ข้อความจากผู้สมัคร: {item.note}</Text> : null}
+        <TextInput style={styles.note} placeholder="ความคิดเห็น/เหตุผลกรณีปฏิเสธ" value={notes[item.application_id] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [item.application_id]: value }))} multiline />
+        <View style={styles.actions}><Button title="อนุมัติ" size="sm" onPress={() => reviewSeller(item.application_id, true)} /><Button title="ปฏิเสธ" size="sm" variant="outline" onPress={() => reviewSeller(item.application_id, false)} /></View>
+      </View>)}
+    </KeyboardAwareScrollView>
   </PermissionGate>;
 }
-const styles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 58, backgroundColor: Colors.background, flexGrow: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, section: { fontFamily: "Kanit_700Bold", marginTop: 20, fontSize: 17 }, card: { backgroundColor: "white", padding: 16, borderRadius: 16, marginTop: 10 }, name: { fontFamily: "Kanit_500Medium" }, actions: { flexDirection: "row", gap: 8, marginTop: 10 } });
+const styles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 58, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, section: { fontFamily: "Kanit_700Bold", marginTop: 20, fontSize: 18, color: Colors.textDark }, card: { backgroundColor: "white", padding: 16, borderRadius: BorderRadius.lg, marginTop: 10, flexDirection: "row", alignItems: "center" }, cardColumn: { backgroundColor: "white", padding: 16, borderRadius: BorderRadius.lg, marginTop: 10 }, name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, detail: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, actions: { flexDirection: "row", gap: 8, marginTop: 10 }, note: { minHeight: 68, borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 10, padding: 10, fontFamily: "Kanit_400Regular", textAlignVertical: "top", marginTop: 10 }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginTop: 8 } });

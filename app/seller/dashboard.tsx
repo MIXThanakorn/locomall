@@ -10,15 +10,16 @@ export default function SellerDashboard() {
   if (permissions.loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
 
   const actions = [
-    { show: permissions.isSeller || permissions.isStoreManager, title: "จัดการสต็อก", desc: "แก้ไขจำนวนพร้อมขาย", icon: "cube-outline", route: "/seller/listings" },
-    { show: permissions.isSeller, title: "งานเตรียมสินค้า", desc: "ดู allocation และแจ้งพร้อมรับ", icon: "clipboard-outline", route: "/seller/allocations" },
-    { show: permissions.isMarketOwner || permissions.isAdmin, title: "คิวอนุมัติ Market", desc: "ตรวจร้านใหม่และผู้ขายร่วมร้าน", icon: "checkmark-done-outline", route: "/market/manage" },
+    { show: permissions.isStoreManager, title: "จัดการร้านของฉัน", desc: "แก้ไขชื่อสินค้า ราคา และรายละเอียดร้าน", icon: "create-outline", route: "/seller/stores" },
+    { show: permissions.isSeller || permissions.isStoreManager, title: "จำนวนสินค้าที่พร้อมขาย", desc: "เพิ่มหรือลดจำนวนสินค้าของคุณ", icon: "cube-outline", route: "/seller/listings" },
+    { show: permissions.isSeller, title: "รายการสินค้าที่ต้องเตรียม", desc: "ดูจำนวนที่ต้องเตรียมและแจ้งเมื่อสินค้าเสร็จแล้ว", icon: "clipboard-outline", route: "/seller/allocations" },
+    { show: permissions.isMarketOwner || permissions.isAdmin, title: "จัดการตลาดชุมชน", desc: "แก้ไขข้อมูล ตรวจคำขอ ดูร้านค้า และจัดการจุดรวมสินค้า", icon: "business-outline", route: "/market/manage/home" },
     { show: permissions.isMarketOwner || permissions.isAdmin, title: "จุดรวมและจัดส่ง", desc: "รับของ รวมพัสดุ และบันทึกเลขติดตาม", icon: "car-outline", route: "/market/manage/logistics" },
   ].filter((item) => item.show);
 
   return <ScrollView contentContainerStyle={styles.root}>
-    <Text style={styles.title}>ศูนย์งานผู้ขาย</Text>
-    <Text style={styles.sub}>รายได้และ Wallet จะเพิ่มใน milestone Payment ภายหลัง</Text>
+    <Text style={styles.title}>งานขายสินค้าของฉัน</Text>
+    <Text style={styles.sub}>ดูแลร้าน จำนวนสินค้า และงานที่ต้องเตรียมได้จากหน้านี้</Text>
     {!actions.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>ยังไม่มีสิทธิ์จัดการร้าน</Text><Text style={styles.desc}>สมัครเปิดร้านหรือเข้าร่วมขายในร้านที่อยู่ตำบลเดียวกับคุณก่อน</Text></View> : null}
     {actions.map((action) => <TouchableOpacity key={action.route} style={styles.card} onPress={() => router.push(action.route as never)}>
       <View style={styles.icon}><Ionicons name={action.icon as any} size={25} color={Colors.greenPrimary} /></View>

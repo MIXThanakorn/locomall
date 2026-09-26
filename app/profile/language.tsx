@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
+import { KeyboardAwareView } from "../../src/components/KeyboardAware";
 import { useLanguage, Language } from "../../src/context/LanguageContext";
 
 export default function LanguageScreen() {
@@ -28,7 +29,7 @@ export default function LanguageScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAwareView style={styles.container}>
       <HeaderGradient
         title={t("selectLanguage")}
         variant="white"
@@ -97,7 +98,7 @@ export default function LanguageScreen() {
           onPress={handleApply}
         />
       </View>
-    </View>
+    </KeyboardAwareView>
   );
 }
 

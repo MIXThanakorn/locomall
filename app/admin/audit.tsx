@@ -3,17 +3,18 @@ import { useCallback, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AdminGate } from "../../src/components/AdminGate";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
+import { auditActionLabel, auditEntityLabel } from "../../src/lib/displayText";
 import { supabase } from "../../src/lib/supabase";
 
 export default function AdminAudit() {
   const [logs, setLogs] = useState<any[]>([]); const [events, setEvents] = useState<any[]>([]); const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => { setRefreshing(true); const [audit, approvals] = await Promise.all([supabase.from("admin_audit_logs").select("*").order("created_at", { ascending: false }).limit(100), supabase.from("approval_events").select("*").order("created_at", { ascending: false }).limit(100)]); setLogs(audit.data ?? []); setEvents(approvals.data ?? []); setRefreshing(false); }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
-  const logCard = (item: any, approval = false) => <View key={`${approval ? "event" : "audit"}-${approval ? item.event_id : item.log_id}`} style={styles.card}><View style={styles.row}><Text style={styles.action}>{approval ? item.action : item.action.replaceAll("_", " ")}</Text><Text style={styles.date}>{new Date(item.created_at).toLocaleString("th-TH")}</Text></View><Text style={styles.meta}>{item.entity_type} #{item.entity_id ?? "-"}</Text><Text style={styles.actor}>ผู้ดำเนินการ: {item.actor_id?.slice(0, 8) ?? "system"}…</Text>{item.note ? <Text style={styles.note}>หมายเหตุ: {item.note}</Text> : null}</View>;
+  const logCard = (item: any, approval = false) => <View key={`${approval ? "event" : "audit"}-${approval ? item.event_id : item.log_id}`} style={styles.card}><View style={styles.row}><Text style={styles.action}>{auditActionLabel(item.action)}</Text><Text style={styles.date}>{new Date(item.created_at).toLocaleString("th-TH")}</Text></View><Text style={styles.meta}>{auditEntityLabel(item.entity_type)} · เลขที่ {item.entity_id ?? "-"}</Text><Text style={styles.actor}>ผู้ดำเนินการ: {item.actor_id ? `${item.actor_id.slice(0, 8)}…` : "ระบบ"}</Text>{item.note ? <Text style={styles.note}>หมายเหตุ: {item.note}</Text> : null}</View>;
   return <AdminGate><ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
-    <Text style={styles.eyebrow}>AUDIT & HISTORY</Text><Text style={styles.title}>ประวัติระบบ</Text><Text style={styles.sub}>เก็บรายการอนุมัติ ปฏิเสธ และการดำเนินการสำคัญของผู้ดูแล</Text>
-    <Text style={styles.section}>Admin audit ({logs.length})</Text>{logs.length ? logs.map((item) => logCard(item)) : <Text style={styles.empty}>ยังไม่มี Audit log</Text>}
-    <Text style={styles.section}>Approval events ({events.length})</Text>{events.length ? events.map((item) => logCard(item, true)) : <Text style={styles.empty}>ยังไม่มีประวัติการอนุมัติ</Text>}
+    <Text style={styles.eyebrow}>ประวัติการดำเนินการ</Text><Text style={styles.title}>ประวัติระบบ</Text><Text style={styles.sub}>เก็บรายการอนุมัติ ปฏิเสธ และการดำเนินการสำคัญของผู้ดูแลระบบ</Text>
+    <Text style={styles.section}>รายการของผู้ดูแลระบบ ({logs.length})</Text>{logs.length ? logs.map((item) => logCard(item)) : <Text style={styles.empty}>ยังไม่มีประวัติการดำเนินการ</Text>}
+    <Text style={styles.section}>ประวัติการอนุมัติ ({events.length})</Text>{events.length ? events.map((item) => logCard(item, true)) : <Text style={styles.empty}>ยังไม่มีประวัติการอนุมัติ</Text>}
   </ScrollView></AdminGate>;
 }
 

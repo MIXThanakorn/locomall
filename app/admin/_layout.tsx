@@ -21,7 +21,7 @@ export default function AdminLayout() {
   }}>
     <Tabs.Screen name="index" options={{ title: "ภาพรวม", tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} /> }} />
     <Tabs.Screen name="markets" options={{ title: "อนุมัติ", tabBarIcon: ({ color, size }) => <Ionicons name="checkmark-done-outline" size={size} color={color} /> }} />
-    <Tabs.Screen name="orders" options={{ title: "ออเดอร์", tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> }} />
+    <Tabs.Screen name="orders" options={{ title: "คำสั่งซื้อ", tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> }} />
     <Tabs.Screen name="audit" options={{ title: "ประวัติ", tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> }} />
     <Tabs.Screen name="security" options={{ href: null }} />
   </Tabs>;

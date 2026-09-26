@@ -35,23 +35,23 @@ export default function AdminDashboard() {
   ]);
 
   const cards = [
-    { label: "Market รออนุมัติ", value: stats.markets, icon: "people-outline", color: Colors.greenPrimary },
+    { label: "ตลาดชุมชนรอตรวจสอบ", value: stats.markets, icon: "people-outline", color: Colors.greenPrimary },
     { label: "ร้านรออนุมัติ", value: stats.stores, icon: "storefront-outline", color: Colors.goldDark },
     { label: "ผู้ขายรออนุมัติ", value: stats.sellers, icon: "person-add-outline", color: Colors.info },
-    { label: "ออเดอร์กำลังดำเนินการ", value: stats.orders, icon: "cube-outline", color: Colors.warning },
+    { label: "คำสั่งซื้อที่กำลังดำเนินการ", value: stats.orders, icon: "cube-outline", color: Colors.warning },
   ];
 
   return <AdminGate><ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
     <View style={styles.header}>
-      <View><Text style={styles.eyebrow}>LOCOMALL ADMIN</Text><Text style={styles.title}>ศูนย์ควบคุมระบบ</Text><Text style={styles.role}>ผู้ดูแลแพลตฟอร์ม</Text></View>
+      <View><Text style={styles.eyebrow}>สำหรับผู้ดูแลระบบ</Text><Text style={styles.title}>ศูนย์ควบคุมระบบ</Text><Text style={styles.role}>ตรวจคำขอและติดตามการทำงานของระบบ</Text></View>
       <TouchableOpacity style={styles.logout} onPress={logout}><Ionicons name="log-out-outline" size={22} color={Colors.danger} /></TouchableOpacity>
     </View>
     <View style={styles.grid}>{cards.map((card) => <View key={card.label} style={styles.statCard}><View style={[styles.statIcon, { backgroundColor: `${card.color}18` }]}><Ionicons name={card.icon as any} size={22} color={card.color} /></View><Text style={styles.statValue}>{card.value}</Text><Text style={styles.statLabel}>{card.label}</Text></View>)}</View>
     <Text style={styles.section}>งานที่ใช้บ่อย</Text>
-    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/markets" as never)}><Ionicons name="checkmark-circle-outline" size={24} color={Colors.greenPrimary} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ตรวจคำขอทั้งหมด</Text><Text style={styles.actionDesc}>Market ร้านค้า และผู้ขายร่วมร้าน</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
-    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/orders" as never)}><Ionicons name="warning-outline" size={24} color={Colors.warning} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ติดตามออเดอร์</Text><Text style={styles.actionDesc}>ตรวจสถานะและจัดการกรณีผิดปกติ</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
-    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/audit" as never)}><Ionicons name="shield-checkmark-outline" size={24} color={Colors.info} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ประวัติการดำเนินการ</Text><Text style={styles.actionDesc}>ตรวจสอบการอนุมัติและ Admin override</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
-    <View style={styles.notice}><Ionicons name="lock-closed-outline" size={19} color={Colors.greenPrimary} /><Text style={styles.noticeText}>สิทธิ์ผู้ดูแลตรวจจาก Platform Role ในฐานข้อมูล ไม่ใช้การยืนยันผ่านอีเมลหรือ Authenticator</Text></View>
+    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/markets" as never)}><Ionicons name="checkmark-circle-outline" size={24} color={Colors.greenPrimary} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ตรวจคำขอทั้งหมด</Text><Text style={styles.actionDesc}>ตลาดชุมชน ร้านค้า และผู้สมัครร่วมขาย</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
+    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/orders" as never)}><Ionicons name="warning-outline" size={24} color={Colors.warning} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ติดตามคำสั่งซื้อ</Text><Text style={styles.actionDesc}>ตรวจสถานะและจัดการกรณีผิดปกติ</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
+    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/audit" as never)}><Ionicons name="shield-checkmark-outline" size={24} color={Colors.info} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ประวัติการดำเนินการ</Text><Text style={styles.actionDesc}>ตรวจสอบการอนุมัติและการแก้ไขกรณีพิเศษ</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
+    <View style={styles.notice}><Ionicons name="lock-closed-outline" size={19} color={Colors.greenPrimary} /><Text style={styles.noticeText}>สิทธิ์ของผู้ดูแลระบบถูกกำหนดไว้ในฐานข้อมูล และไม่ต้องยืนยันผ่านอีเมลหรือแอปยืนยันตัวตน</Text></View>
   </ScrollView></AdminGate>;
 }
 

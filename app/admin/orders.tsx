@@ -17,21 +17,21 @@ export default function AdminOrders() {
   const load = useCallback(async () => {
     setRefreshing(true);
     const { data, error } = await supabase.from("orders").select("order_id,order_number,buyer_id,status,payment_status,total_amount,created_at,markets(name),order_items(order_item_id)").neq("status", "delivered").neq("status", "cancelled").order("created_at", { ascending: false });
-    if (error) Alert.alert("โหลดออเดอร์ไม่สำเร็จ", translateDatabaseError(error));
+    if (error) Alert.alert("โหลดคำสั่งซื้อไม่สำเร็จ", translateDatabaseError(error));
     setOrders(data ?? []); setRefreshing(false);
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
-  const cancel = (order: any) => Alert.alert("ยกเลิกออเดอร์โดย Admin", `ยืนยันยกเลิก ${order.order_number}? การคืน reserved stock จะทำเพียงครั้งเดียว`, [
+  const cancel = (order: any) => Alert.alert("ผู้ดูแลระบบยกเลิกคำสั่งซื้อ", `ต้องการยกเลิก ${order.order_number} ใช่หรือไม่? ระบบจะคืนจำนวนสินค้าให้ผู้ขายเพียงครั้งเดียว`, [
     { text: "กลับ", style: "cancel" },
-    { text: "ยกเลิกออเดอร์", style: "destructive", onPress: async () => { setWorking(order.order_id); const { error } = await supabase.rpc("cancel_order", { p_order_id: order.order_id, p_reason: "ยกเลิกโดย Platform Admin", p_admin_override: true }); setWorking(null); if (error) return Alert.alert("ยกเลิกไม่สำเร็จ", translateDatabaseError(error)); await load(); } },
+    { text: "ยืนยันการยกเลิก", style: "destructive", onPress: async () => { setWorking(order.order_id); const { error } = await supabase.rpc("cancel_order", { p_order_id: order.order_id, p_reason: "ยกเลิกโดยผู้ดูแลระบบ", p_admin_override: true }); setWorking(null); if (error) return Alert.alert("ยกเลิกไม่สำเร็จ", translateDatabaseError(error)); await load(); } },
   ]);
   return <AdminGate><ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
-    <Text style={styles.eyebrow}>ORDER OPERATIONS</Text><Text style={styles.title}>ออเดอร์ที่กำลังดำเนินการ</Text><Text style={styles.sub}>ใช้สำหรับติดตามและแก้กรณีผิดปกติเท่านั้น การ override ทุกครั้งมี Audit log</Text>
-    {!orders.length ? <Text style={styles.empty}>ไม่มีออเดอร์ที่กำลังดำเนินการ</Text> : orders.map((order) => <TouchableOpacity key={order.order_id} style={styles.card} onPress={() => router.push(`/order/${order.order_id}` as never)}>
+    <Text style={styles.eyebrow}>ติดตามการสั่งซื้อ</Text><Text style={styles.title}>คำสั่งซื้อที่กำลังดำเนินการ</Text><Text style={styles.sub}>ใช้ติดตามและแก้ไขกรณีผิดปกติ การดำเนินการของผู้ดูแลระบบจะถูกบันทึกไว้ทุกครั้ง</Text>
+    {!orders.length ? <Text style={styles.empty}>ไม่มีคำสั่งซื้อที่กำลังดำเนินการ</Text> : orders.map((order) => <TouchableOpacity key={order.order_id} style={styles.card} onPress={() => router.push(`/order/${order.order_id}` as never)}>
       <View style={styles.row}><Text style={styles.number}>{order.order_number}</Text><Text style={styles.status}>{statusLabels[order.status] ?? order.status}</Text></View>
-      <Text style={styles.market}>{order.markets?.name ?? "ไม่พบชื่อ Market"}</Text><Text style={styles.meta}>ผู้ซื้อ {order.buyer_id.slice(0, 8)}… · {order.order_items?.length ?? 0} รายการ</Text>
+      <Text style={styles.market}>{order.markets?.name ?? "ไม่พบชื่อตลาดชุมชน"}</Text><Text style={styles.meta}>ผู้ซื้อ {order.buyer_id.slice(0, 8)}… · {order.order_items?.length ?? 0} รายการ</Text>
       <View style={styles.row}><Text style={styles.date}>{new Date(order.created_at).toLocaleString("th-TH")}</Text><Text style={styles.total}>฿{Number(order.total_amount).toLocaleString()}</Text></View>
-      <Button title="Admin ยกเลิกออเดอร์" variant="outline" size="sm" loading={working === order.order_id} onPress={() => cancel(order)} style={styles.cancel} />
+      <Button title="ผู้ดูแลระบบยกเลิกคำสั่งซื้อ" variant="outline" size="sm" loading={working === order.order_id} onPress={() => cancel(order)} style={styles.cancel} />
     </TouchableOpacity>)}
   </ScrollView></AdminGate>;
 }

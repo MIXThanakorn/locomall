@@ -1,4 +1,5 @@
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Button } from "../../../src/components/Button";
@@ -20,7 +21,7 @@ export default function CreateStore() {
 
   const chooseImage = async () => {
     try { setImage(await selectSquareImage()); }
-    catch (error: any) { Alert.alert("เลือกรูปไม่สำเร็จ", error.message); }
+    catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); }
   };
 
   const submit = async () => {
@@ -47,12 +48,12 @@ export default function CreateStore() {
     finally { setLoading(false); }
   };
 
-  const inputs: Array<[string, string, (value: string) => void]> = [
+  const inputs: [string, string, (value: string) => void][] = [
     ["ชื่อร้าน", name, setName], ["ชื่อสินค้า", product, setProduct], ["รายละเอียด", description, setDescription],
     ["หน่วย เช่น กก. / ลูก / ขวด", unit, setUnit], ["ราคากลาง", price, setPrice],
   ];
 
-  return <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+  return <KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content}>
     <Text style={styles.title}>ขอเปิดร้าน</Text>
     <Text style={styles.note}>หนึ่งร้านขายสินค้าเพียงชนิดเดียว และใช้ราคากลางเดียวกันสำหรับผู้ขายทุกราย</Text>
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
@@ -60,7 +61,7 @@ export default function CreateStore() {
     </TouchableOpacity>
     {inputs.map(([label, value, setter]) => <TextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} keyboardType={label === "ราคากลาง" ? "decimal-pad" : "default"} />)}
     <Button title="ส่งคำขอเปิดร้าน" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary, marginTop: 16 }} />
-  </ScrollView>;
+  </KeyboardAwareScrollView>;
 }
 
 const styles = StyleSheet.create({

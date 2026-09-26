@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { BorderRadius, Colors, Spacing } from "../constants/theme";
+import { KeyboardAwareView } from "./KeyboardAware";
 
 export type DropdownOption = { value: string; label: string; description?: string };
 
@@ -43,7 +44,7 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
     </TouchableOpacity>
 
     <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
-      <View style={styles.overlay}>
+      <KeyboardAwareView style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
@@ -69,7 +70,7 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
             {!filtered.length ? <Text style={styles.empty}>ไม่พบรายการ</Text> : null}
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAwareView>
     </Modal>
   </View>;
 }

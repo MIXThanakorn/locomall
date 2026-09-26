@@ -1,4 +1,5 @@
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Button } from "../../src/components/Button";
@@ -30,7 +31,7 @@ export default function CreateMarket() {
 
   const chooseImage = async () => {
     try { setImage(await selectSquareImage()); }
-    catch (error: any) { Alert.alert("เลือกรูปไม่สำเร็จ", error.message); }
+    catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); }
   };
 
   const submit = async () => {
@@ -48,25 +49,25 @@ export default function CreateMarket() {
           const { error: imageError } = await supabase.rpc("set_market_image", { p_market_id: marketId, p_image_url: uploaded.publicUrl });
           if (imageError) throw imageError;
         } catch {
-          return Alert.alert("ส่งคำขอแล้ว แต่รูปยังไม่ถูกบันทึก", "คำขอ Market อยู่ในคิวเรียบร้อยแล้ว คุณสามารถกลับมาเลือกรูปและส่งซ้ำได้โดยระบบจะอัปเดตคำขอเดิม", [{ text: "ตกลง", onPress: () => router.back() }]);
+          return Alert.alert("ส่งคำขอแล้ว แต่รูปยังไม่ถูกบันทึก", "คำขอเปิดตลาดชุมชนถูกส่งเรียบร้อยแล้ว คุณสามารถกลับมาเลือกรูปและส่งอีกครั้งเพื่ออัปเดตคำขอเดิม", [{ text: "ตกลง", onPress: () => router.back() }]);
         }
       }
-      Alert.alert("ส่งคำขอแล้ว", "Platform Admin จะตรวจสอบ Market", [{ text: "ตกลง", onPress: () => router.back() }]);
+      Alert.alert("ส่งคำขอแล้ว", "ผู้ดูแลระบบจะตรวจสอบข้อมูลตลาดชุมชนของคุณ", [{ text: "ตกลง", onPress: () => router.back() }]);
     } catch (error: any) { Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error)); }
     finally { setLoading(false); }
   };
 
-  return <ScrollView contentContainerStyle={styles.root}>
-    <Text style={styles.title}>ขอเปิด Market ชุมชน</Text>
+  return <KeyboardAwareScrollView contentContainerStyle={styles.root}>
+    <Text style={styles.title}>ขอเปิดตลาดชุมชน</Text>
     <Text style={styles.area}>พื้นที่หลัก: {area || "กำลังโหลด..."}</Text>
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
-      {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูป Market</Text>}
+      {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปตลาดชุมชน</Text>}
     </TouchableOpacity>
-    <TextInput style={styles.input} placeholder="ชื่อ Market" value={name} onChangeText={setName} />
+    <TextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} />
     <TextInput style={[styles.input, styles.multiline]} multiline placeholder="เรื่องราวและรายละเอียดชุมชน" value={description} onChangeText={setDescription} />
     <TextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} />
-    <Button title="ส่งให้ Platform Admin ตรวจสอบ" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary }} />
-  </ScrollView>;
+    <Button title="ส่งคำขอให้ผู้ดูแลระบบตรวจสอบ" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary }} />
+  </KeyboardAwareScrollView>;
 }
 
 const styles = StyleSheet.create({

@@ -1,12 +1,14 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Image } from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image } from "react-native";
+import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { ImagePlaceholder } from "../../src/components/ImagePlaceholder";
 import { Button } from "../../src/components/Button";
 import { Ionicons } from "@expo/vector-icons";
+import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
 import { ownObjectPathFromPublicUrl, selectSquareImage, SelectedImage, uploadPublicImage } from "../../src/lib/storage";
 
@@ -21,7 +23,6 @@ export default function EditProfileScreen() {
   
   const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null);
   const [newAvatar, setNewAvatar] = useState<SelectedImage | null>(null);
-  const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
@@ -51,14 +52,12 @@ export default function EditProfileScreen() {
       }
     } catch (error) {
       console.error("Error loading user data", error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const pickImage = async () => {
     try { setNewAvatar(await selectSquareImage()); }
-    catch (error: any) { Alert.alert("เลือกรูปไม่สำเร็จ", error.message); }
+    catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); }
   };
 
   const handleUpdateProfile = async () => {
@@ -95,11 +94,11 @@ export default function EditProfileScreen() {
 
       if (updateError) throw updateError;
 
-      Alert.alert("Success", "Profile updated successfully!", [
-        { text: "OK", onPress: () => router.back() }
+      Alert.alert("บันทึกสำเร็จ", "แก้ไขข้อมูลส่วนตัวเรียบร้อยแล้ว", [
+        { text: "ตกลง", onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      Alert.alert("บันทึกไม่สำเร็จ", translateDatabaseError(error));
     } finally {
       setUpdating(false);
     }
@@ -135,29 +134,29 @@ export default function EditProfileScreen() {
             <Ionicons name="camera" size={14} color={Colors.textWhite} />
           </View>
         </TouchableOpacity>
-        <Text style={styles.headerName}>{fullName || username || "Your Profile"}</Text>
+        <Text style={styles.headerName}>{fullName || username || "โปรไฟล์ของฉัน"}</Text>
         <Text style={styles.headerEmail}>{email}</Text>
       </HeaderGradient>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
-          <Text style={styles.inputLabel}>Full name</Text>
+          <Text style={styles.inputLabel}>ชื่อ-นามสกุล</Text>
           <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
 
-          <Text style={styles.inputLabel}>Username</Text>
+          <Text style={styles.inputLabel}>ชื่อผู้ใช้</Text>
           <TextInput style={styles.input} value={username} onChangeText={setUsername} />
 
-          <Text style={styles.inputLabel}>Email (Read Only)</Text>
+          <Text style={styles.inputLabel}>อีเมล (แก้ไขไม่ได้)</Text>
           <TextInput style={[styles.input, { opacity: 0.7 }]} value={email} editable={false} />
 
-          <Text style={styles.inputLabel}>Phone Number</Text>
+          <Text style={styles.inputLabel}>เบอร์โทรศัพท์</Text>
           <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
 
-          <Text style={styles.inputLabel}>Age</Text>
+          <Text style={styles.inputLabel}>อายุ</Text>
           <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
 
           <Button
-            title="Update Profile"
+            title="บันทึกข้อมูลส่วนตัว"
             variant="gold"
             size="lg"
             style={styles.updateBtn}
@@ -166,7 +165,7 @@ export default function EditProfileScreen() {
             onPress={handleUpdateProfile}
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }

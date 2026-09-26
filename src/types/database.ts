@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_audit_logs: {
@@ -508,15 +533,18 @@ export type Database = {
       }
       orders: {
         Row: {
-          address_id: number
+          address_id: number | null
           buyer_id: string
           courier_name: string | null
           created_at: string
           delivered_at: string | null
+          fulfillment_method: string
           market_id: number
           order_id: number
           order_number: string
           payment_status: string
+          pickup_distance_km: number | null
+          pickup_ready_at: string | null
           shipped_at: string | null
           status: string
           total_amount: number
@@ -524,15 +552,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          address_id: number
+          address_id?: number | null
           buyer_id: string
           courier_name?: string | null
           created_at?: string
           delivered_at?: string | null
+          fulfillment_method?: string
           market_id: number
           order_id?: never
           order_number?: string
           payment_status?: string
+          pickup_distance_km?: number | null
+          pickup_ready_at?: string | null
           shipped_at?: string | null
           status?: string
           total_amount: number
@@ -540,15 +571,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          address_id?: number
+          address_id?: number | null
           buyer_id?: string
           courier_name?: string | null
           created_at?: string
           delivered_at?: string | null
+          fulfillment_method?: string
           market_id?: number
           order_id?: never
           order_number?: string
           payment_status?: string
+          pickup_distance_km?: number | null
+          pickup_ready_at?: string | null
           shipped_at?: string | null
           status?: string
           total_amount?: number
@@ -1129,7 +1163,14 @@ export type Database = {
       confirm_delivery: { Args: { p_order_id: number }; Returns: undefined }
       consolidate_order: { Args: { p_order_id: number }; Returns: undefined }
       create_cod_order: {
-        Args: { p_address_id: number; p_items: Json; p_market_id: number }
+        Args: {
+          p_address_id: number
+          p_fulfillment_method?: string
+          p_items: Json
+          p_lat?: number
+          p_lng?: number
+          p_market_id: number
+        }
         Returns: number
       }
       discover_nearby: {
@@ -1150,6 +1191,38 @@ export type Database = {
           market_id: number
           name: string
           radius_km: number
+        }[]
+      }
+      get_pickup_eligibility: {
+        Args: { p_lat?: number; p_lng?: number; p_market_id: number }
+        Returns: {
+          distance_km: number
+          eligible: boolean
+          hub_address: string
+        }[]
+      }
+      get_store_request_detail: {
+        Args: { p_store_id: number }
+        Returns: {
+          applicant_id: string
+          applicant_name: string
+          applicant_phone: string
+          applicant_username: string
+          approval_note: string
+          approval_status: string
+          created_at: string
+          description: string
+          district_name: string
+          image_url: string
+          market_id: number
+          market_name: string
+          product_name: string
+          province_name: string
+          store_id: number
+          store_name: string
+          subdistrict_name: string
+          unit: string
+          unit_price: number
         }[]
       }
       increment_cart_item: {
@@ -1197,11 +1270,33 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_market: {
+        Args: {
+          p_description: string
+          p_hub_address: string
+          p_image_url?: string
+          p_market_id: number
+          p_name: string
+        }
+        Returns: undefined
+      }
       update_my_listing_stock: {
         Args: {
           p_listing_id: number
           p_status?: string
           p_stock_quantity: number
+        }
+        Returns: undefined
+      }
+      update_store: {
+        Args: {
+          p_description: string
+          p_image_url?: string
+          p_name: string
+          p_product_name: string
+          p_store_id: number
+          p_unit: string
+          p_unit_price: number
         }
         Returns: undefined
       }
@@ -1370,6 +1465,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       allocation_status: [

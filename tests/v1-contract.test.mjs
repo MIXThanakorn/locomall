@@ -187,7 +187,7 @@ test("New Market requests notify Platform Admins once", () => {
 test("Protected profile and account tabs redirect Guests to sign in", () => {
   assert.match(read("app/profile/_layout.tsx"), /if \(!session\) return <Redirect href="\/\(auth\)\/sign-in"/);
   for (const path of ["app/(tabs)/profile.tsx", "app/(tabs)/orders.tsx", "app/(tabs)/notification.tsx"]) {
-    assert.match(read(path), /if\(!.*session\)return <Redirect href="\/\(auth\)\/sign-in"\/>/, path);
+    assert.match(read(path), /if\s*\(!.*session\)\s*return <Redirect href="\/\(auth\)\/sign-in"\s*\/>/, path);
   }
 });
 
@@ -197,4 +197,68 @@ test("Runtime geolocation always times out to saved-area discovery", () => {
   assert.match(context, /withTimeout\(Location\.requestForegroundPermissionsAsync\(\), LOCATION_TIMEOUT_MS\)/);
   assert.match(context, /withTimeout\([\s\S]*Location\.getCurrentPositionAsync/);
   assert.match(context, /setDeviceLocationReady\(true\)/);
+});
+
+test("Stock management scopes both reads and writes to the current seller", () => {
+  const screen = read("app/seller/listings/index.tsx");
+  const sql = read("supabase/migrations/20260926025356_market_store_management_and_pickup.sql");
+  assert.match(screen, /\.eq\("seller_id", session\.user\.id\)/);
+  assert.match(sql, /l\.listing_id=p_listing_id and l\.seller_id=auth\.uid\(\)/);
+});
+
+test("Store applications stay in the Market subdistrict and expose a review detail flow", () => {
+  const sql = read("supabase/migrations/20260925015236_admin_workspace_and_request_rls_fixes.sql");
+  assert.match(sql, /seller must be in the same subdistrict/i);
+  assert.match(read("app/market/[id].tsx"), /sameArea/);
+  assert.match(read("app/market/manage/index.tsx"), /market\/manage\/request/);
+  assert.match(read("app/market/manage/request/[id].tsx"), /get_store_request_detail/);
+});
+
+test("A rejection reason is required and returned to applicants", () => {
+  const sql = read("supabase/migrations/20260926025356_market_store_management_and_pickup.sql");
+  assert.match(sql, /rejection reason required/);
+  assert.match(read("app/seller/stores.tsx"), /approval_note/);
+  assert.match(read("app/store/[id].tsx"), /review_note/);
+});
+
+test("Pickup is capped at 10 km and follows the short at-hub confirmation flow", () => {
+  const sql = read("supabase/migrations/20260926025356_market_store_management_and_pickup.sql");
+  assert.match(sql, /distance_m<=10000/);
+  assert.match(sql, /pickup_km>10/);
+  assert.match(sql, /fulfillment_method='pickup' and o\.status='at_hub'/);
+  const order = read("app/order/[id].tsx");
+  assert.match(order, /pickupSteps = \["awaiting_preparation", "preparing", "at_hub", "delivered"\]/);
+  assert.match(order, /isBuyer &&/);
+});
+
+test("Market ownership adds management without removing buyer capabilities", () => {
+  const profile = read("app/(tabs)/profile.tsx");
+  const checkout = read("app/order/checkout.tsx");
+  assert.match(profile, /จัดการตลาดชุมชน/);
+  assert.match(profile, /เจ้าของตลาดชุมชน · ซื้อสินค้าได้ตามปกติ/);
+  assert.doesNotMatch(checkout, /isMarketOwner.*disabled|!isMarketOwner/);
+});
+
+test("Saved shipping addresses can be loaded into the form and updated by their owner", () => {
+  const screen = read("app/profile/shipping-address.tsx");
+  assert.match(screen, /startEditing/);
+  assert.match(screen, /\.update\(payload\)\.eq\("address_id", editingId\)\.eq\("user_id", session\.user\.id\)/);
+  assert.match(screen, /แก้ไขที่อยู่แล้ว/);
+  assert.match(screen, /scrollToEnd/);
+});
+
+test("Every route with a text input opts into keyboard avoidance", () => {
+  const routes = [
+    "app/admin/markets.tsx", "app/(auth)/new-password.tsx", "app/(auth)/recover-password.tsx",
+    "app/(auth)/sign-in.tsx", "app/(auth)/sign-up.tsx", "app/chat/[id].tsx", "app/market/create.tsx",
+    "app/market/manage/edit.tsx", "app/market/manage/index.tsx", "app/market/manage/logistics.tsx",
+    "app/market/manage/request/[id].tsx", "app/profile/change-password.tsx", "app/profile/edit-profile.tsx",
+    "app/profile/language.tsx", "app/profile/shipping-address.tsx", "app/seller/listings/index.tsx",
+    "app/seller/listings/join.tsx", "app/store/[id].tsx", "app/store/manage/edit.tsx", "app/(tabs)/nearby.tsx",
+  ];
+  for (const path of routes) {
+    assert.match(read(path), /KeyboardAware|KeyboardAvoidingView/, path);
+  }
+  assert.match(read("src/components/SearchableDropdown.tsx"), /KeyboardAwareView/);
+  assert.match(read("app.json"), /"softwareKeyboardLayoutMode": "resize"/);
 });
