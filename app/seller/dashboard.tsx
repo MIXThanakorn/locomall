@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ContextHelp } from "../../src/components/ContextHelp";
 import { Colors, Spacing } from "../../src/constants/theme";
 import { useCapabilities } from "../../src/hooks/useCapabilities";
 
@@ -20,12 +21,14 @@ export default function SellerDashboard() {
   return <ScrollView contentContainerStyle={styles.root}>
     <Text style={styles.title}>งานขายสินค้าของฉัน</Text>
     <Text style={styles.sub}>ดูแลร้าน จำนวนสินค้า และงานที่ต้องเตรียมได้จากหน้านี้</Text>
+    <ContextHelp title="เริ่มขายสินค้าต้องทำอย่างไร?" steps={["เลือกตลาดชุมชนที่อยู่ตำบลเดียวกับพื้นที่หลักของคุณ", "เปิดร้านใหม่ หรือขอร่วมขายในร้านที่มีสินค้าชนิดเดียวกัน", "รอเจ้าของตลาดตรวจสอบ แล้วใส่จำนวนสินค้าที่พร้อมขาย"]} />
     {!actions.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>ยังไม่มีสิทธิ์จัดการร้าน</Text><Text style={styles.desc}>สมัครเปิดร้านหรือเข้าร่วมขายในร้านที่อยู่ตำบลเดียวกับคุณก่อน</Text></View> : null}
     {actions.map((action) => <TouchableOpacity key={action.route} style={styles.card} onPress={() => router.push(action.route as never)}>
       <View style={styles.icon}><Ionicons name={action.icon as any} size={25} color={Colors.greenPrimary} /></View>
       <View style={{ flex: 1 }}><Text style={styles.name}>{action.title}</Text><Text style={styles.desc}>{action.desc}</Text></View>
       <Ionicons name="chevron-forward" size={20} />
     </TouchableOpacity>)}
+    <TouchableOpacity style={styles.guideLink} onPress={() => router.push({ pathname: "/guide", params: { section: "seller" } } as never)}><Ionicons name="book-outline" size={19} color={Colors.greenPrimary} /><Text style={styles.guideText}>เปิดคู่มือผู้ขายฉบับเต็ม</Text></TouchableOpacity>
   </ScrollView>;
 }
 
@@ -38,4 +41,5 @@ const styles = StyleSheet.create({
   icon: { width: 48, height: 48, borderRadius: 14, backgroundColor: "#EAF1E9", alignItems: "center", justifyContent: "center" },
   name: { fontFamily: "Kanit_700Bold" }, desc: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },
   empty: { backgroundColor: "white", padding: 20, borderRadius: 16, marginTop: 12 }, emptyTitle: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary },
+  guideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, padding: 14, marginTop: 16 }, guideText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary },
 });

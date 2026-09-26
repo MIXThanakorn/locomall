@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { View, Text, StyleSheet, ViewStyle, DimensionValue } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, BorderRadius } from "../constants/theme";

@@ -1,4 +1,4 @@
-﻿export const Colors = {
+export const Colors = {
   // Brand Primary & Gradients (Gold/Yellow)
   goldPrimary: "#F3BE38",
   goldDark: "#C99412",

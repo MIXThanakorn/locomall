@@ -47,6 +47,7 @@ export default function Profile() {
     { title: "พื้นที่หลัก", icon: "navigate-outline", route: "/profile/location" },
     { title: "ที่อยู่จัดส่ง", icon: "location-outline", route: "/profile/shipping-address" },
     { title: "เปลี่ยนรหัสผ่าน", icon: "lock-closed-outline", route: "/profile/change-password" },
+    { title: "คู่มือการใช้งาน", icon: "help-circle-outline", route: "/guide" },
     { title: "งานขายสินค้าของฉัน", icon: "storefront-outline", route: "/seller/dashboard" },
     hasMarket
       ? { title: "จัดการตลาดชุมชน", icon: "business-outline", route: "/market/manage/home" }

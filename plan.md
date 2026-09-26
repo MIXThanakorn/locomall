@@ -1,5 +1,17 @@
 # Locomall — Implementation Plan
 
+> **Current V1 scope override (2026-09-26)**
+>
+> ส่วนที่กล่าวถึง `market_members`, `market_products`, ราคาต่อผู้ขาย, earnings
+> ledger, Review หรือ Wallet ด้านล่างเป็นแผนรุ่นก่อนและไม่ใช่ข้อกำหนด V1
+> ปัจจุบันใช้โครงสร้าง `Market ชุมชน → ร้านค้าหนึ่งสินค้าและหนึ่งราคากลาง →
+> ผู้ขายหลายราย → กระจายตามจำนวนสินค้าที่พร้อมขาย → รวมสินค้าที่ Market`.
+> V1 ใช้การชำระเงินเมื่อได้รับสินค้า, ไม่มี Payment Gateway/Wallet/Review,
+> ผู้ใช้หนึ่งบัญชีมีหลายบทบาทและยังซื้อสินค้าได้ตามปกติ, ผู้ดูแลระบบใช้
+> `platform_roles` โดยไม่บังคับ email confirmation หรือ MFA. ให้ยึด README,
+> migration ล่าสุด และ business requirements ที่ล็อกแล้วเหนือข้อความ legacy
+> ในแผนส่วนล่างนี้.
+
 ## Goal
 Build Locomall as a community marketplace using React Native, Expo, TypeScript, Supabase, PostgreSQL, Supabase Auth, Storage, Realtime, Antigravity, VS Code, Figma, and Git/GitHub. `skill.md` is the business/technical source of truth.
 

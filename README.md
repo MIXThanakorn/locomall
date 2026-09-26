@@ -146,10 +146,12 @@ Business IDs ใช้ `bigint identity`; user IDs ใช้ UUID จาก `aut
 ### Public RPC API
 
 - Location: `complete_location_onboarding`, `discover_nearby`
-- Approval: `apply_for_market`, `review_market`, `apply_to_open_store`, `review_store`, `apply_to_sell_in_store`, `review_store_seller`
+- Approval: `apply_for_market`, `review_market`, `apply_to_open_store`, `review_store`, `apply_to_sell_in_store`, `review_store_seller`, `get_store_request_detail`
+- Management: `update_market`, `update_store`
 - Catalog media: `set_market_image`, `set_store_image`
 - Stock/cart: `update_my_listing_stock`, `increment_cart_item`, `upsert_cart_item`, `remove_cart_item`
 - Order: `create_cod_order`, `cancel_order`, `confirm_delivery`
+- Pickup: `get_pickup_eligibility`
 - Logistics: `mark_allocation_ready`, `record_allocation_collected`, `record_allocation_at_hub`, `consolidate_order`, `ship_order`
 
 Helper functions อยู่ใน private schema และไม่เปิดผ่าน Data API.
@@ -174,6 +176,19 @@ Allocation ใช้ `preparing → ready_for_pickup → collected → at_hub` �
 ตรวจ actor และเขียน `allocation_status_events`. หลังเริ่มส่ง การยกเลิกต้องใช้ Admin
 override และถูกบันทึก audit log.
 
+คำสั่งซื้อแบบนัดรับใช้เส้นทางย่อ
+`awaiting_preparation → preparing → at_hub → delivered` โดยเลือกได้เมื่อผู้ซื้ออยู่
+ห่างจากจุดรวมสินค้าไม่เกิน 10 กม. และมีเพียงผู้ซื้อของคำสั่งซื้อนั้นที่ยืนยันรับสินค้าได้.
+
+## Beginner-friendly UX
+
+- หน้าแรกมีคำแนะนำสำหรับผู้ใช้ใหม่ที่ปิดได้และจำการตั้งค่าไว้ในอุปกรณ์
+- คู่มือเปิดอ่านได้ตลอดเวลาจากหน้าแรกและหน้าโปรไฟล์
+- คู่มือแยกขั้นตอนสำหรับผู้ซื้อ ผู้ขาย และเจ้าของตลาด
+- หน้าผู้ขาย หน้าจัดการตลาด และหน้าสั่งซื้อมีคำแนะนำเฉพาะหน้าที่พับเก็บได้
+- UI ใช้คำภาษาไทยแทนรหัสสถานะและคำเทคนิคจากฐานข้อมูล
+- ขนาดปุ่มหลักยังใช้ design system เดิม ไม่ได้เพิ่มปุ่มขนาดใหญ่เป็นพิเศษ
+
 ## Nearby discovery
 
 - ใช้ `geography(Point,4326)` และ GiST indexes
@@ -195,7 +210,9 @@ override และถูกบันทึก audit log.
 - Storage จำกัด JPG/PNG/WebP ขนาดไม่เกิน 5 MB
 - Storage paths: `{user_id}/...`, `{market_id}/...`, `{store_id}/...`
 - Approval/Admin actions มี audit trail และตรวจสิทธิ์จาก `platform_roles` ที่ผู้ใช้แก้เองไม่ได้
-- Security Advisor ไม่มี Critical/High; expected warnings อธิบายใน [`docs/security-advisor.md`](docs/security-advisor.md)
+- ผลตรวจ Security Advisor ล่าสุดที่บันทึกไว้เมื่อ 2026-09-21 ไม่มี Critical/High;
+  ต้องตรวจใหม่หลัง migration ล่าสุด โดยรายละเอียดและ expected warnings อยู่ใน
+  [`docs/security-advisor.md`](docs/security-advisor.md)
 
 ปิด email confirmation และไม่บังคับ MFA สำหรับ Admin ตามขอบเขต V1 โดยยังใช้รหัสผ่านขั้นต่ำ
 10 ตัวแบบตัวพิมพ์เล็ก/ใหญ่+ตัวเลข+สัญลักษณ์ ส่วน CAPTCHA กับ
@@ -210,8 +227,9 @@ locomall/
 │  ├─ (auth)/                  sign in/up, recovery, location onboarding
 │  ├─ (tabs)/                  Home, Nearby, Orders, Notifications, Profile
 │  ├─ admin/                   Admin dashboard, approvals, orders, audit
-│  ├─ market/                  catalog, application, owner approval/logistics
-│  ├─ store/                   one-product store detail
+│  ├─ guide.tsx                คู่มือผู้ซื้อ ผู้ขาย และเจ้าของตลาด
+│  ├─ market/                  catalog, application, edit, owner approval/logistics
+│  ├─ store/                   one-product store detail and management
 │  ├─ seller/                  stock and allocation operations
 │  ├─ order/                   cart, COD checkout and tracking
 │  ├─ chat/                    buyer ↔ store manager room

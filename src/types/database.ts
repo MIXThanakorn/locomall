@@ -1115,6 +1115,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_allocation: {
+        Args: { p_allocation_id: number }
+        Returns: undefined
+      }
       apply_for_market: {
         Args: {
           p_description: string
@@ -1172,6 +1176,10 @@ export type Database = {
           p_market_id: number
         }
         Returns: number
+      }
+      delete_cancelled_order: {
+        Args: { p_order_id: number; p_reason: string }
+        Returns: undefined
       }
       discover_nearby: {
         Args: {

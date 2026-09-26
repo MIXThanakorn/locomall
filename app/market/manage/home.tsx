@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
+import { ContextHelp } from "../../../src/components/ContextHelp";
 import { useAuth } from "../../../src/context/AuthContext";
 import { supabase } from "../../../src/lib/supabase";
 import { approvalStatusLabel } from "../../../src/lib/displayText";
@@ -24,6 +25,7 @@ export default function MarketManagementHome() {
   return <ScrollView contentContainerStyle={styles.root}>
     <Text style={styles.title}>จัดการตลาดชุมชน</Text>
     <Text style={styles.sub}>แก้ไขข้อมูล ตรวจคำขอ ดูร้านค้า และดูแลจุดรวมสินค้า</Text>
+    <ContextHelp title="งานหลักของเจ้าของตลาด" steps={["ตรวจรายละเอียดคำขอเปิดร้านและผู้สมัครร่วมขาย", "รับสินค้าที่ผู้ขายเตรียมเสร็จ แล้วนำไปยังจุดรวม", "เมื่อสินค้าครบทุกชิ้น จึงรวมและส่งให้ลูกค้า"]} />
     <View style={styles.quickRow}>
       <TouchableOpacity style={styles.quick} onPress={() => router.push("/market/manage" as never)}><Ionicons name="checkmark-done-outline" size={24} color={Colors.greenPrimary} /><Text style={styles.quickText}>คำขอที่รอตรวจสอบ</Text></TouchableOpacity>
       <TouchableOpacity style={styles.quick} onPress={() => router.push("/market/manage/logistics" as never)}><Ionicons name="cube-outline" size={24} color={Colors.greenPrimary} /><Text style={styles.quickText}>จุดรวมสินค้า</Text></TouchableOpacity>
@@ -51,6 +53,7 @@ export default function MarketManagementHome() {
       })}
       <TouchableOpacity style={styles.open} onPress={() => router.push(`/market/${market.market_id}` as never)}><Text style={styles.openText}>ดูหน้าตลาดชุมชน</Text></TouchableOpacity>
     </View>)}
+    <TouchableOpacity style={styles.guideLink} onPress={() => router.push({ pathname: "/guide", params: { section: "owner" } } as never)}><Ionicons name="book-outline" size={19} color={Colors.greenPrimary} /><Text style={styles.guideText}>เปิดคู่มือเจ้าของตลาดฉบับเต็ม</Text></TouchableOpacity>
   </ScrollView>;
 }
 
@@ -62,4 +65,5 @@ const styles = StyleSheet.create({
   name: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 19 }, status: { fontFamily: "Kanit_500Medium", color: Colors.goldDark }, address: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginTop: 6 },
   section: { fontFamily: "Kanit_700Bold", color: Colors.textDark, marginTop: 14 }, store: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.inputBackground, padding: 12, borderRadius: 12, marginTop: 8 }, storeName: { fontFamily: "Kanit_500Medium", color: Colors.textDark }, muted: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },
   open: { paddingTop: 14 }, openText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "center" }, empty: { backgroundColor: "white", padding: 18, borderRadius: 16, marginTop: 16 },
+  guideLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, padding: 14, marginTop: 12 }, guideText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary },
 });

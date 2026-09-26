@@ -9,6 +9,8 @@ export function translateDatabaseError(error: ErrorLike) {
   if (message.includes("store unavailable")) return "ร้านค้านี้ยังไม่พร้อมรับคำขอ";
   if (message.includes("rejection reason required")) return "กรุณาระบุเหตุผลที่ปฏิเสธคำขอ";
   if (message.includes("pickup is limited to 10 km")) return "นัดรับได้เมื่ออยู่ห่างจุดรวมสินค้าไม่เกิน 10 กิโลเมตร";
+  if (message.includes("cannot purchase from your own store")) return "คุณไม่สามารถสั่งซื้อสินค้าจากร้านที่คุณเป็นเจ้าของหรือร่วมขายอยู่ได้";
+  if (message.includes("only cancelled orders can be deleted")) return "กรุณายกเลิกออเดอร์ก่อนลบออกจากระบบ";
   if (message.includes("location unavailable")) return "ไม่พบตำแหน่งสำหรับคำนวณระยะทาง กรุณาตรวจสอบพื้นที่หลักหรือเปิดตำแหน่งอุปกรณ์";
   if (message.includes("forbidden or invalid state")) return "บัญชีนี้ไม่ใช่ผู้ซื้อของคำสั่งซื้อนี้ หรือยังไม่ถึงขั้นตอนยืนยันรับสินค้า";
   if (message.includes("listing not found")) return "คุณแก้ไขได้เฉพาะจำนวนสินค้าของตนเอง และจำนวนต้องไม่น้อยกว่าสินค้าที่มีลูกค้าสั่งไว้";

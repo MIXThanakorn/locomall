@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 export type Language = "en" | "th";
 
@@ -15,7 +15,6 @@ const translations: Record<Language, Record<string, string>> = {
     signUp: "SIGN UP",
     welcome: "Welcome to Locomall",
     recoverPassword: "Recover Password",
-    enterOtp: "Enter OTP",
     newPassword: "Create new password",
     passwordChanged: "Password Changed",
 
@@ -69,7 +68,6 @@ const translations: Record<Language, Record<string, string>> = {
     signUp: "สมัครสมาชิก",
     welcome: "ยินดีต้อนรับสู่ Locomall",
     recoverPassword: "กู้คืนรหัสผ่าน",
-    enterOtp: "กรอกรหัส OTP",
     newPassword: "ตั้งรหัสผ่านใหม่",
     passwordChanged: "เปลี่ยนรหัสผ่านสำเร็จ",
 

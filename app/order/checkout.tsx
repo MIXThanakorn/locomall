@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Button } from "../../src/components/Button";
+import { ContextHelp } from "../../src/components/ContextHelp";
 import { SearchableDropdown } from "../../src/components/SearchableDropdown";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -53,6 +54,7 @@ export default function Checkout() {
   return <View style={styles.root}>
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <Text style={styles.title}>วิธีรับสินค้า</Text>
+      <ContextHelp title="เลือกวิธีรับสินค้าแบบไหนดี?" steps={["เลือกจัดส่งถึงที่อยู่ หากต้องการให้ส่งสินค้าถึงบ้าน", "เลือกนัดรับ เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร", "ทั้งสองแบบชำระเงินเมื่อได้รับสินค้า"]} />
       <TouchableOpacity style={[styles.method, fulfillment === "delivery" && styles.selected]} onPress={() => setFulfillment("delivery")}><Ionicons name="car-outline" size={24} color={Colors.greenPrimary} /><View style={{ flex: 1 }}><Text style={styles.name}>จัดส่งถึงที่อยู่</Text><Text style={styles.detail}>รวมสินค้าจากทุกผู้ขายเป็นพัสดุเดียว</Text></View></TouchableOpacity>
       <TouchableOpacity style={[styles.method, fulfillment === "pickup" && styles.selected, !pickup?.eligible && styles.disabled]} disabled={!pickup?.eligible} onPress={() => setFulfillment("pickup")}><Ionicons name="storefront-outline" size={24} color={pickup?.eligible ? Colors.greenPrimary : Colors.textMuted} /><View style={{ flex: 1 }}><Text style={styles.name}>นัดรับที่จุดรวมสินค้า</Text><Text style={styles.detail}>{pickup?.eligible ? `ห่างประมาณ ${pickup.distance_km} กม. · ${pickup.hub_address}` : "ใช้ได้เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กม."}</Text></View></TouchableOpacity>
 

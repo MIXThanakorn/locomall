@@ -262,3 +262,80 @@ test("Every route with a text input opts into keyboard avoidance", () => {
   assert.match(read("src/components/SearchableDropdown.tsx"), /KeyboardAwareView/);
   assert.match(read("app.json"), /"softwareKeyboardLayoutMode": "resize"/);
 });
+
+test("Beginner guidance stays available without enlarging shared buttons", () => {
+  const home = read("app/(tabs)/index.tsx");
+  const profile = read("app/(tabs)/profile.tsx");
+  const guide = read("app/guide.tsx");
+  const seller = read("app/seller/dashboard.tsx");
+  const owner = read("app/market/manage/home.tsx");
+  assert.match(home, /locomall-home-guide-dismissed-v1/);
+  assert.match(home, /เปิดคู่มือการใช้งาน/);
+  assert.match(profile, /คู่มือการใช้งาน/);
+  assert.match(guide, /วิธีซื้อสินค้า/);
+  assert.match(guide, /วิธีเริ่มขายสินค้า/);
+  assert.match(guide, /วิธีดูแลตลาดชุมชน/);
+  assert.match(seller, /ContextHelp/);
+  assert.match(owner, /ContextHelp/);
+  assert.equal(read("src/components/Button.tsx").includes("locomall-home-guide-dismissed-v1"), false);
+});
+
+test("Store detail selects quantity before cart and uses a transient success message", () => {
+  const store = read("app/store/[id].tsx");
+  assert.match(store, /เลือกจำนวน/);
+  assert.match(store, /p_increment: quantity/);
+  assert.match(store, /setTimeout\(\(\) => setToast\(null\), 1800\)/);
+  assert.doesNotMatch(store, /Alert\.alert\("เพิ่มลงตะกร้าแล้ว"/);
+});
+
+test("Home separates community Markets from purchasable stores", () => {
+  const home = read("app/(tabs)/index.tsx");
+  const card = read("src/components/CommerceCard.tsx");
+  assert.match(home, /marketItems = items\.filter/);
+  assert.match(home, /storeItems = items\.filter/);
+  assert.match(home, /ตลาดชุมชนใกล้บ้าน/);
+  assert.match(home, /ร้านค้าและสินค้าใกล้คุณ/);
+  assert.match(card, /สินค้าพร้อมขาย/);
+});
+
+test("Cart and buyer/seller order history show item, price, fulfillment, and Thai dates", () => {
+  const cart = read("app/order/cart.tsx");
+  const buyer = read("app/(tabs)/orders.tsx");
+  const seller = read("app/seller/allocations/index.tsx");
+  const detail = read("app/order/[id].tsx");
+  assert.match(cart, /แก้ไขล่าสุด/);
+  assert.match(cart, /subtotal/);
+  assert.match(cart, /รวม \{totalQuantity\} ชิ้น/);
+  assert.match(buyer, /วันที่สั่ง/);
+  assert.match(buyer, /fulfillment_method/);
+  assert.match(buyer, /i\.unit_price/);
+  assert.match(seller, /วันที่สั่ง/);
+  assert.match(seller, /มูลค่าสินค้าส่วนนี้/);
+  assert.match(seller, /วิธีรับสินค้า/);
+  assert.match(detail, /วันที่สั่ง/);
+  assert.match(detail, /item\.unit_price/);
+});
+
+test("Sellers cannot buy their own store and must accept an allocation before preparing", () => {
+  const sql = read("supabase/migrations/20260926075917_prevent_self_purchase_and_accept_orders.sql");
+  const store = read("app/store/[id].tsx");
+  const seller = read("app/seller/allocations/index.tsx");
+  assert.match(sql, /cannot purchase from your own store/);
+  assert.match(sql, /reject_self_purchase_cart/);
+  assert.match(sql, /reject_self_purchase_order/);
+  assert.match(sql, /create or replace function public\.accept_allocation/);
+  assert.match(store, /cannotBuyOwn/);
+  assert.match(store, /ไม่สามารถสั่งสินค้าร้านของตนเอง/);
+  assert.match(seller, /รับออเดอร์และเริ่มเตรียมสินค้า/);
+  assert.match(seller, /mark_allocation_ready/);
+});
+
+test("Admin can permanently remove only cancelled erroneous orders with an audit record", () => {
+  const sql = read("supabase/migrations/20260926075917_prevent_self_purchase_and_accept_orders.sql");
+  const admin = read("app/admin/orders.tsx");
+  assert.match(sql, /create or replace function public\.delete_cancelled_order/);
+  assert.match(sql, /status='cancelled'/);
+  assert.match(sql, /'delete_cancelled_order'/);
+  assert.match(admin, /ลบออเดอร์ผิดพลาด/);
+  assert.match(admin, /delete_cancelled_order/);
+});

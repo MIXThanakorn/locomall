@@ -7,9 +7,9 @@ export function CommerceCard({ item, onPress }: { item: NearbyResult; onPress: (
   return <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
     {item.image_url ? <Image source={{ uri: item.image_url }} style={styles.image} /> : <View style={styles.placeholder}><Ionicons name={item.entity_type === "market" ? "storefront" : "basket"} size={32} color={Colors.greenPrimary} /></View>}
     <View style={styles.body}>
-      <View style={styles.row}><Text style={styles.name} numberOfLines={1}>{item.name}</Text><Text style={styles.type}>{item.entity_type === "market" ? "ตลาด" : "ร้าน"}</Text></View>
+      <View style={styles.row}><Text style={styles.name} numberOfLines={1}>{item.name}</Text><Text style={styles.type}>{item.entity_type === "market" ? "ตลาดชุมชน" : "ร้านค้า"}</Text></View>
       <Text style={styles.description} numberOfLines={2}>{item.description || "สินค้าจากชุมชนใกล้คุณ"}</Text>
-      <View style={styles.meta}><Ionicons name="location-outline" size={14} color={Colors.greenPrimary} /><Text style={styles.metaText}>{item.distance_km == null ? "แนะนำสำหรับคุณ" : `${item.distance_km} กม.`}</Text><Text style={styles.dot}>•</Text><Text style={styles.metaText}>คงเหลือ {item.available_stock}</Text></View>
+      <View style={styles.meta}><Ionicons name="location-outline" size={14} color={Colors.greenPrimary} /><Text style={styles.metaText}>{item.distance_km == null ? "แนะนำสำหรับคุณ" : `${item.distance_km} กม.`}</Text><Text style={styles.dot}>•</Text><Text style={styles.metaText}>{item.entity_type === "market" ? `สินค้าพร้อมขาย ${item.available_stock}` : `คงเหลือ ${item.available_stock}`}</Text></View>
     </View>
   </TouchableOpacity>;
 }

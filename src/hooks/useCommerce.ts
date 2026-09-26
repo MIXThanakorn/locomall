@@ -24,7 +24,7 @@ export function useOrders() {
   const [orders, setOrders] = useState<any[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
   const refresh = useCallback(async () => {
     setLoading(true);
-    const result = await supabase.from("orders").select("*, order_items(*)").order("created_at", { ascending: false });
+    const result = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name))").order("created_at", { ascending: false });
     setOrders(result.data ?? []); setError(result.error?.message ?? null); setLoading(false);
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
