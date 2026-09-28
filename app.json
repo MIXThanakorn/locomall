@@ -49,6 +49,13 @@
       "expo-status-bar",
       "expo-web-browser",
       [
+        "expo-notifications",
+        {
+          "color": "#154C2B",
+          "defaultChannel": "locomall-updates"
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Locomall ใช้ตำแหน่งเพื่อแนะนำตลาดชุมชนใกล้คุณ โดยจะไม่เปิดเผยพิกัดของคุณต่อผู้ใช้อื่น"

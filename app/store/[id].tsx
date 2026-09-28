@@ -9,7 +9,7 @@ import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Shadows, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { translateDatabaseError } from "../../src/lib/databaseError";
-import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../src/lib/storage";
+import { SelectedImage, selectSquareImage, uploadPrivateImage } from "../../src/lib/storage";
 import { supabase } from "../../src/lib/supabase";
 
 export default function StoreDetail() {
@@ -31,18 +31,16 @@ export default function StoreDetail() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const storeResult = await supabase.from("stores").select("*,markets(name,hub_address,subdistrict_code),seller_listings(stock_quantity,reserved_quantity,status)").eq("store_id", Number(id)).single();
-    const currentStore = storeResult.data;
+    const storeResult = await supabase.rpc("get_store_catalog", { p_store_id: Number(id) });
+    const currentStore = storeResult.data as any;
     setStore(currentStore);
-    setStock((currentStore?.seller_listings ?? []).filter((item: any) => item.status === "active").reduce((sum: number, item: any) => sum + item.stock_quantity - item.reserved_quantity, 0));
+    setStock(Number(currentStore?.available_stock ?? 0));
     if (session?.user.id && currentStore) {
-      const [locationResult, applicationResult, listingResult] = await Promise.all([
-        supabase.from("user_locations").select("subdistrict_code").eq("user_id", session.user.id).maybeSingle(),
+      const [applicationResult] = await Promise.all([
         supabase.from("store_seller_applications").select("application_id,status,review_note,note,product_image_url").eq("store_id", Number(id)).eq("applicant_id", session.user.id).maybeSingle(),
-        supabase.from("seller_listings").select("listing_id").eq("store_id", Number(id)).eq("seller_id", session.user.id).maybeSingle(),
       ]);
-      setSameArea(locationResult.data?.subdistrict_code === currentStore.markets?.subdistrict_code);
-      setApplication(applicationResult.data); setSeller(Boolean(listingResult.data));
+      setSameArea(Boolean(currentStore.same_area));
+      setApplication(applicationResult.data); setSeller(Boolean(currentStore.is_seller));
     }
     setLoading(false);
   }, [id, session]);
@@ -57,7 +55,7 @@ export default function StoreDetail() {
 
   const add = async () => {
     if (!session) return router.push("/(auth)/sign-in" as never);
-    if (session.user.id === store.manager_id || isSeller) return Alert.alert("ไม่สามารถสั่งร้านของตนเอง", "บัญชีเจ้าของร้านและผู้ขายร่วมไม่สามารถซื้อสินค้าจากร้านที่ตนขายอยู่ได้");
+    if (store.is_manager || isSeller) return Alert.alert("ไม่สามารถสั่งร้านของตนเอง", "บัญชีเจ้าของร้านและผู้ขายร่วมไม่สามารถซื้อสินค้าจากร้านที่ตนขายอยู่ได้");
     setAdding(true);
     const { data, error } = await supabase.rpc("increment_cart_item", { p_store_id: Number(id), p_increment: quantity });
     setAdding(false);
@@ -69,9 +67,9 @@ export default function StoreDetail() {
   };
   const chat = async () => {
     if (!session) return router.push("/(auth)/sign-in" as never);
-    const { data, error } = await supabase.from("chat_rooms").upsert({ buyer_id: session.user.id, store_id: Number(id) }, { onConflict: "buyer_id,store_id" }).select("room_id").single();
+    const { data, error } = await supabase.rpc("get_or_create_chat_room", { p_store_id: Number(id) });
     if (error) Alert.alert("เปิดแชตไม่สำเร็จ", translateDatabaseError(error));
-    else router.push(`/chat/${data.room_id}` as never);
+    else router.push(`/chat/${data}` as never);
   };
   const chooseSellerImage = async () => {
     try { setSellerImage(await selectSquareImage()); }
@@ -83,16 +81,16 @@ export default function StoreDetail() {
     setSending(true);
     let uploadedPath: string | null = null;
     try {
-      const uploaded = await uploadPublicImage("avatars", session.user.id, sellerImage, `seller-product-${id}`);
+      const uploaded = await uploadPrivateImage("seller-evidence", session.user.id, sellerImage, `seller-product-${id}`);
       uploadedPath = uploaded.path;
-      const { error } = await supabase.rpc("apply_to_sell_in_store", { p_store_id: Number(id), p_note: note.trim() || undefined, p_product_image_url: uploaded.publicUrl });
+      const { error } = await supabase.rpc("apply_to_sell_in_store", { p_store_id: Number(id), p_note: note.trim() || undefined, p_product_image_url: uploaded.path });
       if (error) throw error;
       uploadedPath = null;
       setSellerImage(null);
       Alert.alert("ส่งคำขอร่วมขายแล้ว", "เจ้าของตลาดชุมชนจะตรวจรูปสินค้าและข้อมูลของคุณ");
       await load();
     } catch (error: any) {
-      if (uploadedPath) await supabase.storage.from("avatars").remove([uploadedPath]);
+      if (uploadedPath) await supabase.storage.from("seller-evidence").remove([uploadedPath]);
       Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error));
     }
     finally { setSending(false); }
@@ -100,7 +98,7 @@ export default function StoreDetail() {
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!store) return <View style={styles.center}><Text>ไม่พบร้านค้า</Text></View>;
-  const isManager = session?.user.id === store.manager_id;
+  const isManager = Boolean(store.is_manager);
   const cannotBuyOwn = Boolean(session && (isManager || isSeller));
   const sellerImagePicker = <TouchableOpacity style={styles.applicationImagePicker} onPress={chooseSellerImage}>{sellerImage?<Image source={{uri:sellerImage.uri}} style={styles.applicationImage}/>:<View style={styles.applicationImageEmpty}><Ionicons name="camera-outline" size={28} color={Colors.greenPrimary}/><Text style={styles.applicationImageText}>แนบรูปสินค้าของคุณ (จำเป็น)</Text></View>}</TouchableOpacity>;
 

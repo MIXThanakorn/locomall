@@ -12,7 +12,8 @@ features ถูกแยกเป็น milestone หลัง Commerce Core.
 
 - React Native 0.86, React 19, Expo 57 และ Expo Router
 - TypeScript แบบ strict
-- Supabase Auth, PostgreSQL, PostGIS, Storage และ Realtime
+- Supabase Auth, PostgreSQL, PostGIS, Storage, Realtime และ Edge Functions
+- Expo Notifications + Expo Push Service สำหรับแจ้งเตือนนอกแอป
 - PostgreSQL RPC สำหรับ transaction สำคัญ และ RLS สำหรับ authorization
 - Kanit สำหรับ UI ภาษาไทย และ Spectral สำหรับ branding
 - Node test runner สำหรับ unit/contract tests
@@ -28,10 +29,13 @@ flowchart LR
     App --> RPC[Transactional RPC]
     App --> Storage[Supabase Storage]
     App <--> Realtime[Realtime]
+    App --> ExpoPush[Expo Push Service]
     REST --> DB[(PostgreSQL + PostGIS)]
     RPC --> DB
     Storage --> Policies[Storage RLS]
     Realtime --> DB
+    DB --> PushFn[Push Edge Function]
+    PushFn --> ExpoPush
 
     DB --> Market[Market approval]
     Market --> Store[One-product store]
@@ -127,6 +131,7 @@ erDiagram
     PROFILES ||--o{ CHAT_ROOMS : participates
     CHAT_ROOMS ||--o{ CHAT_MESSAGES : contains
     PROFILES ||--o{ NOTIFICATIONS : receives
+    PROFILES ||--o{ USER_PUSH_DEVICES : registers
     PROFILES ||--o{ ADMIN_AUDIT_LOGS : acts
 ```
 
@@ -139,7 +144,11 @@ erDiagram
 | Catalog | `markets`, `stores`, `store_seller_applications`, `seller_listings` | approval, one-product store และ stock รายผู้ขาย |
 | Commerce | `carts`, `cart_items`, `orders`, `order_items`, `order_allocations` | Market-scoped cart, price snapshot และ allocation |
 | History | `approval_events`, `allocation_status_events`, `admin_audit_logs` | append-only operational/audit trail |
-| Communication | `chat_rooms`, `chat_messages`, `notifications` | participant-only chat และ in-app Realtime |
+| Communication | `chat_rooms`, `chat_messages`, `notifications`, `user_push_devices` | participant-only chat, in-app Realtime และ private Expo push tokens |
+
+Notification แบ่งเป็น `order`, `approval`, `chat`, `system`. Database triggers สร้าง
+รายการสำหรับออเดอร์ใหม่ การเปลี่ยนสถานะ สินค้าพร้อมรับเข้าจุดรวม และข้อความแชต;
+หน้าแอปรองรับ filter ตามหมวดและเฉพาะรายการที่ยังไม่ได้อ่าน.
 
 Business IDs ใช้ `bigint identity`; user IDs ใช้ UUID จาก `auth.users`.
 
@@ -153,6 +162,7 @@ Business IDs ใช้ `bigint identity`; user IDs ใช้ UUID จาก `aut
 - Order: `create_cod_order`, `cancel_order`, `confirm_delivery`, `delete_cancelled_order`
 - Pickup: `get_pickup_eligibility`
 - Logistics: `accept_allocation`, `mark_allocation_ready`, `record_allocation_collected`, `record_allocation_at_hub`, `consolidate_order`, `ship_order`
+- Notifications: `mark_notification_read`, `mark_all_notifications_read`, `register_my_push_device`, `disable_my_push_devices`
 
 Helper functions อยู่ใน private schema และไม่เปิดผ่าน Data API.
 
@@ -220,12 +230,13 @@ audit log. Admin ลบถาวรได้เฉพาะ order ที่ย�
 - Storage จำกัด JPG/PNG/WebP ขนาดไม่เกิน 5 MB
 - Storage paths: `{user_id}/...`, `{market_id}/...`, `{store_id}/...`
 - Approval/Admin actions มี audit trail และตรวจสิทธิ์จาก `platform_roles` ที่ผู้ใช้แก้เองไม่ได้
-- ตรวจ live schema แบบ read-only ล่าสุดเมื่อ 2026-09-28: RLS เปิดครบทุก public table
-  แต่ manual audit พบ policy/grant ที่ต้องปรับก่อน production โดยยังไม่ได้แก้ตามขอบเขตงานนี้
-- รายการช่องโหว่ RLS พร้อมระดับความเสี่ยงและแนวทางแก้อยู่ที่
+- ตรวจและ harden live schema ล่าสุดเมื่อ 2026-09-28: RLS เปิดครบทุก public table,
+  sensitive writes ใช้ validated RPC, catalog ใช้ safe-shape RPC และหลักฐานผู้ขายอยู่ private bucket
+- รายการช่องโหว่ RLS ผลการแก้ และหลักฐาน verification อยู่ที่
   [`docs/rls-security-audit-2026-09-28.md`](docs/rls-security-audit-2026-09-28.md)
-- Supabase Security Advisor ไม่มี Critical/High แต่มี warnings เรื่อง authenticated users
-  เรียก `SECURITY DEFINER` RPC ได้ 24 รายการ และ leaked-password protection ยังปิดอยู่;
+- Supabase Security Advisor ไม่มี Critical/High แต่มี expected warnings สำหรับ public
+  safe catalog RPC 3 รายการ, authenticated business RPC 32 รายการ และ
+  leaked-password protection ยังปิดอยู่;
   รายละเอียด advisor เดิมอยู่ใน [`docs/security-advisor.md`](docs/security-advisor.md)
 
 ปิด email confirmation และไม่บังคับ MFA สำหรับ Admin ตามขอบเขต V1 โดยยังใช้รหัสผ่านขั้นต่ำ
@@ -321,7 +332,10 @@ The complete V1 matrix is in [`docs/test-cases.md`](docs/test-cases.md). Before 
 release, run the E2E scenario with separate Admin, Market owner, Store manager,
 three Sellers and Buyer accounts on Android, iOS and web.
 
-Contract/unit suite ปัจจุบันมี 42 tests. การผ่านชุดนี้ไม่แทน penetration test,
+ขั้นตอนเชื่อม EAS credentials, Supabase webhook และการทดสอบ Push บนเครื่องจริงอยู่ใน
+[`docs/push-notifications.md`](docs/push-notifications.md).
+
+Contract/unit suite ปัจจุบันมี 44 tests. การผ่านชุดนี้ไม่แทน penetration test,
 concurrent database test หรือการทดสอบ role boundary กับ live Supabase.
 
 ## Release checklist
@@ -329,7 +343,9 @@ concurrent database test หรือการทดสอบ role boundary ก�
 - Run migrations and regenerate TypeScript types
 - Run Security/Performance Advisors and record accepted warnings
 - Verify Auth production settings and redirect URLs
-- Configure EAS environment variables without secret keys
+- Link EAS project, configure Android FCM V1/iOS APNs credentials และสร้าง Development/Production Build
+- Connect the `notifications` INSERT database webhook to the deployed `push-notification` Edge Function with an authenticated service header
+- หากเปิด Expo enhanced push security ให้เก็บ `EXPO_ACCESS_TOKEN` ใน Supabase Edge Function Secrets เท่านั้น
 - Test GPS granted/denied and all role boundaries on real devices
 - Verify concurrent checkout, cancellation idempotency and consolidated shipping
 - Compare key screens with Figma at common phone sizes
@@ -342,7 +358,6 @@ concurrent database test หรือการทดสอบ role boundary ก�
 - Buyer/Seller Wallet and settlement
 - Reviews/ratings
 - Favorite, Follow and Share
-- External push notifications
 
 These features must not be added by weakening the COD transaction, RLS or audit
 model established for Commerce Core.

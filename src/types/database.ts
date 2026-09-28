@@ -387,6 +387,7 @@ export type Database = {
       notifications: {
         Row: {
           body: string
+          category: string
           created_at: string
           entity_id: number | null
           entity_type: string | null
@@ -398,6 +399,7 @@ export type Database = {
         }
         Insert: {
           body: string
+          category?: string
           created_at?: string
           entity_id?: number | null
           entity_type?: string | null
@@ -409,6 +411,7 @@ export type Database = {
         }
         Update: {
           body?: string
+          category?: string
           created_at?: string
           entity_id?: number | null
           entity_type?: string | null
@@ -1116,6 +1119,56 @@ export type Database = {
           },
         ]
       }
+      user_push_devices: {
+        Row: {
+          created_at: string
+          device_name: string | null
+          enabled: boolean
+          expo_push_token: string
+          last_error: string | null
+          last_seen_at: string
+          last_success_at: string | null
+          platform: string
+          push_device_id: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string | null
+          enabled?: boolean
+          expo_push_token: string
+          last_error?: string | null
+          last_seen_at?: string
+          last_success_at?: string | null
+          platform: string
+          push_device_id?: never
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string | null
+          enabled?: boolean
+          expo_push_token?: string
+          last_error?: string | null
+          last_seen_at?: string
+          last_success_at?: string | null
+          platform?: string
+          push_device_id?: never
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_push_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1211,6 +1264,8 @@ export type Database = {
           radius_km: number
         }[]
       }
+      get_market_catalog: { Args: { p_market_id: number }; Returns: Json }
+      get_or_create_chat_room: { Args: { p_store_id: number }; Returns: number }
       get_pickup_eligibility: {
         Args: { p_lat?: number; p_lng?: number; p_market_id: number }
         Returns: {
@@ -1243,12 +1298,31 @@ export type Database = {
           unit_price: number
         }[]
       }
+      get_store_catalog: { Args: { p_store_id: number }; Returns: Json }
       increment_cart_item: {
         Args: { p_increment?: number; p_store_id: number }
         Returns: number
       }
       mark_allocation_ready: {
         Args: { p_allocation_id: number }
+        Returns: undefined
+      }
+      mark_notification_read: {
+        Args: { p_notification_id: number }
+        Returns: undefined
+      }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
+      disable_my_push_devices: { Args: never; Returns: undefined }
+      disable_my_push_device: {
+        Args: { p_expo_push_token: string }
+        Returns: undefined
+      }
+      register_my_push_device: {
+        Args: {
+          p_device_name?: string | null
+          p_expo_push_token: string
+          p_platform: string
+        }
         Returns: undefined
       }
       record_allocation_at_hub: {
@@ -1271,6 +1345,17 @@ export type Database = {
       review_store_seller: {
         Args: { p_application_id: number; p_approve: boolean; p_note?: string }
         Returns: undefined
+      }
+      save_my_address: {
+        Args: {
+          p_address_id: number | null
+          p_address_line: string
+          p_is_default?: boolean
+          p_phone: string
+          p_recipient_name: string
+          p_subdistrict_code: string
+        }
+        Returns: number
       }
       set_market_image: {
         Args: { p_image_url: string; p_market_id: number }

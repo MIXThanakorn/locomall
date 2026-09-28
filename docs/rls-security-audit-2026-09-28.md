@@ -5,15 +5,39 @@
 `SECURITY DEFINER` functions, Storage policies และข้อมูลที่ anonymous/authenticated
 roles อ่านหรือแก้ได้โดยตรงผ่าน Data API.
 
-> สถานะ: **พบแล้ว ยังไม่ได้แก้** ตามขอบเขตที่กำหนดในรอบนี้
+> สถานะ: **แก้แล้วเมื่อ 2026-09-28** ด้วย migration
+> `20260928080428_close_rls_security_findings.sql`
+
+## ผลการแก้ไข
+
+- RLS-01, 02, 03, 08 และ 11: ถอน direct mutation policies/grants และบังคับเขียนผ่าน
+  validated RPC (`update_my_listing_stock`, `complete_location_onboarding`,
+  `get_or_create_chat_room`, cart RPCs, `mark_notification_read`, `save_my_address`)
+- RLS-04: ถอน base catalog จาก `anon`; guest ใช้ `discover_nearby`,
+  `get_market_catalog` และ `get_store_catalog` ซึ่งคืนเฉพาะ safe fields
+- RLS-05: allocation และ event อ่านได้เฉพาะ seller, store manager, market owner และ Admin
+- RLS-06 และ 12: ถอน helper/trigger `EXECUTE` ที่ไม่จำเป็นจาก API roles
+- RLS-07 และ 09: รูปสมัครผู้ขายใหม่อยู่ private `seller-evidence` bucket, เก็บ object key
+  และตรวจ object จริงใน Storage ก่อนรับคำขอ; ณ เวลา migration ไม่มี legacy URL ค้างอยู่
+- RLS-10: ถอน table privileges ทั้งหมดแล้ว grant ใหม่เฉพาะ operation ที่ client ใช้จริง
+
+Verification หลัง migration:
+
+- `anon` อ่าน base `markets` ไม่ได้ แต่ safe catalog/discovery RPC ยังใช้งานได้
+- `authenticated` ไม่มี direct UPDATE บน listing, location, notification, cart และ address
+- seller stock RPC ยังใช้งานได้ภายใต้ JWT ของเจ้าของ listing
+- safe catalog ไม่คืน `owner_id`, `manager_id`, `seller_id`, geography หรือ allocation metadata
+- private evidence bucket และ path policies ทำงานตาม applicant/approver relationship
+- Supabase Security Advisor ไม่มี Critical/High; warning ที่เหลือเป็น public read-only catalog
+  RPC และ authenticated business RPC ที่ตั้งใจเปิดและตรวจ identity/ownership ภายใน
 
 ## สรุป
 
 | ระดับ | จำนวน | ใจความสำคัญ |
 |---|---:|---|
 | High | 3 | ผู้ขายแก้คอลัมน์ระบบของ listing, ผู้ใช้ปลอมพื้นที่หลัก, buyer ย้าย chat room |
-| Medium | 6 | catalog/allocations เปิด metadata มากไป, private ownership oracle, รูปคำขออยู่ public bucket, cart เขียนตรง, URL รูปตรวจไม่เข้ม |
-| Low / Hardening | 3 | grants กว้าง, notification/address integrity, trigger function executable |
+| Medium | 5 | catalog/allocations เปิด metadata มากไป, รูปคำขออยู่ public bucket, cart เขียนตรง, URL รูปตรวจไม่เข้ม |
+| Low / Hardening | 4 | private helper grants, table grants กว้าง, notification/address integrity, trigger function executable |
 
 สิ่งที่ทำถูกต้องแล้ว:
 
@@ -87,13 +111,15 @@ catalog views/RPC ที่คืนเฉพาะ public fields และ aggr
 แนวแก้ที่เสนอ: base allocation ให้ seller/manager/owner/admin เท่านั้น และให้ buyer อ่าน
 สถานะรวมผ่าน view/RPC ที่ไม่คืน seller identity.
 
-### RLS-06 — Ownership helper เป็น oracle ที่ `anon` เรียกได้
+### RLS-06 — Ownership helper ให้ `anon` EXECUTE โดยไม่จำเป็น
 
-- Severity: **Medium**
+- Severity: **Low / Defense in depth**
 - Functions: `private.market_owner(bigint, uuid)` และ
   `private.store_manager(bigint, uuid)`
-- ทั้งสองเป็น `SECURITY DEFINER` และ `anon` มี EXECUTE พร้อมส่ง UUID เป้าหมายเองได้
-- ใช้ทดสอบความสัมพันธ์ระหว่าง UUID กับ Market/Store ได้ แม้ helper ไม่ควรเป็น API
+- ทั้งสองเป็น `SECURITY DEFINER` และ `anon` มี EXECUTE พร้อมรับ UUID เป็น argument
+- `private` schema ไม่ควรถูก expose ผ่าน Data API จึงยังไม่พบช่องเรียกตรงจาก client ใน
+  configuration ปัจจุบัน อย่างไรก็ตาม grant นี้จะกลายเป็น ownership oracle ทันทีหาก
+  schema ถูก expose หรือมี public wrapper เรียกต่อโดยไม่จำกัด input
 
 แนวแก้ที่เสนอ: revoke จาก `anon`/`PUBLIC`; helper ต้องตรวจ current identity ภายใน
 หรือให้ execute เฉพาะ role ที่จำเป็นต่อ policy จริง.
@@ -173,10 +199,10 @@ codes/postal code ก่อน write.
 2. Leaked-password protection ยังปิด ดู
    [Supabase password security](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
 
-## ขอบเขตและสิ่งที่ยังไม่ได้ทำ
+## ขอบเขตและสิ่งที่ยังควรทำต่อ
 
-- ไม่ได้แก้ policy, grants, functions, Storage หรือ Auth setting ใด ๆ
-- ไม่ได้ใช้ exploit กับข้อมูลผู้ใช้จริง และไม่ได้ทดสอบ destructive operation
+- ไม่ได้ใช้ destructive exploit กับข้อมูลผู้ใช้จริง
+- leaked-password protection ยังต้องเปิดจาก Supabase Dashboard เมื่อ plan รองรับ
 - ยังควรทำ automated role-matrix tests ด้วย JWT แยก `anon`, buyer, seller, manager,
   market owner และ admin รวมถึง concurrent checkout/cancellation
 - หลังแก้แต่ละ finding ต้องรัน Security/Performance Advisors, contract tests และ regression

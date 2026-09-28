@@ -3,6 +3,7 @@ import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
 
 export type PublicImageBucket = "avatars" | "market-images" | "store-images";
+export type PrivateImageBucket = "seller-evidence";
 export type SelectedImage = { uri: string; base64: string; extension: "jpg" | "png" | "webp"; mimeType: string };
 
 const allowedMimeTypes: Record<string, SelectedImage["extension"]> = {
@@ -40,6 +41,28 @@ export async function uploadPublicImage(
   });
   if (error) throw error;
   return { path, publicUrl: supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl };
+}
+
+export async function uploadPrivateImage(
+  bucket: PrivateImageBucket,
+  ownerFolder: string | number,
+  image: SelectedImage,
+  prefix = "evidence",
+) {
+  const path = `${ownerFolder}/${prefix}-${Date.now()}.${image.extension}`;
+  const { error } = await supabase.storage.from(bucket).upload(path, decode(image.base64), {
+    contentType: image.mimeType,
+    upsert: false,
+  });
+  if (error) throw error;
+  return { path };
+}
+
+export async function signedPrivateImageUrl(bucket: PrivateImageBucket, path: string, expiresIn = 300) {
+  if (/^https?:\/\//i.test(path)) return path; // Legacy public evidence; new uploads store object keys only.
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 export function ownObjectPathFromPublicUrl(bucket: PublicImageBucket, publicUrl: string, ownerFolder: string) {

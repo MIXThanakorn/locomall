@@ -4,6 +4,7 @@ import * as Location from "expo-location";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { supabase } from "../lib/supabase";
+import { disableCurrentPushDevice } from "../lib/pushNotifications";
 
 export type DeviceLocation = { latitude: number; longitude: number };
 type AuthState = {
@@ -78,6 +79,8 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const signOut = useCallback(async () => {
+    // Prevent a shared device from receiving the previous account's private updates.
+    try { await disableCurrentPushDevice(); } catch { /* Sign-out must still continue offline. */ }
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw error;
     setSession(null);

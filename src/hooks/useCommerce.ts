@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import type { Tables } from "../types/database";
 
 export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number };
 
@@ -46,12 +47,20 @@ export function useSellerAllocations() {
 }
 
 export function useNotifications() {
-  const [items, setItems] = useState<any[]>([]); const [loading, setLoading] = useState(true);
-  const refresh = useCallback(async () => { const r = await supabase.from("notifications").select("*").order("created_at", { ascending: false }); setItems(r.data ?? []); setLoading(false); }, []);
+  const { session } = useAuth();
+  const userId = session?.user.id;
+  const [items, setItems] = useState<Tables<"notifications">[]>([]); const [loading, setLoading] = useState(true);
+  const refresh = useCallback(async () => {
+    if (!userId) { setItems([]); setLoading(false); return; }
+    setLoading(true);
+    const r = await supabase.from("notifications").select("*").order("created_at", { ascending: false });
+    setItems(r.data ?? []); setLoading(false);
+  }, [userId]);
   useEffect(() => {
+    if (!userId) return;
     void refresh();
-    const channel = supabase.channel("my-notifications").on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => void refresh()).subscribe();
+    const channel = supabase.channel(`my-notifications-${userId}`).on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh()).subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [refresh]);
+  }, [refresh, userId]);
   return { items, loading, refresh };
 }

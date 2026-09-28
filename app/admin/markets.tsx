@@ -7,6 +7,7 @@ import { AdminGate } from "../../src/components/AdminGate";
 import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { translateDatabaseError } from "../../src/lib/databaseError";
+import { signedPrivateImageUrl } from "../../src/lib/storage";
 import { supabase } from "../../src/lib/supabase";
 
 type QueueKind = "market" | "store" | "seller";
@@ -28,7 +29,10 @@ export default function AdminApprovals() {
     ]);
     setMarkets(marketResult.data ?? []);
     setStores(storeResult.data ?? []);
-    setSellers(sellerResult.data ?? []);
+    setSellers(await Promise.all((sellerResult.data ?? []).map(async (item: any) => ({
+      ...item,
+      evidence_url: item.product_image_url ? await signedPrivateImageUrl("seller-evidence", item.product_image_url).catch(() => null) : null,
+    }))));
     setRefreshing(false);
   }, []);
 
@@ -60,7 +64,7 @@ export default function AdminApprovals() {
         : `ตลาดชุมชน: ${item.stores?.markets?.name}\nหมายเหตุ: ${item.note || "-"}`;
     return <View key={key} style={styles.card}>
       <View style={styles.cardHeader}><View style={styles.typeIcon}><Ionicons name={kind === "market" ? "people" : kind === "store" ? "storefront" : "person-add"} size={19} color={Colors.greenPrimary} /></View><View style={styles.cardTitleWrap}><Text style={styles.name}>{title}</Text><Text style={styles.date}>{new Date(item.created_at).toLocaleString("th-TH")}</Text></View></View>
-      {kind!=="market"&&(item.image_url||item.product_image_url||item.stores?.image_url)?<Image source={{uri:item.image_url||item.product_image_url||item.stores?.image_url}} style={styles.productImage}/>:null}
+      {kind!=="market"&&(item.image_url||item.evidence_url||item.stores?.image_url)?<Image source={{uri:item.image_url||item.evidence_url||item.stores?.image_url}} style={styles.productImage}/>:null}
       <Text style={styles.detail}>{detail}</Text>
       <Text style={styles.userId}>ผู้ยื่น: {(item.owner_id ?? item.manager_id ?? item.applicant_id)?.slice(0, 8)}…</Text>
       <TextInput style={styles.note} placeholder="หมายเหตุสำหรับผู้ยื่นคำขอ (ไม่บังคับ)" value={notes[key] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [key]: value }))} />

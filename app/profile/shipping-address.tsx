@@ -101,15 +101,12 @@ export default function ShippingAddress() {
     if (!session || !province || !district || !subdistrict || !name.trim() || !phone.trim() || !addressLine.trim()) return Alert.alert("กรอกข้อมูลให้ครบ");
     const wasEditing = editingId !== null;
     setLoading(true);
-    const payload = {
-      user_id: session.user.id, recipient_name: name.trim(), phone: phone.trim(), address_line: addressLine.trim(),
-      subdistrict_code: subdistrict.code, postal_code: subdistrict.postal_code ?? "",
-      is_default: editingId ? Boolean(list.find((item) => item.address_id === editingId)?.is_default) : list.length === 0,
-    };
-    const request = editingId
-      ? supabase.from("user_addresses").update(payload).eq("address_id", editingId).eq("user_id", session.user.id)
-      : supabase.from("user_addresses").insert(payload);
-    const { error } = await request;
+    const { error } = await supabase.rpc("save_my_address", {
+      p_address_id: editingId,
+      p_recipient_name: name.trim(), p_phone: phone.trim(), p_address_line: addressLine.trim(),
+      p_subdistrict_code: subdistrict.code,
+      p_is_default: editingId ? Boolean(list.find((item) => item.address_id === editingId)?.is_default) : list.length === 0,
+    });
     setLoading(false);
     if (error) return Alert.alert("บันทึกที่อยู่ไม่สำเร็จ", translateDatabaseError(error));
     resetForm();

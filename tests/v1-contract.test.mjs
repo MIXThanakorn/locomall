@@ -230,13 +230,27 @@ test("Store and co-seller approvals show a product photo before review", () => {
   const store = read("app/store/[id].tsx");
   assert.match(store, /กรุณาแนบรูปสินค้า/);
   assert.match(store, /seller-product-/);
-  assert.match(store, /p_product_image_url: uploaded\.publicUrl/);
+  assert.match(store, /uploadPrivateImage\("seller-evidence"[\s\S]*p_product_image_url: uploaded\.path/);
   for (const path of ["app/market/manage/index.tsx", "app/admin/markets.tsx"]) {
     const source = read(path);
     assert.match(source, /product_image_url/, path);
     assert.match(source, /<Image/, path);
   }
   assert.match(read("app/market/manage/request/[id].tsx"), /detail\.image_url/);
+});
+
+test("RLS hardening makes sensitive writes RPC-only and evidence private", () => {
+  const sql = read("supabase/migrations/20260928080428_close_rls_security_findings.sql");
+  assert.match(sql, /revoke all privileges on all tables in schema public from anon, authenticated/i);
+  assert.match(sql, /drop policy if exists listing_self_update/);
+  assert.match(sql, /drop policy if exists locations_self/);
+  assert.match(sql, /drop policy if exists rooms_buyer_update/);
+  assert.match(sql, /drop policy if exists notifications_self_update/);
+  assert.match(sql, /create policy allocations_operational_read[\s\S]*private\.can_access_allocation/i);
+  assert.match(sql, /values\('seller-evidence','seller-evidence',false/i);
+  assert.match(sql, /get_market_catalog[\s\S]*get_store_catalog/);
+  assert.match(read("app/store/[id].tsx"), /get_or_create_chat_room[\s\S]*uploadPrivateImage\("seller-evidence"/);
+  assert.match(read("app/(tabs)/notification.tsx"), /mark_notification_read/);
 });
 
 test("A rejection reason is required and returned to applicants", () => {
@@ -267,7 +281,7 @@ test("Market ownership adds management without removing buyer capabilities", () 
 test("Saved shipping addresses can be loaded into the form and updated by their owner", () => {
   const screen = read("app/profile/shipping-address.tsx");
   assert.match(screen, /startEditing/);
-  assert.match(screen, /\.update\(payload\)\.eq\("address_id", editingId\)\.eq\("user_id", session\.user\.id\)/);
+  assert.match(screen, /rpc\("save_my_address"[\s\S]*p_address_id: editingId/);
   assert.match(screen, /แก้ไขที่อยู่แล้ว/);
   assert.match(screen, /scrollToEnd/);
 });
@@ -428,4 +442,29 @@ test("The official APP_LOGO asset is used for every app branding surface", () =>
     "app-icon.png",
     "favicon.png",
   ]);
+});
+
+test("Notifications request native permission, register devices securely and support category filters", () => {
+  const screen = read("app/(tabs)/notification.tsx");
+  const bootstrap = read("src/components/PushNotificationBootstrap.tsx");
+  const push = read("src/lib/pushNotifications.ts");
+  const migration = read("supabase/migrations/20260928082411_add_push_notifications_and_categories.sql");
+  const events = read("supabase/migrations/20260928083333_add_notification_event_triggers.sql");
+  const edge = read("supabase/functions/push-notification/index.ts");
+  assert.match(push, /requestPermissionsAsync/);
+  assert.match(push, /getExpoPushTokenAsync/);
+  assert.match(push, /register_my_push_device/);
+  assert.match(bootstrap, /registerForPushNotifications\(true\)/);
+  assert.match(screen, /คำสั่งซื้อ/);
+  assert.match(screen, /แสดงเฉพาะที่ยังไม่ได้อ่าน/);
+  assert.match(screen, /mark_all_notifications_read/);
+  assert.match(migration, /create table if not exists public\.user_push_devices/);
+  assert.match(migration, /revoke all on public\.user_push_devices from public, anon, authenticated/);
+  assert.match(edge, /exp\.host\/--\/api\/v2\/push\/send/);
+  assert.match(edge, /isServiceRequest/);
+  assert.match(edge, /return new Response\("Unauthorized", \{ status: 401 \}\)/);
+  assert.match(events, /notify_new_order_allocation/);
+  assert.match(events, /notify_order_status_change/);
+  assert.match(events, /notify_allocation_ready/);
+  assert.match(events, /notify_chat_recipient/);
 });

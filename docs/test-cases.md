@@ -98,6 +98,11 @@
 | LOG-05 | Buyer ยืนยัน delivery ของผู้อื่น | RPC ปฏิเสธ | Manual/E2E |
 | CHAT-01 | บุคคลที่สามอ่าน chat room | RLS ไม่คืนข้อมูล | Manual/E2E |
 | CHAT-02 | Buyer/manager ส่งข้อความ | อีกฝ่ายได้รับผ่าน Realtime | Manual/E2E |
+| NOTI-01 | Login บนเครื่องจริงครั้งแรก | ระบบขอสิทธิ์แจ้งเตือน และการปฏิเสธไม่บล็อกการใช้งาน | Device/E2E |
+| NOTI-02 | อนุญาตแจ้งเตือนบน Development/Production Build | Expo push token ถูกลงทะเบียนให้ user ปัจจุบันผ่าน RPC | Device/Integration |
+| NOTI-03 | Logout แล้วเปลี่ยนบัญชีบนเครื่องเดิม | token ของบัญชีก่อนหน้าถูก disable และไม่รับข้อมูลส่วนตัวต่อ | Device/Security |
+| NOTI-04 | เปิดหน้าการแจ้งเตือน | filter ทั้งหมด/คำสั่งซื้อ/คำขอ/แชต/ระบบ และเฉพาะยังไม่อ่านทำงานถูกต้อง | UI/E2E |
+| NOTI-05 | แตะ Push ของ Order/Market/Store/Chat | แอปเปิดหน้ารายละเอียด entity ที่เกี่ยวข้อง | Device/E2E |
 | NOTI-01 | Approval เปลี่ยนสถานะ | เจ้าของคำขอได้รับ notification | Manual/E2E |
 
 ## Release verification

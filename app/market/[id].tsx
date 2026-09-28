@@ -19,20 +19,20 @@ export default function MarketDetail() {
 
   useEffect(() => {
     (async () => {
-      const [marketResult, storeResult, locationResult] = await Promise.all([
-        supabase.from("markets").select("*").eq("market_id", Number(id)).single(),
-        supabase.from("stores").select("*,seller_listings(stock_quantity,reserved_quantity,status)").eq("market_id", Number(id)).eq("approval_status", "approved"),
+      const [marketResult, locationResult] = await Promise.all([
+        supabase.rpc("get_market_catalog", { p_market_id: Number(id) }),
         session ? supabase.from("user_locations").select("subdistrict_code").eq("user_id", session.user.id).maybeSingle() : Promise.resolve({ data: null }),
       ]);
-      setMarket(marketResult.data); setStores(storeResult.data ?? []);
-      setSameArea(Boolean(marketResult.data && locationResult.data?.subdistrict_code === marketResult.data.subdistrict_code));
+      const catalog = marketResult.data as any;
+      setMarket(catalog); setStores(catalog?.stores ?? []);
+      setSameArea(Boolean(catalog && locationResult.data?.subdistrict_code === catalog.subdistrict_code));
       setLoading(false);
     })();
   }, [id, session]);
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!market) return <View style={styles.center}><Text>ไม่พบตลาดชุมชนนี้</Text></View>;
-  const isOwner = session?.user.id === market.owner_id;
+  const isOwner = Boolean(market.is_owner);
 
   return <View style={styles.root}>
     <View style={[styles.hero, { paddingTop: insets.top + 16 }]}>
@@ -51,7 +51,7 @@ export default function MarketDetail() {
       {session && !sameArea ? <View style={styles.areaNotice}><Ionicons name="location-outline" size={18} color={Colors.goldDark} /><Text style={styles.areaText}>เปิดร้านได้เมื่อพื้นที่หลักของคุณอยู่ตำบลเดียวกับตลาดชุมชนนี้</Text></View> : null}
       {!stores.length ? <Text style={styles.empty}>ยังไม่มีร้านที่ผ่านการอนุมัติ</Text> : null}
       {stores.map((store) => {
-        const stock = (store.seller_listings ?? []).filter((item: any) => item.status === "active").reduce((sum: number, item: any) => sum + item.stock_quantity - item.reserved_quantity, 0);
+        const stock = Number(store.available_stock ?? 0);
         return <TouchableOpacity key={store.store_id} style={styles.card} onPress={() => router.push(`/store/${store.store_id}` as never)}>
           <View style={styles.icon}><Ionicons name="basket" size={27} color={Colors.greenPrimary} /></View>
           <View style={{ flex: 1 }}><Text style={styles.store}>{store.name}</Text><Text style={styles.product}>{store.product_name} · ฿{Number(store.unit_price).toLocaleString()}/{store.unit}</Text><Text style={styles.stock}>พร้อมขาย {stock} {store.unit}</Text></View>

@@ -9,6 +9,7 @@ import { PermissionGate } from "../../../src/components/PermissionGate";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
 import { useCapabilities } from "../../../src/hooks/useCapabilities";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
+import { signedPrivateImageUrl } from "../../../src/lib/storage";
 import { supabase } from "../../../src/lib/supabase";
 
 export default function ApprovalQueue() {
@@ -20,7 +21,11 @@ export default function ApprovalQueue() {
       supabase.from("stores").select("store_id,name,product_name,image_url,unit,unit_price,created_at,markets(name)").eq("approval_status", "pending").order("created_at"),
       supabase.from("store_seller_applications").select("application_id,note,product_image_url,created_at,stores(name,product_name,image_url)").eq("status", "pending").order("created_at"),
     ]);
-    setStores(storeResult.data ?? []); setSellers(sellerResult.data ?? []);
+    const sellerRows = await Promise.all((sellerResult.data ?? []).map(async (item: any) => ({
+      ...item,
+      evidence_url: item.product_image_url ? await signedPrivateImageUrl("seller-evidence", item.product_image_url).catch(() => null) : null,
+    })));
+    setStores(storeResult.data ?? []); setSellers(sellerRows);
   }, [permissions.isAdmin, permissions.isMarketOwner]);
   useEffect(() => { void load(); }, [load]);
   const reviewSeller = async (id: number, approve: boolean) => {
@@ -39,7 +44,7 @@ export default function ApprovalQueue() {
       <Text style={styles.section}>ผู้ขายร่วมร้าน</Text>
       {!sellers.length ? <Text style={styles.empty}>ไม่มีผู้ขายร่วมรอตรวจสอบ</Text> : null}
       {sellers.map((item) => <View style={styles.cardColumn} key={item.application_id}>
-        {item.product_image_url||item.stores?.image_url?<Image source={{uri:item.product_image_url||item.stores?.image_url}} style={styles.applicationImage}/>:<View style={styles.missingImage}><Ionicons name="image-outline" size={28} color={Colors.textMuted}/><Text style={styles.detail}>ผู้สมัครเดิมไม่ได้แนบรูปสินค้า</Text></View>}
+        {item.evidence_url||item.stores?.image_url?<Image source={{uri:item.evidence_url||item.stores?.image_url}} style={styles.applicationImage}/>:<View style={styles.missingImage}><Ionicons name="image-outline" size={28} color={Colors.textMuted}/><Text style={styles.detail}>ผู้สมัครเดิมไม่ได้แนบรูปสินค้า</Text></View>}
         <Text style={styles.name}>{item.stores?.name} · {item.stores?.product_name}</Text>{item.note ? <Text style={styles.detail}>ข้อความจากผู้สมัคร: {item.note}</Text> : null}
         <TextInput style={styles.note} placeholder="ความคิดเห็น/เหตุผลกรณีปฏิเสธ" value={notes[item.application_id] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [item.application_id]: value }))} multiline />
         <View style={styles.actions}><Button title="อนุมัติ" size="sm" onPress={() => reviewSeller(item.application_id, true)} /><Button title="ปฏิเสธ" size="sm" variant="outline" onPress={() => reviewSeller(item.application_id, false)} /></View>
