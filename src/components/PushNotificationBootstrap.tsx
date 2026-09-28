@@ -1,8 +1,11 @@
-import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { notificationPath, registerForPushNotifications } from "../lib/pushNotifications";
+import { canUseNativePushNotifications, configureNotificationHandler, notificationPath, registerForPushNotifications } from "../lib/pushNotifications";
+
+type NotificationResponseLike = {
+  notification: { request: { content: { data?: Record<string, unknown> } } };
+};
 
 export function PushNotificationBootstrap() {
   const { session, loading } = useAuth();
@@ -19,15 +22,28 @@ export function PushNotificationBootstrap() {
   }, [loading, session?.user.id]);
 
   useEffect(() => {
-    const open = (response: Notifications.NotificationResponse) => {
-      const data = response.notification.request.content.data as Record<string, unknown> | undefined;
+    if (!canUseNativePushNotifications()) return;
+    let cancelled = false;
+    let subscription: { remove: () => void } | undefined;
+    const open = (response: NotificationResponseLike) => {
+      const data = response.notification.request.content.data;
       router.push(notificationPath(data));
     };
-    const subscription = Notifications.addNotificationResponseReceivedListener(open);
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) open(response);
+    void (async () => {
+      const configured = await configureNotificationHandler();
+      if (!configured || cancelled) return;
+      const notifications = await import("expo-notifications");
+      if (cancelled) return;
+      subscription = notifications.addNotificationResponseReceivedListener(open);
+      const response = await notifications.getLastNotificationResponseAsync();
+      if (response && !cancelled) open(response);
+    })().catch(() => {
+      // Push is optional and must never prevent the app from opening.
     });
-    return () => subscription.remove();
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+    };
   }, [router]);
 
   return null;

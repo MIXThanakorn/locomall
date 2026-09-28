@@ -454,10 +454,14 @@ test("Notifications request native permission, register devices securely and sup
   assert.match(push, /requestPermissionsAsync/);
   assert.match(push, /getExpoPushTokenAsync/);
   assert.match(push, /register_my_push_device/);
+  assert.match(push, /Constants\.appOwnership !== "expo"/);
+  assert.doesNotMatch(push, /^import .*expo-notifications/m);
+  assert.doesNotMatch(bootstrap, /^import .*expo-notifications/m);
   assert.match(bootstrap, /registerForPushNotifications\(true\)/);
   assert.match(screen, /คำสั่งซื้อ/);
   assert.match(screen, /แสดงเฉพาะที่ยังไม่ได้อ่าน/);
   assert.match(screen, /mark_all_notifications_read/);
+  assert.doesNotMatch(screen, /Push ใช้ไม่ได้ใน Expo Go/);
   assert.match(migration, /create table if not exists public\.user_push_devices/);
   assert.match(migration, /revoke all on public\.user_push_devices from public, anon, authenticated/);
   assert.match(edge, /exp\.host\/--\/api\/v2\/push\/send/);

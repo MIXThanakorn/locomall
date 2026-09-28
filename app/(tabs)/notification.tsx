@@ -90,6 +90,7 @@ export default function NotificationScreen() {
 
   const pushGranted = pushState === "granted";
   const pushPermissionOnly = pushState === "not_configured";
+  const pushUnavailable = pushState === "unavailable";
   return <View style={styles.root}>
     <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
       <View style={styles.titleRow}>
@@ -98,9 +99,9 @@ export default function NotificationScreen() {
       </View>
     </View>
     <ScrollView contentContainerStyle={styles.content}>
-      {Platform.OS !== "web" ? <View style={[styles.pushCard, pushGranted && styles.pushCardOn]}>
+      {Platform.OS !== "web" && !pushUnavailable ? <View style={[styles.pushCard, pushGranted && styles.pushCardOn]}>
         <View style={[styles.pushIcon, pushGranted && styles.pushIconOn]}><Ionicons name={pushGranted ? "notifications" : "notifications-outline"} size={22} color={Colors.greenPrimary} /></View>
-        <View style={styles.pushCopy}><Text style={styles.pushTitle}>{pushGranted ? "แจ้งเตือนนอกแอปเปิดอยู่" : pushPermissionOnly ? "อนุญาตแล้ว — รอแอปเวอร์ชัน Build" : "รับแจ้งเตือนแม้ไม่ได้เปิดแอป"}</Text><Text style={styles.pushBody}>{pushState === "denied" ? "สิทธิ์ถูกปิดอยู่ แตะเพื่อเปิดในการตั้งค่าเครื่อง" : pushGranted ? "คุณจะไม่พลาดคำสั่งซื้อ คำขอ และข้อความสำคัญ" : pushPermissionOnly ? "Expo Go รับ Push บน Android ไม่ได้ กรุณาใช้ Development หรือ Production Build" : "อนุญาตเพื่อรับคำสั่งซื้อ คำขอ และข้อความสำคัญ"}</Text></View>
+        <View style={styles.pushCopy}><Text style={styles.pushTitle}>{pushGranted ? "แจ้งเตือนนอกแอปเปิดอยู่" : pushPermissionOnly ? "อนุญาตแล้ว — รอแอปเวอร์ชัน Build" : "รับแจ้งเตือนแม้ไม่ได้เปิดแอป"}</Text><Text style={styles.pushBody}>{pushState === "denied" ? "สิทธิ์ถูกปิดอยู่ แตะเพื่อเปิดในการตั้งค่าเครื่อง" : pushGranted ? "คุณจะไม่พลาดคำสั่งซื้อ คำขอ และข้อความสำคัญ" : pushPermissionOnly ? "เครื่องพร้อมรับ Push หลังตั้งค่าโครงการสำหรับ Development หรือ Production Build" : "อนุญาตเพื่อรับคำสั่งซื้อ คำขอ และข้อความสำคัญ"}</Text></View>
         {!pushGranted && !pushPermissionOnly ? <TouchableOpacity disabled={pushBusy} style={styles.enableButton} onPress={enablePush}><Text style={styles.enableText}>{pushBusy ? "กำลังเปิด..." : pushState === "denied" ? "ตั้งค่า" : "เปิดใช้"}</Text></TouchableOpacity> : null}
       </View> : null}
 

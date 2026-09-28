@@ -62,3 +62,7 @@ supabase/.temp/
 # Project outputs & temporary files
 outputs/
 .codex-spreadsheet/
+
+# Firebase Admin / FCM V1 private keys (never commit)
+**/*firebase-adminsdk*.json
+**/*service-account*.json

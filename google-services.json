@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "561042320440",
+    "project_id": "locomall-bcfa4",
+    "storage_bucket": "locomall-bcfa4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:561042320440:android:1d6e45ef3223624f854acd",
+        "android_client_info": {
+          "package_name": "com.locomall.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJf1Z3QE0WOjhyAVNsmGl-740Qlkg7YaM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
