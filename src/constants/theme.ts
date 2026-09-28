@@ -1,3 +1,5 @@
+import { Platform } from "react-native";
+
 export const Colors = {
   // Brand Primary & Gradients (Gold/Yellow)
   goldPrimary: "#F3BE38",
@@ -65,4 +67,23 @@ export const BorderRadius = {
   xl: 24,
   round: 9999,
   headerBottom: 32,
+};
+
+const nativeShadow = (y: number, radius: number, opacity: number, elevation: number) => ({
+  shadowColor: Colors.shadowColor,
+  shadowOffset: { width: 0, height: y },
+  shadowOpacity: opacity,
+  shadowRadius: radius,
+  elevation,
+});
+
+const responsiveShadow = (web: string, y: number, radius: number, opacity: number, elevation: number) =>
+  Platform.OS === "web" ? { boxShadow: web } : nativeShadow(y, radius, opacity, elevation);
+
+export const Shadows = {
+  subtle: responsiveShadow("0 2px 8px rgba(0, 0, 0, 0.05)", 2, 8, 0.05, 2),
+  card: responsiveShadow("0 4px 12px rgba(0, 0, 0, 0.08)", 4, 12, 0.08, 4),
+  elevated: responsiveShadow("0 4px 8px rgba(0, 0, 0, 0.15)", 4, 8, 0.15, 6),
+  toast: responsiveShadow("0 8px 12px rgba(0, 0, 0, 0.18)", 8, 12, 0.18, 8),
+  modal: responsiveShadow("0 12px 24px rgba(0, 0, 0, 0.20)", 12, 24, 0.2, 12),
 };

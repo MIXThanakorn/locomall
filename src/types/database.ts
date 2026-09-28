@@ -487,6 +487,7 @@ export type Database = {
         Row: {
           order_id: number
           order_item_id: number
+          product_image_url: string | null
           product_name: string
           quantity: number
           store_id: number
@@ -497,6 +498,7 @@ export type Database = {
         Insert: {
           order_id: number
           order_item_id?: never
+          product_image_url?: string | null
           product_name: string
           quantity: number
           store_id: number
@@ -507,6 +509,7 @@ export type Database = {
         Update: {
           order_id?: number
           order_item_id?: never
+          product_image_url?: string | null
           product_name?: string
           quantity?: number
           store_id?: number
@@ -760,6 +763,7 @@ export type Database = {
           application_id: number
           created_at: string
           note: string | null
+          product_image_url: string | null
           review_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -771,6 +775,7 @@ export type Database = {
           application_id?: never
           created_at?: string
           note?: string | null
+          product_image_url?: string | null
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -782,6 +787,7 @@ export type Database = {
           application_id?: never
           created_at?: string
           note?: string | null
+          product_image_url?: string | null
           review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1142,7 +1148,11 @@ export type Database = {
         Returns: number
       }
       apply_to_sell_in_store: {
-        Args: { p_note?: string; p_store_id: number }
+        Args: {
+          p_note?: string
+          p_product_image_url?: string
+          p_store_id: number
+        }
         Returns: number
       }
       cancel_order: {

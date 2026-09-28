@@ -6,9 +6,10 @@ import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, Touchable
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../src/components/Button";
-import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
+import { BorderRadius, Colors, Shadows, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { translateDatabaseError } from "../../src/lib/databaseError";
+import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../src/lib/storage";
 import { supabase } from "../../src/lib/supabase";
 
 export default function StoreDetail() {
@@ -22,6 +23,7 @@ export default function StoreDetail() {
   const [application, setApplication] = useState<any>();
   const [isSeller, setSeller] = useState(false);
   const [note, setNote] = useState("");
+  const [sellerImage, setSellerImage] = useState<SelectedImage | null>(null);
   const [sending, setSending] = useState(false);
   const [adding, setAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -36,7 +38,7 @@ export default function StoreDetail() {
     if (session?.user.id && currentStore) {
       const [locationResult, applicationResult, listingResult] = await Promise.all([
         supabase.from("user_locations").select("subdistrict_code").eq("user_id", session.user.id).maybeSingle(),
-        supabase.from("store_seller_applications").select("application_id,status,review_note,note").eq("store_id", Number(id)).eq("applicant_id", session.user.id).maybeSingle(),
+        supabase.from("store_seller_applications").select("application_id,status,review_note,note,product_image_url").eq("store_id", Number(id)).eq("applicant_id", session.user.id).maybeSingle(),
         supabase.from("seller_listings").select("listing_id").eq("store_id", Number(id)).eq("seller_id", session.user.id).maybeSingle(),
       ]);
       setSameArea(locationResult.data?.subdistrict_code === currentStore.markets?.subdistrict_code);
@@ -71,20 +73,36 @@ export default function StoreDetail() {
     if (error) Alert.alert("เปิดแชตไม่สำเร็จ", translateDatabaseError(error));
     else router.push(`/chat/${data.room_id}` as never);
   };
+  const chooseSellerImage = async () => {
+    try { setSellerImage(await selectSquareImage()); }
+    catch { Alert.alert("เลือกรูปไม่สำเร็จ", "รองรับเฉพาะรูป JPG, PNG และ WebP กรุณาลองใหม่อีกครั้ง"); }
+  };
   const applyToSell = async () => {
     if (!session) return router.push("/(auth)/sign-in" as never);
+    if (!sellerImage) return Alert.alert("กรุณาแนบรูปสินค้า", "ใช้รูปสินค้าจริงของคุณเพื่อให้เจ้าของตลาดตรวจสอบก่อนอนุมัติ");
     setSending(true);
-    const { error } = await supabase.rpc("apply_to_sell_in_store", { p_store_id: Number(id), p_note: note.trim() || undefined });
-    setSending(false);
-    if (error) return Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error));
-    Alert.alert("ส่งคำขอร่วมขายแล้ว", "เจ้าของตลาดชุมชนจะตรวจสอบข้อมูลของคุณ");
-    await load();
+    let uploadedPath: string | null = null;
+    try {
+      const uploaded = await uploadPublicImage("avatars", session.user.id, sellerImage, `seller-product-${id}`);
+      uploadedPath = uploaded.path;
+      const { error } = await supabase.rpc("apply_to_sell_in_store", { p_store_id: Number(id), p_note: note.trim() || undefined, p_product_image_url: uploaded.publicUrl });
+      if (error) throw error;
+      uploadedPath = null;
+      setSellerImage(null);
+      Alert.alert("ส่งคำขอร่วมขายแล้ว", "เจ้าของตลาดชุมชนจะตรวจรูปสินค้าและข้อมูลของคุณ");
+      await load();
+    } catch (error: any) {
+      if (uploadedPath) await supabase.storage.from("avatars").remove([uploadedPath]);
+      Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error));
+    }
+    finally { setSending(false); }
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!store) return <View style={styles.center}><Text>ไม่พบร้านค้า</Text></View>;
   const isManager = session?.user.id === store.manager_id;
   const cannotBuyOwn = Boolean(session && (isManager || isSeller));
+  const sellerImagePicker = <TouchableOpacity style={styles.applicationImagePicker} onPress={chooseSellerImage}>{sellerImage?<Image source={{uri:sellerImage.uri}} style={styles.applicationImage}/>:<View style={styles.applicationImageEmpty}><Ionicons name="camera-outline" size={28} color={Colors.greenPrimary}/><Text style={styles.applicationImageText}>แนบรูปสินค้าของคุณ (จำเป็น)</Text></View>}</TouchableOpacity>;
 
   return <View style={styles.root}>
     <KeyboardAwareScrollView contentContainerStyle={{ paddingBottom: 150 }}>
@@ -107,8 +125,8 @@ export default function StoreDetail() {
         {!isManager && !isSeller && session ? <View style={styles.sellerBox}>
           <Text style={styles.sellerTitle}>มีสินค้าชนิดเดียวกัน?</Text>
           {application?.status === "pending" ? <Text style={styles.pending}>คำขอร่วมขายกำลังรอเจ้าของตลาดชุมชนตรวจสอบ</Text>
-            : application?.status === "rejected" ? <><Text style={styles.rejected}>คำขอเดิมไม่ผ่าน: {application.review_note || "ไม่ระบุเหตุผล"}</Text><TextInput style={styles.note} placeholder="ข้อมูลเพิ่มเติมสำหรับสมัครใหม่" value={note} onChangeText={setNote} multiline /><Button title="ส่งคำขอใหม่" onPress={applyToSell} loading={sending} /></>
-              : sameArea ? <><TextInput style={styles.note} placeholder="แนะนำตัวหรือรายละเอียดสินค้าของคุณ" value={note} onChangeText={setNote} multiline /><Button title="ขอเป็นผู้ขายร่วม" onPress={applyToSell} loading={sending} /></>
+            : application?.status === "rejected" ? <><Text style={styles.rejected}>คำขอเดิมไม่ผ่าน: {application.review_note || "ไม่ระบุเหตุผล"}</Text>{sellerImagePicker}<TextInput style={styles.note} placeholder="ข้อมูลเพิ่มเติมสำหรับสมัครใหม่" value={note} onChangeText={setNote} multiline /><Button title="ส่งคำขอใหม่" onPress={applyToSell} loading={sending} /></>
+              : sameArea ? <>{sellerImagePicker}<TextInput style={styles.note} placeholder="แนะนำตัวหรือรายละเอียดสินค้าของคุณ" value={note} onChangeText={setNote} multiline /><Button title="ขอเป็นผู้ขายร่วม" onPress={applyToSell} loading={sending} /></>
                 : <Text style={styles.rejected}>คุณจะร่วมขายได้เมื่อพื้นที่หลักอยู่ตำบลเดียวกับตลาดชุมชนนี้</Text>}
         </View> : null}
         {isSeller ? <TouchableOpacity onPress={() => router.push("/seller/listings" as never)}><Text style={styles.chat}>แก้ไขจำนวนสินค้าที่พร้อมขาย</Text></TouchableOpacity> : null}
@@ -130,7 +148,9 @@ const styles = StyleSheet.create({
   quantityBox: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, padding: 14, marginBottom: 16, backgroundColor: Colors.cardBackground, borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.lg }, quantityTitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, quantityHint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, quantityControl: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.round, overflow: "hidden" }, quantityButton: { width: 42, height: 42, alignItems: "center", justifyContent: "center" }, quantityInput: { width: 46, height: 42, textAlign: "center", fontFamily: "Kanit_700Bold", color: Colors.textDark, paddingVertical: 0 },
   hub: { flexDirection: "row", gap: 10, padding: Spacing.md, backgroundColor: "#EAF1E9", borderRadius: BorderRadius.lg }, hubText: { flex: 1, fontFamily: "Kanit_400Regular", color: Colors.greenDark },
   sellerBox: { marginTop: 16, backgroundColor: "white", borderRadius: BorderRadius.lg, padding: 16, borderWidth: 1, borderColor: Colors.inputBorder }, sellerTitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 17 },
+  applicationImagePicker: { height: 150, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, borderRadius: 12, overflow: "hidden", marginTop: 12 },
+  applicationImage: { width: "100%", height: "100%" }, applicationImageEmpty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#F0F7F2" }, applicationImageText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary },
   note: { minHeight: 76, borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 12, padding: 12, fontFamily: "Kanit_400Regular", textAlignVertical: "top", marginVertical: 10 },
   pending: { fontFamily: "Kanit_400Regular", color: Colors.goldDark, marginTop: 6 }, rejected: { fontFamily: "Kanit_400Regular", color: Colors.danger, marginTop: 6 },
-  chat: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "center", padding: 18 }, toast: { position: "absolute", left: Spacing.lg, right: Spacing.lg, bottom: 92, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: BorderRadius.round, backgroundColor: Colors.greenPrimary, elevation: 8, shadowColor: Colors.shadowColor, shadowOpacity: 0.18, shadowRadius: 12 }, toastText: { flexShrink: 1, fontFamily: "Kanit_500Medium", color: Colors.textWhite, textAlign: "center" }, bottom: { position: "absolute", left: 0, right: 0, bottom: 0, padding: Spacing.md, backgroundColor: "white", borderTopWidth: 1, borderTopColor: Colors.inputBorder },
+  chat: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "center", padding: 18 }, toast: { position: "absolute", left: Spacing.lg, right: Spacing.lg, bottom: 92, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderRadius: BorderRadius.round, backgroundColor: Colors.greenPrimary, ...Shadows.toast }, toastText: { flexShrink: 1, fontFamily: "Kanit_500Medium", color: Colors.textWhite, textAlign: "center" }, bottom: { position: "absolute", left: 0, right: 0, bottom: 0, padding: Spacing.md, backgroundColor: "white", borderTopWidth: 1, borderTopColor: Colors.inputBorder },
 });

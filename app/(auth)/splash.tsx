@@ -1,9 +1,8 @@
-﻿import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React from "react";
+import { Image, View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { Ionicons, Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
+import { Colors, Typography, Spacing } from "../../src/constants/theme";
 import { Button } from "../../src/components/Button";
 
 export default function SplashScreen() {
@@ -13,15 +12,12 @@ export default function SplashScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.content}>
-        {/* Emblem / Logo Circle matching Figma */}
-        <View style={styles.logoCircle}>
-          <View style={styles.iconContainer}>
-            <Ionicons name="bag-handle" size={48} color={Colors.greenPrimary} />
-            <Feather name="feather" size={24} color={Colors.goldDark} style={styles.leafBadge} />
-          </View>
-          <Text style={styles.logoTitle}>LOCOMALL</Text>
-          <Text style={styles.logoSubtitle}>ตลาดออนไลน์ของชุมชน</Text>
-        </View>
+        <Image
+          source={require("../../assets/images/APP_LOGO.png")}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="โลโก้ Locomall"
+        />
 
         <Text style={styles.tagline}>
           ซื้อสินค้าชุมชนใกล้ตัว ส่งตรงจากผู้ขายในพื้นที่
@@ -68,43 +64,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: Spacing.xl,
   },
-  logoCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: Colors.cardBackground,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 4,
-    borderColor: Colors.greenPrimary,
-    shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  iconContainer: {
-    position: "relative",
-    marginBottom: Spacing.xs,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  leafBadge: {
-    position: "absolute",
-    top: -4,
-    right: -10,
-  },
-  logoTitle: {
-    fontSize: Typography.fontSizeXl,
-    fontWeight: "700",
-    color: Colors.greenDark,
-    letterSpacing: 2,
-  },
-  logoSubtitle: {
-    fontSize: Typography.fontSizeXs,
-    fontWeight: "500",
-    color: Colors.textMuted,
-    marginTop: 2,
+  logo: {
+    width: 240,
+    height: 248,
   },
   tagline: {
     fontSize: Typography.fontSizeMd,

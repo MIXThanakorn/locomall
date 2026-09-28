@@ -214,6 +214,31 @@ test("Store applications stay in the Market subdistrict and expose a review deta
   assert.match(read("app/market/manage/request/[id].tsx"), /get_store_request_detail/);
 });
 
+test("Order history keeps a product-image snapshot for buyer and seller views", () => {
+  const sql = read("supabase/migrations/20260928033114_order_and_approval_product_images.sql");
+  assert.match(sql, /alter table public\.order_items[\s\S]*add column if not exists product_image_url text/i);
+  assert.match(sql, /create trigger snapshot_order_item_image[\s\S]*before insert on public\.order_items/i);
+  assert.match(read("app/(tabs)/orders.tsx"), /product_image_url[\s\S]*<Image/);
+  assert.match(read("app/order/[id].tsx"), /product_image_url[\s\S]*stores\?\.image_url/);
+  assert.match(read("app/seller/allocations/[id].tsx"), /product_image_url[\s\S]*<Image/);
+});
+
+test("Store and co-seller approvals show a product photo before review", () => {
+  const sql = read("supabase/migrations/20260928033114_order_and_approval_product_images.sql");
+  assert.match(sql, /alter table public\.store_seller_applications[\s\S]*add column if not exists product_image_url text/i);
+  assert.match(sql, /valid product image required/);
+  const store = read("app/store/[id].tsx");
+  assert.match(store, /กรุณาแนบรูปสินค้า/);
+  assert.match(store, /seller-product-/);
+  assert.match(store, /p_product_image_url: uploaded\.publicUrl/);
+  for (const path of ["app/market/manage/index.tsx", "app/admin/markets.tsx"]) {
+    const source = read(path);
+    assert.match(source, /product_image_url/, path);
+    assert.match(source, /<Image/, path);
+  }
+  assert.match(read("app/market/manage/request/[id].tsx"), /detail\.image_url/);
+});
+
 test("A rejection reason is required and returned to applicants", () => {
   const sql = read("supabase/migrations/20260926025356_market_store_management_and_pickup.sql");
   assert.match(sql, /rejection reason required/);
@@ -253,7 +278,7 @@ test("Every route with a text input opts into keyboard avoidance", () => {
     "app/(auth)/sign-in.tsx", "app/(auth)/sign-up.tsx", "app/chat/[id].tsx", "app/market/create.tsx",
     "app/market/manage/edit.tsx", "app/market/manage/index.tsx", "app/market/manage/logistics.tsx",
     "app/market/manage/request/[id].tsx", "app/profile/change-password.tsx", "app/profile/edit-profile.tsx",
-    "app/profile/language.tsx", "app/profile/shipping-address.tsx", "app/seller/listings/index.tsx",
+    "app/(tabs)/index.tsx", "app/profile/language.tsx", "app/profile/shipping-address.tsx", "app/seller/listings/index.tsx",
     "app/seller/listings/join.tsx", "app/store/[id].tsx", "app/store/manage/edit.tsx", "app/(tabs)/nearby.tsx",
   ];
   for (const path of routes) {
@@ -295,21 +320,26 @@ test("Home separates community Markets from purchasable stores", () => {
   assert.match(home, /storeItems = items\.filter/);
   assert.match(home, /ตลาดชุมชนใกล้บ้าน/);
   assert.match(home, /ร้านค้าและสินค้าใกล้คุณ/);
+  assert.match(home, /useNearby\(normalizedQuery, "all"\)/);
+  assert.match(home, /placeholder="ค้นหาตลาด ร้านค้า หรือสินค้า"/);
+  assert.match(home, /ผลการค้นหา/);
+  assert.match(home, /ล้างคำค้นหา/);
+  assert.match(read("supabase/migrations/20260928032318_improve_discovery_product_search.sql"), /c\.product_name ilike/);
   assert.match(card, /สินค้าพร้อมขาย/);
 });
 
 test("Cart and buyer/seller order history show item, price, fulfillment, and Thai dates", () => {
   const cart = read("app/order/cart.tsx");
   const buyer = read("app/(tabs)/orders.tsx");
-  const seller = read("app/seller/allocations/index.tsx");
+  const seller = read("app/seller/allocations/[id].tsx");
   const detail = read("app/order/[id].tsx");
   assert.match(cart, /แก้ไขล่าสุด/);
   assert.match(cart, /subtotal/);
   assert.match(cart, /รวม \{totalQuantity\} ชิ้น/);
   assert.match(buyer, /วันที่สั่ง/);
   assert.match(buyer, /fulfillment_method/);
-  assert.match(buyer, /i\.unit_price/);
-  assert.match(seller, /วันที่สั่ง/);
+  assert.match(buyer, /item\?\.unit_price/);
+  assert.match(seller, /ลูกค้าสั่งเมื่อ/);
   assert.match(seller, /มูลค่าสินค้าส่วนนี้/);
   assert.match(seller, /วิธีรับสินค้า/);
   assert.match(detail, /วันที่สั่ง/);
@@ -319,7 +349,7 @@ test("Cart and buyer/seller order history show item, price, fulfillment, and Tha
 test("Sellers cannot buy their own store and must accept an allocation before preparing", () => {
   const sql = read("supabase/migrations/20260926075917_prevent_self_purchase_and_accept_orders.sql");
   const store = read("app/store/[id].tsx");
-  const seller = read("app/seller/allocations/index.tsx");
+  const seller = read("app/seller/allocations/[id].tsx");
   assert.match(sql, /cannot purchase from your own store/);
   assert.match(sql, /reject_self_purchase_cart/);
   assert.match(sql, /reject_self_purchase_order/);
@@ -330,6 +360,25 @@ test("Sellers cannot buy their own store and must accept an allocation before pr
   assert.match(seller, /mark_allocation_ready/);
 });
 
+test("Orders separate buyer and seller perspectives and keep seller actions on one detail screen", () => {
+  const orders = read("app/(tabs)/orders.tsx");
+  const detail = read("app/seller/allocations/[id].tsx");
+  const labels = read("src/lib/displayText.ts");
+  const commerce = read("src/hooks/useCommerce.ts");
+  assert.match(orders, /รายการที่ซื้อ/);
+  assert.match(orders, /รายการที่ขาย/);
+  assert.match(orders, /buyerOrderStatusLabel/);
+  assert.match(orders, /sellerAllocationStatusLabel/);
+  assert.match(labels, /delivered: "คุณได้รับสินค้าแล้ว"/);
+  assert.match(labels, /awaiting_preparation: "รอคุณรับออเดอร์"/);
+  assert.match(detail, /accept_allocation/);
+  assert.match(detail, /mark_allocation_ready/);
+  assert.match(commerce, /from\("order_allocations"\)[\s\S]*\.eq\("seller_id", userId\)/);
+  assert.match(detail, /\.eq\("seller_id", userId\)/);
+  assert.match(detail, /งานของคุณเสร็จแล้ว รอเจ้าของตลาดรับสินค้า/);
+  assert.match(read("app/seller/allocations/index.tsx"), /orders\?view=selling/);
+});
+
 test("Admin can permanently remove only cancelled erroneous orders with an audit record", () => {
   const sql = read("supabase/migrations/20260926075917_prevent_self_purchase_and_accept_orders.sql");
   const admin = read("app/admin/orders.tsx");
@@ -338,4 +387,45 @@ test("Admin can permanently remove only cancelled erroneous orders with an audit
   assert.match(sql, /'delete_cancelled_order'/);
   assert.match(admin, /ลบออเดอร์ผิดพลาด/);
   assert.match(admin, /delete_cancelled_order/);
+});
+
+test("Admin audit cards use real primary keys and web styles avoid deprecated shadow props", () => {
+  const audit = read("app/admin/audit.tsx");
+  const theme = read("src/constants/theme.ts");
+  assert.match(audit, /item\.audit_id/);
+  assert.match(audit, /item\.event_id/);
+  assert.doesNotMatch(audit, /item\.log_id/);
+  assert.match(theme, /Platform\.OS === "web"/);
+  assert.match(theme, /boxShadow/);
+  const files = [];
+  const visit = (relative) => {
+    for (const entry of readdirSync(new URL(`${relative}/`, root), { withFileTypes: true })) {
+      const child = join(relative, entry.name).replaceAll("\\", "/");
+      if (entry.isDirectory()) visit(child); else files.push(child);
+    }
+  };
+  visit("app"); visit("src/components");
+  for (const path of files) {
+    if (!/\.(ts|tsx)$/.test(path)) continue;
+    assert.doesNotMatch(read(path), /shadow(Color|Offset|Opacity|Radius)\s*:/, path);
+  }
+});
+
+test("The official APP_LOGO asset is used for every app branding surface", () => {
+  const config = JSON.parse(read("app.json")).expo;
+  const officialLogo = "./assets/images/APP_LOGO.png";
+  const splashPlugin = config.plugins.find((plugin) => Array.isArray(plugin) && plugin[0] === "expo-splash-screen");
+
+  assert.equal(config.icon, "./assets/images/app-icon.png");
+  assert.equal(config.android.adaptiveIcon.foregroundImage, "./assets/images/adaptive-icon-foreground.png");
+  assert.equal(config.web.favicon, "./assets/images/favicon.png");
+  assert.equal(splashPlugin?.[1]?.image, officialLogo);
+  assert.match(read("app/(auth)/splash.tsx"), /APP_LOGO\.png/);
+  assert.match(read("app/(tabs)/index.tsx"), /APP_LOGO\.png/);
+  assert.deepEqual(readdirSync(new URL("assets/images/", root)).sort(), [
+    "APP_LOGO.png",
+    "adaptive-icon-foreground.png",
+    "app-icon.png",
+    "favicon.png",
+  ]);
 });

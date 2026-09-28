@@ -3,8 +3,8 @@ import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert,
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
-import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
+import { makeRedirectUri } from "expo-auth-session";
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
 import { supabase } from "../../src/lib/supabase";
@@ -42,7 +42,6 @@ export default function SignInScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      const { makeRedirectUri } = require("expo-auth-session");
       const redirectUrl = makeRedirectUri({
         path: '/(auth)/sign-in'
       });
@@ -185,11 +184,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.cardBackground,
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
-    shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    ...Shadows.card,
   },
   inputLabel: {
     fontSize: Typography.fontSizeSm,

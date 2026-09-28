@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { AdminGate } from "../../src/components/AdminGate";
 import { Button } from "../../src/components/Button";
@@ -23,8 +23,8 @@ export default function AdminApprovals() {
     setRefreshing(true);
     const [marketResult, storeResult, sellerResult] = await Promise.all([
       supabase.from("markets").select("market_id,name,description,hub_address,owner_id,created_at").eq("approval_status", "pending").order("created_at"),
-      supabase.from("stores").select("store_id,name,product_name,unit,unit_price,manager_id,created_at,markets(name,owner_id)").eq("approval_status", "pending").order("created_at"),
-      supabase.from("store_seller_applications").select("application_id,applicant_id,note,created_at,stores(name,product_name,markets(name,owner_id))").eq("status", "pending").order("created_at"),
+      supabase.from("stores").select("store_id,name,product_name,image_url,unit,unit_price,manager_id,created_at,markets(name,owner_id)").eq("approval_status", "pending").order("created_at"),
+      supabase.from("store_seller_applications").select("application_id,applicant_id,note,product_image_url,created_at,stores(name,product_name,image_url,markets(name,owner_id))").eq("status", "pending").order("created_at"),
     ]);
     setMarkets(marketResult.data ?? []);
     setStores(storeResult.data ?? []);
@@ -60,6 +60,7 @@ export default function AdminApprovals() {
         : `ตลาดชุมชน: ${item.stores?.markets?.name}\nหมายเหตุ: ${item.note || "-"}`;
     return <View key={key} style={styles.card}>
       <View style={styles.cardHeader}><View style={styles.typeIcon}><Ionicons name={kind === "market" ? "people" : kind === "store" ? "storefront" : "person-add"} size={19} color={Colors.greenPrimary} /></View><View style={styles.cardTitleWrap}><Text style={styles.name}>{title}</Text><Text style={styles.date}>{new Date(item.created_at).toLocaleString("th-TH")}</Text></View></View>
+      {kind!=="market"&&(item.image_url||item.product_image_url||item.stores?.image_url)?<Image source={{uri:item.image_url||item.product_image_url||item.stores?.image_url}} style={styles.productImage}/>:null}
       <Text style={styles.detail}>{detail}</Text>
       <Text style={styles.userId}>ผู้ยื่น: {(item.owner_id ?? item.manager_id ?? item.applicant_id)?.slice(0, 8)}…</Text>
       <TextInput style={styles.note} placeholder="หมายเหตุสำหรับผู้ยื่นคำขอ (ไม่บังคับ)" value={notes[key] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [key]: value }))} />
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 54, paddingBottom: 110 },
   eyebrow: { fontFamily: "Kanit_500Medium", color: Colors.goldDark, fontSize: 12, letterSpacing: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, lineHeight: 20 },
   sectionBlock: { marginTop: 24 }, section: { fontFamily: "Kanit_700Bold", fontSize: 19, color: Colors.textDark }, count: { color: Colors.goldDark }, sectionSub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 },
-  card: { backgroundColor: Colors.cardBackground, padding: 16, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.inputBorder, marginTop: 10 }, cardHeader: { flexDirection: "row", gap: 10, alignItems: "center" }, typeIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#E8F2EC", alignItems: "center", justifyContent: "center" }, cardTitleWrap: { flex: 1 },
+  card: { backgroundColor: Colors.cardBackground, padding: 16, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.inputBorder, marginTop: 10 }, cardHeader: { flexDirection: "row", gap: 10, alignItems: "center" }, typeIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#E8F2EC", alignItems: "center", justifyContent: "center" }, cardTitleWrap: { flex: 1 }, productImage: { width: "100%", height: 170, borderRadius: 12, backgroundColor: "#EAF1E9", marginTop: 12 },
   name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, date: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 11 }, detail: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, marginTop: 10, lineHeight: 20 }, userId: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 11, marginTop: 5 },
   note: { backgroundColor: Colors.inputBackground, borderRadius: BorderRadius.md, padding: 11, marginTop: 12, fontFamily: "Kanit_400Regular" }, actions: { flexDirection: "row", gap: 8, marginTop: 10 }, approve: { flex: 1, backgroundColor: Colors.greenPrimary }, reject: { flex: 1, borderColor: Colors.danger }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, backgroundColor: Colors.cardBackground, borderRadius: BorderRadius.md, padding: 16, marginTop: 9, textAlign: "center" },
 });

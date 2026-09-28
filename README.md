@@ -80,7 +80,7 @@ sequenceDiagram
     RPC->>DB: snapshot ราคาและ capacity-aware allocation
     RPC->>DB: reserve stock + create order/items/allocations
     DB-->>App: order_id
-    Seller->>DB: preparing → ready_for_pickup
+    Seller->>DB: รับงาน → preparing → ready_for_pickup
     Owner->>DB: collected → at_hub
     Owner->>DB: consolidate_order
     Owner->>DB: ship_order + tracking number
@@ -150,9 +150,9 @@ Business IDs ใช้ `bigint identity`; user IDs ใช้ UUID จาก `aut
 - Management: `update_market`, `update_store`
 - Catalog media: `set_market_image`, `set_store_image`
 - Stock/cart: `update_my_listing_stock`, `increment_cart_item`, `upsert_cart_item`, `remove_cart_item`
-- Order: `create_cod_order`, `cancel_order`, `confirm_delivery`
+- Order: `create_cod_order`, `cancel_order`, `confirm_delivery`, `delete_cancelled_order`
 - Pickup: `get_pickup_eligibility`
-- Logistics: `mark_allocation_ready`, `record_allocation_collected`, `record_allocation_at_hub`, `consolidate_order`, `ship_order`
+- Logistics: `accept_allocation`, `mark_allocation_ready`, `record_allocation_collected`, `record_allocation_at_hub`, `consolidate_order`, `ship_order`
 
 Helper functions อยู่ใน private schema และไม่เปิดผ่าน Data API.
 
@@ -172,9 +172,14 @@ stateDiagram-v2
     consolidated --> cancelled
 ```
 
-Allocation ใช้ `preparing → ready_for_pickup → collected → at_hub` โดยทุก transition
-ตรวจ actor และเขียน `allocation_status_events`. หลังเริ่มส่ง การยกเลิกต้องใช้ Admin
-override และถูกบันทึก audit log.
+Allocation ใช้ `awaiting_preparation → preparing → ready_for_pickup → collected → at_hub`
+โดยผู้ขายต้องกดรับงานก่อนเริ่มเตรียมสินค้า ทุก transition ตรวจ actor และเขียน
+`allocation_status_events`. หลังเริ่มส่ง การยกเลิกต้องใช้ Admin override และถูกบันทึก
+audit log. Admin ลบถาวรได้เฉพาะ order ที่ยกเลิกแล้วและบันทึกเหตุผลไว้ใน audit log.
+
+หน้า “คำสั่งซื้อ” แยกมุมมอง `รายการที่ซื้อ` และ `รายการที่ขาย` สำหรับบัญชีที่มีทั้งสอง
+บทบาท สถานะและข้อความ action จะแปลตามบริบทของผู้ซื้อ/ผู้ขาย และการรับงานกับการส่งของ
+ไปจุดรวมทำได้จบในหน้ารายละเอียดงานของผู้ขายหน้าเดียว.
 
 คำสั่งซื้อแบบนัดรับใช้เส้นทางย่อ
 `awaiting_preparation → preparing → at_hub → delivered` โดยเลือกได้เมื่อผู้ซื้ออยู่
@@ -188,6 +193,11 @@ override และถูกบันทึก audit log.
 - หน้าผู้ขาย หน้าจัดการตลาด และหน้าสั่งซื้อมีคำแนะนำเฉพาะหน้าที่พับเก็บได้
 - UI ใช้คำภาษาไทยแทนรหัสสถานะและคำเทคนิคจากฐานข้อมูล
 - ขนาดปุ่มหลักยังใช้ design system เดิม ไม่ได้เพิ่มปุ่มขนาดใหญ่เป็นพิเศษ
+- ช่องค้นหาบนหน้าแรกค้นหา Market, ร้าน และชื่อสินค้าจริง พร้อมแยกผลลัพธ์เป็นหมวด
+- ตะกร้า ประวัติ และหน้ารายละเอียดคำสั่งซื้อแสดงรูปสินค้า จำนวน ราคาต่อหน่วย ยอดรวม
+  วันที่สั่ง วิธีรับสินค้า และสถานะตามบทบาท
+- ผู้ตรวจสอบคำขอเปิดร้าน/สมัครผู้ขายเห็นรูปสินค้าก่อนอนุมัติ โดยคำขอผู้ขายต้องแนบรูป
+- Branding, app icon และ splash screen ใช้ `assets/images/APP_LOGO.png` เป็นแหล่งหลัก
 
 ## Nearby discovery
 
@@ -210,9 +220,13 @@ override และถูกบันทึก audit log.
 - Storage จำกัด JPG/PNG/WebP ขนาดไม่เกิน 5 MB
 - Storage paths: `{user_id}/...`, `{market_id}/...`, `{store_id}/...`
 - Approval/Admin actions มี audit trail และตรวจสิทธิ์จาก `platform_roles` ที่ผู้ใช้แก้เองไม่ได้
-- ผลตรวจ Security Advisor ล่าสุดที่บันทึกไว้เมื่อ 2026-09-21 ไม่มี Critical/High;
-  ต้องตรวจใหม่หลัง migration ล่าสุด โดยรายละเอียดและ expected warnings อยู่ใน
-  [`docs/security-advisor.md`](docs/security-advisor.md)
+- ตรวจ live schema แบบ read-only ล่าสุดเมื่อ 2026-09-28: RLS เปิดครบทุก public table
+  แต่ manual audit พบ policy/grant ที่ต้องปรับก่อน production โดยยังไม่ได้แก้ตามขอบเขตงานนี้
+- รายการช่องโหว่ RLS พร้อมระดับความเสี่ยงและแนวทางแก้อยู่ที่
+  [`docs/rls-security-audit-2026-09-28.md`](docs/rls-security-audit-2026-09-28.md)
+- Supabase Security Advisor ไม่มี Critical/High แต่มี warnings เรื่อง authenticated users
+  เรียก `SECURITY DEFINER` RPC ได้ 24 รายการ และ leaked-password protection ยังปิดอยู่;
+  รายละเอียด advisor เดิมอยู่ใน [`docs/security-advisor.md`](docs/security-advisor.md)
 
 ปิด email confirmation และไม่บังคับ MFA สำหรับ Admin ตามขอบเขต V1 โดยยังใช้รหัสผ่านขั้นต่ำ
 10 ตัวแบบตัวพิมพ์เล็ก/ใหญ่+ตัวเลข+สัญลักษณ์ ส่วน CAPTCHA กับ
@@ -306,6 +320,9 @@ npm audit --omit=dev --audit-level=high
 The complete V1 matrix is in [`docs/test-cases.md`](docs/test-cases.md). Before a
 release, run the E2E scenario with separate Admin, Market owner, Store manager,
 three Sellers and Buyer accounts on Android, iOS and web.
+
+Contract/unit suite ปัจจุบันมี 42 tests. การผ่านชุดนี้ไม่แทน penetration test,
+concurrent database test หรือการทดสอบ role boundary กับ live Supabase.
 
 ## Release checklist
 

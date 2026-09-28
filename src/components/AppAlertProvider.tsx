@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   AlertButton,
@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { BorderRadius, Colors, Spacing, Typography } from "../constants/theme";
+import { BorderRadius, Colors, Shadows, Spacing, Typography } from "../constants/theme";
 
 type AlertState = {
   title: string;
@@ -22,9 +22,8 @@ type AlertState = {
 
 export function AppAlertProvider({ children }: React.PropsWithChildren) {
   const [alertState, setAlertState] = useState<AlertState | null>(null);
-  const nativeAlert = useRef(Alert.alert);
-
   useEffect(() => {
+    const nativeAlert = Alert.alert;
     Alert.alert = (title, message, buttons, options) => {
       setAlertState({
         title,
@@ -34,7 +33,7 @@ export function AppAlertProvider({ children }: React.PropsWithChildren) {
       });
     };
     return () => {
-      Alert.alert = nativeAlert.current;
+      Alert.alert = nativeAlert;
     };
   }, []);
 
@@ -117,11 +116,7 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     borderRadius: BorderRadius.xl,
     backgroundColor: Colors.cardBackground,
-    shadowColor: Colors.shadowColor,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 12,
+    ...Shadows.modal,
   },
   icon: {
     width: 56,

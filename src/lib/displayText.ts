@@ -15,12 +15,32 @@ const orderLabels: Record<string, string> = {
   cancelled: "ยกเลิกคำสั่งซื้อแล้ว",
 };
 
+const buyerOrderLabels: Record<string, string> = {
+  awaiting_preparation: "รอผู้ขายรับคำสั่งซื้อ",
+  preparing: "ผู้ขายกำลังเตรียมสินค้าให้คุณ",
+  at_hub: "สินค้าของคุณถึงจุดรวมแล้ว",
+  consolidated: "รวมสินค้าเป็นพัสดุของคุณแล้ว",
+  shipped: "สินค้ากำลังส่งมาหาคุณ",
+  delivered: "คุณได้รับสินค้าแล้ว",
+  cancelled: "คำสั่งซื้อของคุณถูกยกเลิก",
+};
+
 const allocationLabels: Record<string, string> = {
+  awaiting_preparation: "รอผู้ขายรับออเดอร์",
   preparing: "กำลังเตรียมสินค้า",
   ready_for_pickup: "พร้อมให้เจ้าของตลาดมารับ",
   collected: "เจ้าของตลาดรับสินค้าแล้ว",
   at_hub: "สินค้าถึงจุดรวมแล้ว",
   cancelled: "ยกเลิกรายการแล้ว",
+};
+
+const sellerAllocationLabels: Record<string, string> = {
+  awaiting_preparation: "รอคุณรับออเดอร์",
+  preparing: "คุณกำลังเตรียมสินค้า",
+  ready_for_pickup: "สินค้าพร้อมส่งให้เจ้าของตลาด",
+  collected: "เจ้าของตลาดรับสินค้าจากคุณแล้ว",
+  at_hub: "สินค้าของคุณถึงจุดรวมแล้ว",
+  cancelled: "งานขายรายการนี้ถูกยกเลิก",
 };
 
 const auditActionLabels: Record<string, string> = {
@@ -46,6 +66,8 @@ const auditEntityLabels: Record<string, string> = {
 
 export const approvalStatusLabel = (status?: string | null) => approvalLabels[status ?? ""] ?? "ไม่ทราบสถานะ";
 export const orderStatusLabel = (status?: string | null) => orderLabels[status ?? ""] ?? "กำลังตรวจสอบสถานะ";
+export const buyerOrderStatusLabel = (status?: string | null) => buyerOrderLabels[status ?? ""] ?? "กำลังตรวจสอบสถานะ";
 export const allocationStatusLabel = (status?: string | null) => allocationLabels[status ?? ""] ?? "กำลังตรวจสอบสถานะ";
+export const sellerAllocationStatusLabel = (status?: string | null) => sellerAllocationLabels[status ?? ""] ?? "กำลังตรวจสอบสถานะ";
 export const auditActionLabel = (action?: string | null) => auditActionLabels[action ?? ""] ?? "การดำเนินการในระบบ";
 export const auditEntityLabel = (entity?: string | null) => auditEntityLabels[entity ?? ""] ?? "ข้อมูลในระบบ";

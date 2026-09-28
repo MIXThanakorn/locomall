@@ -24,11 +24,25 @@ export function useOrders() {
   const [orders, setOrders] = useState<any[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
   const refresh = useCallback(async () => {
     setLoading(true);
-    const result = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name))").order("created_at", { ascending: false });
+    const result = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name,image_url))").order("created_at", { ascending: false });
     setOrders(result.data ?? []); setError(result.error?.message ?? null); setLoading(false);
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);
   return { orders, loading, error, refresh };
+}
+
+export function useSellerAllocations() {
+  const { session } = useAuth();
+  const userId = session?.user.id;
+  const [allocations, setAllocations] = useState<any[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  const refresh = useCallback(async () => {
+    if (!userId) { setAllocations([]); setLoading(false); return; }
+    setLoading(true);
+    const result = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("seller_id", userId).order("created_at", { ascending: false });
+    setAllocations(result.data ?? []); setError(result.error?.message ?? null); setLoading(false);
+  }, [userId]);
+  useEffect(() => { void refresh(); }, [refresh]);
+  return { allocations, loading, error, refresh };
 }
 
 export function useNotifications() {
