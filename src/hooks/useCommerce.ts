@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -17,7 +18,10 @@ export function useNearby(query = "", kind = "all") {
     const { data, error: requestError } = await supabase.rpc("discover_nearby", { p_query: query || undefined, p_kind: kind, p_limit: 40, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude });
     setItems((data ?? []) as NearbyResult[]); setError(requestError?.message ?? null); setLoading(false);
   }, [query, kind, deviceLocation, deviceLocationReady]);
-  useEffect(() => { const timer = setTimeout(() => void refresh(), 250); return () => clearTimeout(timer); }, [refresh]);
+  useFocusEffect(useCallback(() => {
+    const timer = setTimeout(() => void refresh(), 250);
+    return () => clearTimeout(timer);
+  }, [refresh]));
   return { items, loading, error, refresh };
 }
 

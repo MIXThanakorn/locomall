@@ -1,6 +1,8 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/preserve-manual-memoization */
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
+/* eslint-disable react-hooks/preserve-manual-memoization */
+import { useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { AppTextInput } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { Button } from "../../../src/components/Button";
 import { PermissionGate } from "../../../src/components/PermissionGate";
@@ -26,7 +28,7 @@ export default function Stock() {
     setList(data ?? []);
   }, [session?.user.id]);
 
-  useEffect(() => { void load(); }, [load]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   const save = async (listing: any) => {
     const quantity = Number(listing.draft ?? listing.stock_quantity);
@@ -39,24 +41,26 @@ export default function Stock() {
       p_status: listing.status,
     });
     if (error) Alert.alert("บันทึกจำนวนสินค้าไม่สำเร็จ", translateDatabaseError(error));
-    else { Alert.alert("บันทึกจำนวนสินค้าที่พร้อมขายแล้ว"); await load(); }
+    else { Alert.alert("บันทึกจำนวนสินค้าคงเหลือแล้ว"); await load(); }
   };
 
   return <PermissionGate allow={permissions.isSeller || permissions.isStoreManager} loading={permissions.loading}>
     <KeyboardAwareScrollView contentContainerStyle={styles.root}>
-      <Text style={styles.title}>จำนวนสินค้าที่พร้อมขาย</Text>
-      <Text style={styles.sub}>กรอกจำนวนสินค้าของคุณที่พร้อมให้ลูกค้าสั่งซื้อ</Text>
+      <Text style={styles.title}>จัดการสต็อกสินค้า</Text>
+      <Text style={styles.sub}>กรอกจำนวนสินค้าที่มีอยู่จริงทั้งหมด รวมชิ้นที่ลูกค้าสั่งแล้ว ระบบจะกันสินค้าไว้ทันทีเมื่อมีคำสั่งซื้อ และหักจากยอดคงเหลือเมื่อผู้ซื้อยืนยันรับสินค้า</Text>
       {!list.length ? <View style={styles.empty}><Text style={styles.emptyText}>ยังไม่มีรายการขายที่ผ่านการอนุมัติ</Text></View> : null}
       {list.map((listing, index) => <View style={styles.card} key={listing.listing_id}>
         <Text style={styles.name}>{listing.stores?.product_name} · {listing.stores?.name}</Text>
-        <Text style={styles.reserved}>มีลูกค้าสั่งแล้ว {listing.reserved_quantity} {listing.stores?.unit}</Text>
-        <TextInput
+        <Text style={styles.reserved}>คงเหลือทั้งหมด {listing.stock_quantity} {listing.stores?.unit} · จองแล้ว {listing.reserved_quantity} {listing.stores?.unit}</Text>
+        <Text style={styles.available}>พร้อมให้สั่ง {listing.status === "active" ? Math.max(0, listing.stock_quantity - listing.reserved_quantity) : 0} {listing.stores?.unit}{listing.status !== "active" ? " (หยุดขายชั่วคราว)" : ""}</Text>
+        <Text style={styles.inputLabel}>แก้ไขจำนวนคงเหลือทั้งหมด (รวมที่จองแล้ว)</Text>
+        <AppTextInput
           style={styles.input}
           keyboardType="number-pad"
           value={String(listing.draft ?? listing.stock_quantity)}
           onChangeText={(value) => setList((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, draft: value } : item))}
         />
-        <Button title="บันทึกจำนวนสินค้า" size="sm" onPress={() => save(listing)} />
+        <Button title="บันทึกจำนวนคงเหลือ" size="sm" onPress={() => save(listing)} />
       </View>)}
     </KeyboardAwareScrollView>
   </PermissionGate>;
@@ -69,6 +73,8 @@ const styles = StyleSheet.create({
   card: { padding: 16, backgroundColor: "white", borderRadius: 16, marginTop: 12 },
   name: { fontFamily: "Kanit_700Bold", color: Colors.textDark },
   reserved: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },
+  available: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, marginTop: 3 },
+  inputLabel: { fontFamily: "Kanit_500Medium", color: Colors.textDark, marginTop: 10 },
   input: { backgroundColor: Colors.inputBackground, padding: 10, marginVertical: 10, fontFamily: "Kanit_400Regular", borderRadius: 10 },
   empty: { backgroundColor: "white", padding: 18, borderRadius: 16, marginTop: 16 },
   emptyText: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, textAlign: "center" },

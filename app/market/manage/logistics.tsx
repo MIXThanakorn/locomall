@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, StyleSheet, Text, View } from "react-native";
+import { AppTextInput } from "../../../src/components/AppTextInput";
 import { Button } from "../../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { PermissionGate } from "../../../src/components/PermissionGate";
@@ -29,7 +30,7 @@ export default function Logistics() {
         {order.order_items.flatMap((item: any) => item.order_allocations.map((allocation: any) => <View key={allocation.allocation_id} style={styles.alloc}><Text style={styles.item}>{item.product_name} × {allocation.quantity} · {allocationStatusLabel(allocation.status)}</Text>{allocation.status === "ready_for_pickup" ? <Button title="รับสินค้าจากผู้ขายแล้ว" size="sm" onPress={() => rpc("record_allocation_collected", { p_allocation_id: allocation.allocation_id })} /> : null}{allocation.status === "collected" ? <Button title="นำสินค้าถึงจุดรวมแล้ว" size="sm" onPress={() => rpc("record_allocation_at_hub", { p_allocation_id: allocation.allocation_id })} /> : null}</View>))}
         {order.status === "at_hub" && order.fulfillment_method === "pickup" ? <View style={styles.ready}><Text style={styles.readyText}>สินค้าครบแล้ว พร้อมให้ลูกค้ามารับและยืนยันด้วยตนเอง</Text></View> : null}
         {order.status === "at_hub" && order.fulfillment_method !== "pickup" ? <Button title="รวมเป็นพัสดุเดียว" onPress={() => rpc("consolidate_order", { p_order_id: order.order_id })} /> : null}
-        {order.status === "consolidated" ? <><TextInput style={styles.input} placeholder="เลขติดตามพัสดุ" value={tracking[order.order_id] ?? ""} onChangeText={(value) => setTracking((current) => ({ ...current, [order.order_id]: value }))} /><Button title="บันทึกการจัดส่ง" onPress={() => rpc("ship_order", { p_order_id: order.order_id, p_tracking_number: tracking[order.order_id] ?? "", p_courier_name: "Locomall Logistics" })} /></> : null}
+        {order.status === "consolidated" ? <><AppTextInput style={styles.input} placeholder="เลขติดตามพัสดุ" value={tracking[order.order_id] ?? ""} onChangeText={(value) => setTracking((current) => ({ ...current, [order.order_id]: value }))} /><Button title="บันทึกการจัดส่ง" onPress={() => rpc("ship_order", { p_order_id: order.order_id, p_tracking_number: tracking[order.order_id] ?? "", p_courier_name: "Locomall Logistics" })} /></> : null}
       </View>)}
     </KeyboardAwareScrollView>
   </PermissionGate>;

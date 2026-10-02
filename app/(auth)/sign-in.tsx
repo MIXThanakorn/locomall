@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -89,7 +90,7 @@ export default function SignInScreen() {
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>อีเมล</Text>
-          <TextInput
+          <AppTextInput
             style={styles.input}
             value={email}
             onChangeText={setEmail}
@@ -100,7 +101,7 @@ export default function SignInScreen() {
 
           <Text style={styles.inputLabel}>รหัสผ่าน</Text>
           <View style={styles.passwordContainer}>
-            <TextInput
+            <AppTextInput
               style={styles.passwordInput}
               value={password}
               onChangeText={setPassword}

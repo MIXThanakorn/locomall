@@ -1,4 +1,5 @@
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -63,9 +64,9 @@ export default function CreateMarket() {
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปตลาดชุมชน</Text>}
     </TouchableOpacity>
-    <TextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} />
-    <TextInput style={[styles.input, styles.multiline]} multiline placeholder="เรื่องราวและรายละเอียดชุมชน" value={description} onChangeText={setDescription} />
-    <TextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} />
+    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} />
+    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="เรื่องราวและรายละเอียดชุมชน" value={description} onChangeText={setDescription} />
+    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} />
     <Button title="ส่งคำขอให้ผู้ดูแลระบบตรวจสอบ" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary }} />
   </KeyboardAwareScrollView>;
 }

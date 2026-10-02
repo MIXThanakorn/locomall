@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppTextInput } from "./AppTextInput";
 import { BorderRadius, Colors, Spacing } from "../constants/theme";
 import { KeyboardAwareView } from "./KeyboardAware";
 
@@ -53,7 +54,7 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
           </View>
           <View style={styles.searchBox}>
             <Ionicons name="search" size={18} color={Colors.textMuted} />
-            <TextInput value={query} onChangeText={setQuery} placeholder={searchPlaceholder ?? `ค้นหา${label ?? "รายการ"}`} style={styles.searchInput} autoFocus />
+            <AppTextInput value={query} onChangeText={setQuery} placeholder={searchPlaceholder ?? `ค้นหา${label ?? "รายการ"}`} style={styles.searchInput} autoFocus />
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" style={styles.optionList}>
             {filtered.map((option) => <TouchableOpacity

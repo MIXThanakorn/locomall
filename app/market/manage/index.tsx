@@ -2,7 +2,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppTextInput } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { Button } from "../../../src/components/Button";
 import { PermissionGate } from "../../../src/components/PermissionGate";
@@ -46,7 +47,7 @@ export default function ApprovalQueue() {
       {sellers.map((item) => <View style={styles.cardColumn} key={item.application_id}>
         {item.evidence_url||item.stores?.image_url?<Image source={{uri:item.evidence_url||item.stores?.image_url}} style={styles.applicationImage}/>:<View style={styles.missingImage}><Ionicons name="image-outline" size={28} color={Colors.textMuted}/><Text style={styles.detail}>ผู้สมัครเดิมไม่ได้แนบรูปสินค้า</Text></View>}
         <Text style={styles.name}>{item.stores?.name} · {item.stores?.product_name}</Text>{item.note ? <Text style={styles.detail}>ข้อความจากผู้สมัคร: {item.note}</Text> : null}
-        <TextInput style={styles.note} placeholder="ความคิดเห็น/เหตุผลกรณีปฏิเสธ" value={notes[item.application_id] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [item.application_id]: value }))} multiline />
+        <AppTextInput style={styles.note} placeholder="ความคิดเห็น/เหตุผลกรณีปฏิเสธ" value={notes[item.application_id] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [item.application_id]: value }))} multiline />
         <View style={styles.actions}><Button title="อนุมัติ" size="sm" onPress={() => reviewSeller(item.application_id, true)} /><Button title="ปฏิเสธ" size="sm" variant="outline" onPress={() => reviewSeller(item.application_id, false)} /></View>
       </View>)}
     </KeyboardAwareScrollView>

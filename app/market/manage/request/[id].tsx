@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, View } from "react-native";
+import { AppTextInput } from "../../../../src/components/AppTextInput";
 import { Button } from "../../../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../../../src/constants/theme";
@@ -23,7 +24,7 @@ export default function StoreRequestDetail() {
     <Text style={styles.title}>รายละเอียดคำขอเปิดร้าน</Text>{detail.image_url ? <Image source={{ uri: detail.image_url }} style={styles.image} /> : null}
     <View style={styles.card}><Text style={styles.heading}>{detail.store_name}</Text><Row label="ตลาดชุมชน" value={detail.market_name} /><Row label="สินค้าที่ขาย" value={detail.product_name} /><Row label="ราคาขายกลาง" value={`฿${Number(detail.unit_price).toLocaleString()} / ${detail.unit}`} /><Row label="รายละเอียด" value={detail.description || "-"} /></View>
     <View style={styles.card}><Text style={styles.heading}>ข้อมูลผู้สมัคร</Text><Row label="ชื่อ" value={detail.applicant_name} /><Row label="ชื่อผู้ใช้" value={detail.applicant_username || "-"} /><Row label="เบอร์โทร" value={detail.applicant_phone || "-"} /><Row label="พื้นที่หลัก" value={`${detail.subdistrict_name ?? ""} ${detail.district_name ?? ""} ${detail.province_name ?? ""}`.trim()} /></View>
-    <Text style={styles.label}>ความคิดเห็นถึงผู้สมัคร</Text><TextInput style={styles.note} placeholder="จำเป็นต้องกรอกเมื่อปฏิเสธคำขอ" value={note} onChangeText={setNote} multiline />
+    <Text style={styles.label}>ความคิดเห็นถึงผู้สมัคร</Text><AppTextInput style={styles.note} placeholder="จำเป็นต้องกรอกเมื่อปฏิเสธคำขอ" value={note} onChangeText={setNote} multiline />
     <View style={styles.actions}><Button title="อนุมัติ" onPress={() => review(true)} loading={saving} /><Button title="ปฏิเสธพร้อมเหตุผล" variant="outline" onPress={() => review(false)} disabled={saving} /></View>
   </KeyboardAwareScrollView>;
 }

@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { AppTextInput } from "../../../src/components/AppTextInput";
 import { Button } from "../../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
@@ -32,9 +33,9 @@ export default function EditMarket() {
     <TouchableOpacity style={styles.imageBox} onPress={async () => { try { setImage(await selectSquareImage()); } catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); } }}>
       {image?.uri || market?.image_url ? <Image source={{ uri: image?.uri ?? market.image_url }} style={styles.image} /> : <Text style={styles.imageText}>+ เปลี่ยนรูปตลาดชุมชน</Text>}
     </TouchableOpacity>
-    <TextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} />
-    <TextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline />
-    <TextInput style={[styles.input, styles.multiline]} placeholder="ที่อยู่จุดรวมสินค้า" value={hubAddress} onChangeText={setHubAddress} multiline />
+    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="ที่อยู่จุดรวมสินค้า" value={hubAddress} onChangeText={setHubAddress} multiline />
     <Button title="บันทึกการแก้ไข" onPress={save} loading={saving} style={styles.button} />
   </KeyboardAwareScrollView>;
 }

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Image, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, RefreshControl, StyleSheet, Text, View } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { AdminGate } from "../../src/components/AdminGate";
 import { Button } from "../../src/components/Button";
@@ -67,7 +68,7 @@ export default function AdminApprovals() {
       {kind!=="market"&&(item.image_url||item.evidence_url||item.stores?.image_url)?<Image source={{uri:item.image_url||item.evidence_url||item.stores?.image_url}} style={styles.productImage}/>:null}
       <Text style={styles.detail}>{detail}</Text>
       <Text style={styles.userId}>ผู้ยื่น: {(item.owner_id ?? item.manager_id ?? item.applicant_id)?.slice(0, 8)}…</Text>
-      <TextInput style={styles.note} placeholder="หมายเหตุสำหรับผู้ยื่นคำขอ (ไม่บังคับ)" value={notes[key] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [key]: value }))} />
+      <AppTextInput style={styles.note} placeholder="หมายเหตุสำหรับผู้ยื่นคำขอ (ไม่บังคับ)" value={notes[key] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [key]: value }))} />
       <View style={styles.actions}><Button title="อนุมัติ" size="sm" loading={working === key} onPress={() => review(kind, id, true)} style={styles.approve} /><Button title="ปฏิเสธ" variant="outline" size="sm" disabled={working === key} onPress={() => review(kind, id, false)} style={styles.reject} /></View>
     </View>;
   };

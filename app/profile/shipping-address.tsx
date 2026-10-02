@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { Button } from "../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { SearchableDropdown } from "../../src/components/SearchableDropdown";
@@ -7,6 +8,7 @@ import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
+import { mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValidation";
 
 type Area = { code: string; name_th: string; postal_code?: string | null };
 
@@ -99,6 +101,8 @@ export default function ShippingAddress() {
 
   const save = async () => {
     if (!session || !province || !district || !subdistrict || !name.trim() || !phone.trim() || !addressLine.trim()) return Alert.alert("กรอกข้อมูลให้ครบ");
+    const phoneError = mobilePhoneError(phone);
+    if (phoneError) return Alert.alert("เบอร์มือถือไม่ถูกต้อง", phoneError);
     const wasEditing = editingId !== null;
     setLoading(true);
     const { error } = await supabase.rpc("save_my_address", {
@@ -125,9 +129,9 @@ export default function ShippingAddress() {
     })}
     <Text style={styles.section}>{editingId ? "แก้ไขที่อยู่" : "เพิ่มที่อยู่"}</Text>
     <Text style={styles.hint}>จังหวัด อำเภอ และตำบลตั้งต้นจากพื้นที่หลัก แต่เปลี่ยนเป็นที่อยู่รับสินค้าอื่นได้</Text>
-    <TextInput style={styles.input} placeholder="ชื่อผู้รับ" value={name} onChangeText={setName} />
-    <TextInput style={styles.input} placeholder="เบอร์โทร" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-    <TextInput style={[styles.input, styles.multiline]} placeholder="บ้านเลขที่ ถนน หมู่บ้าน" value={addressLine} onChangeText={setAddressLine} multiline />
+    <AppTextInput style={styles.input} placeholder="ชื่อผู้รับ" value={name} onChangeText={setName} />
+    <AppTextInput style={styles.input} placeholder="เบอร์มือถือ 10 หลัก" value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="number-pad" maxLength={10} />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="บ้านเลขที่ ถนน หมู่บ้าน" value={addressLine} onChangeText={setAddressLine} multiline />
     <SearchableDropdown label="จังหวัด" placeholder="เลือกจังหวัด" options={provinces.map((item) => ({ value: item.code, label: item.name_th }))} value={province?.code} onChange={chooseProvince} />
     <SearchableDropdown label="อำเภอ / เขต" placeholder="เลือกอำเภอ / เขต" options={districts.map((item) => ({ value: item.code, label: item.name_th }))} value={district?.code} disabled={!province} onChange={chooseDistrict} />
     <SearchableDropdown label="ตำบล / แขวง" placeholder="เลือกตำบล / แขวง" options={subdistricts.map((item) => ({ value: item.code, label: item.name_th, description: item.postal_code ?? undefined }))} value={subdistrict?.code} disabled={!district} onChange={(code) => setSubdistrict(subdistricts.find((item) => item.code === code))} />

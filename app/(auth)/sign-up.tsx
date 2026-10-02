@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from "../../src/constants/theme";
@@ -10,6 +11,7 @@ import { GenderType } from "../../src/types";
 import { supabase } from "../../src/lib/supabase";
 import { passwordValidationError } from "../../src/lib/password";
 import { translateAuthError } from "../../src/lib/authError";
+import { emailValidationError, mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValidation";
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -27,9 +29,15 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
-    if (!email || !password || !fullName || !username) {
-      Alert.alert("ข้อมูลไม่ครบ", "กรุณากรอกอีเมล รหัสผ่าน ชื่อ และชื่อผู้ใช้");
-      return;
+    if (!fullName.trim()) return Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกชื่อ–นามสกุล");
+    if (!username.trim()) return Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกชื่อผู้ใช้");
+    const emailError = emailValidationError(email);
+    if (emailError) return Alert.alert("อีเมลไม่ถูกต้อง", emailError);
+    if (!password) return Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณาสร้างรหัสผ่าน");
+    const phoneError = mobilePhoneError(phone, false);
+    if (phoneError) return Alert.alert("เบอร์มือถือไม่ถูกต้อง", phoneError);
+    if (age && (!/^\d+$/.test(age) || Number(age) < 1 || Number(age) > 120)) {
+      return Alert.alert("อายุไม่ถูกต้อง", "กรุณากรอกอายุเป็นตัวเลขระหว่าง 1–120 ปี");
     }
 
     const passwordError = passwordValidationError(password);
@@ -49,13 +57,13 @@ export default function SignUpScreen() {
       const avatarUrl = "";
 
       const { error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
-            full_name: fullName,
+            full_name: fullName.trim(),
             avatar_url: avatarUrl,
-            username: username,
+            username: username.trim(),
             phone_num: phone,
             age: age ? parseInt(age) : null,
             gender: gender,
@@ -98,18 +106,18 @@ export default function SignUpScreen() {
       >
         <View style={styles.card}>
           <Text style={styles.inputLabel}>ชื่อ–นามสกุล</Text>
-          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="ชื่อและนามสกุลจริง" />
+          <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="ชื่อและนามสกุลจริง" />
 
           <Text style={styles.inputLabel}>ชื่อผู้ใช้</Text>
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="ชื่อที่ใช้แสดงในระบบ" />
+          <AppTextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="ชื่อที่ใช้แสดงในระบบ" />
 
           <Text style={styles.inputLabel}>อีเมล</Text>
-          <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="name@example.com" />
+          <AppTextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="name@example.com" />
 
           <Text style={styles.inputLabel}>รหัสผ่าน</Text>
           <Text style={styles.passwordHint}>อย่างน้อย 10 ตัว และต้องมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์</Text>
           <View style={styles.passwordContainer}>
-            <TextInput style={styles.passwordInput} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" placeholder="สร้างรหัสผ่าน" />
+            <AppTextInput style={styles.passwordInput} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoCapitalize="none" placeholder="สร้างรหัสผ่าน" />
             <TouchableOpacity onPress={() => setShowPassword((value) => !value)} accessibilityLabel={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
               <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
             </TouchableOpacity>
@@ -117,17 +125,17 @@ export default function SignUpScreen() {
 
           <Text style={styles.inputLabel}>ยืนยันรหัสผ่าน</Text>
           <View style={styles.passwordContainer}>
-            <TextInput style={styles.passwordInput} value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry={!showPasswordConfirmation} autoCapitalize="none" placeholder="กรอกรหัสผ่านอีกครั้ง" />
+            <AppTextInput style={styles.passwordInput} value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry={!showPasswordConfirmation} autoCapitalize="none" placeholder="กรอกรหัสผ่านอีกครั้ง" />
             <TouchableOpacity onPress={() => setShowPasswordConfirmation((value) => !value)} accessibilityLabel={showPasswordConfirmation ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
               <Ionicons name={showPasswordConfirmation ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           <Text style={styles.inputLabel}>เบอร์โทรศัพท์</Text>
-          <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="เช่น 0812345678" />
+          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="number-pad" maxLength={10} placeholder="เช่น 0812345678 (10 หลัก)" />
 
           <Text style={styles.inputLabel}>อายุ</Text>
-          <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholder="อายุ (ปี)" />
+          <AppTextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" placeholder="อายุ (ปี)" />
 
           {/* Gender Selector with Vector Icons */}
           <Text style={styles.sectionTitle}>เพศ</Text>

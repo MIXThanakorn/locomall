@@ -1,4 +1,5 @@
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { AppTextInput } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -59,7 +60,7 @@ export default function CreateStore() {
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปสินค้า/ร้าน</Text>}
     </TouchableOpacity>
-    {inputs.map(([label, value, setter]) => <TextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} keyboardType={label === "ราคากลาง" ? "decimal-pad" : "default"} />)}
+    {inputs.map(([label, value, setter]) => <AppTextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} keyboardType={label === "ราคากลาง" ? "decimal-pad" : "default"} />)}
     <Button title="ส่งคำขอเปิดร้าน" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary, marginTop: 16 }} />
   </KeyboardAwareScrollView>;
 }

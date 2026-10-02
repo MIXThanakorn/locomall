@@ -7,7 +7,6 @@
     "icon": "./assets/images/app-icon.png",
     "scheme": "locomall",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.locomall.app",
       "supportsTablet": true,
@@ -23,13 +22,10 @@
         "backgroundColor": "#FAFAF5",
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "ACCESS_FINE_LOCATION"
       ]
     },
     "web": {

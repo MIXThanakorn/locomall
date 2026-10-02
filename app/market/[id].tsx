@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -17,8 +17,8 @@ export default function MarketDetail() {
   const [sameArea, setSameArea] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
+  useFocusEffect(useCallback(() => {
+    void (async () => {
       const [marketResult, locationResult] = await Promise.all([
         supabase.rpc("get_market_catalog", { p_market_id: Number(id) }),
         session ? supabase.from("user_locations").select("subdistrict_code").eq("user_id", session.user.id).maybeSingle() : Promise.resolve({ data: null }),
@@ -28,7 +28,7 @@ export default function MarketDetail() {
       setSameArea(Boolean(catalog && locationResult.data?.subdistrict_code === catalog.subdistrict_code));
       setLoading(false);
     })();
-  }, [id, session]);
+  }, [id, session]));
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!market) return <View style={styles.center}><Text>ไม่พบตลาดชุมชนนี้</Text></View>;

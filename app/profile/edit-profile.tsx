@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/immutability */
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
@@ -11,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
 import { ownObjectPathFromPublicUrl, selectSquareImage, SelectedImage, uploadPublicImage } from "../../src/lib/storage";
+import { mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValidation";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -62,6 +64,8 @@ export default function EditProfileScreen() {
 
   const handleUpdateProfile = async () => {
     if (!userId) return;
+    const phoneError = mobilePhoneError(phone, false);
+    if (phoneError) return Alert.alert("เบอร์มือถือไม่ถูกต้อง", phoneError);
     
     setUpdating(true);
     try {
@@ -72,19 +76,15 @@ export default function EditProfileScreen() {
         const uploaded = await uploadPublicImage("avatars", userId, newAvatar, "avatar");
         finalAvatarUrl = uploaded.publicUrl;
 
-        // ลบรูปเก่าทิ้งเพื่อประหยัดพื้นที่ (ถ้ามีรูปเก่า)
-        if (existingAvatarUrl) {
-          const oldFilePath = ownObjectPathFromPublicUrl("avatars", existingAvatarUrl, userId);
-          if (oldFilePath) await supabase.storage.from("avatars").remove([oldFilePath]);
-        }
       }
 
       // อัปเดตข้อมูลตาราง Profiles
       const { error: updateError } = await supabase
         .from("profiles")
         .update({
-          full_name: fullName,
-          username,
+          full_name: fullName.trim(),
+          display_name: fullName.trim(),
+          username: username.trim(),
           phone_num: phone,
           age: parseInt(age) || null,
           user_img_url: finalAvatarUrl,
@@ -93,6 +93,11 @@ export default function EditProfileScreen() {
         .eq("user_id", userId);
 
       if (updateError) throw updateError;
+
+      if (newAvatar && existingAvatarUrl) {
+        const oldFilePath = ownObjectPathFromPublicUrl("avatars", existingAvatarUrl, userId);
+        if (oldFilePath) void supabase.storage.from("avatars").remove([oldFilePath]);
+      }
 
       Alert.alert("บันทึกสำเร็จ", "แก้ไขข้อมูลส่วนตัวเรียบร้อยแล้ว", [
         { text: "ตกลง", onPress: () => router.back() }
@@ -141,19 +146,19 @@ export default function EditProfileScreen() {
       <KeyboardAwareScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>ชื่อ-นามสกุล</Text>
-          <TextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+          <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} />
 
           <Text style={styles.inputLabel}>ชื่อผู้ใช้</Text>
-          <TextInput style={styles.input} value={username} onChangeText={setUsername} />
+          <AppTextInput style={styles.input} value={username} onChangeText={setUsername} />
 
           <Text style={styles.inputLabel}>อีเมล (แก้ไขไม่ได้)</Text>
-          <TextInput style={[styles.input, { opacity: 0.7 }]} value={email} editable={false} />
+          <AppTextInput style={[styles.input, { opacity: 0.7 }]} value={email} editable={false} />
 
           <Text style={styles.inputLabel}>เบอร์โทรศัพท์</Text>
-          <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="number-pad" maxLength={10} placeholder="เช่น 0812345678" />
 
           <Text style={styles.inputLabel}>อายุ</Text>
-          <TextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
+          <AppTextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
 
           <Button
             title="บันทึกข้อมูลส่วนตัว"

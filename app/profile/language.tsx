@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from "../../src/constants/theme";
@@ -42,7 +43,7 @@ export default function LanguageScreen() {
         {/* Search Language Input */}
         <View style={styles.searchBar}>
           <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
-          <TextInput
+          <AppTextInput
             style={styles.searchInput}
             placeholder={selectedLang === "th" ? "ค้นหาภาษา..." : "Search language..."}
             value={search}

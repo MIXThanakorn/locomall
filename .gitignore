@@ -8,9 +8,15 @@ node_modules/
 # Expo
 .expo/
 dist/
-dist-smoke/
+/dist-*/
 web-build/
 expo-env.d.ts
+
+# Local build packages
+*.apk
+*.aab
+*.apks
+*.ipa
 
 # Native / Keystores / Certificates
 .kotlin/
@@ -46,6 +52,8 @@ Thumbs.db
 .env
 .env*.local
 .env.local
+/.env.*
+!/.env.example
 
 # TypeScript
 *.tsbuildinfo
@@ -66,3 +74,5 @@ outputs/
 # Firebase Admin / FCM V1 private keys (never commit)
 **/*firebase-adminsdk*.json
 **/*service-account*.json
+**/*service_account*.json
+**/serviceAccountKey.json

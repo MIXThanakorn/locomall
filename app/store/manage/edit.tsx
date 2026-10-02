@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity } from "react-native";
+import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
+import { AppTextInput } from "../../../src/components/AppTextInput";
 import { Button } from "../../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
@@ -28,9 +29,9 @@ export default function EditStore() {
     <TouchableOpacity style={styles.imageBox} onPress={async () => { try { setImage(await selectSquareImage()); } catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); } }}>
       {image?.uri || store?.image_url ? <Image source={{ uri: image?.uri ?? store.image_url }} style={styles.image} /> : <Text style={styles.imageText}>+ เปลี่ยนรูปร้าน/สินค้า</Text>}
     </TouchableOpacity>
-    <TextInput style={styles.input} placeholder="ชื่อร้าน" value={name} onChangeText={setName} /><TextInput style={styles.input} placeholder="ชื่อสินค้า" value={product} onChangeText={setProduct} />
-    <TextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline /><TextInput style={styles.input} placeholder="หน่วย" value={unit} onChangeText={setUnit} />
-    <TextInput style={styles.input} placeholder="ราคากลาง" value={price} onChangeText={setPrice} keyboardType="decimal-pad" /><Button title="บันทึกการแก้ไข" onPress={save} loading={saving} style={styles.button} />
+    <AppTextInput style={styles.input} placeholder="ชื่อร้าน" value={name} onChangeText={setName} /><AppTextInput style={styles.input} placeholder="ชื่อสินค้า" value={product} onChangeText={setProduct} />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline /><AppTextInput style={styles.input} placeholder="หน่วย" value={unit} onChangeText={setUnit} />
+    <AppTextInput style={styles.input} placeholder="ราคากลาง" value={price} onChangeText={setPrice} keyboardType="decimal-pad" /><Button title="บันทึกการแก้ไข" onPress={save} loading={saving} style={styles.button} />
   </KeyboardAwareScrollView>;
 }
 const styles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 58, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 14 }, imageBox: { height: 180, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, borderRadius: BorderRadius.lg, overflow: "hidden", alignItems: "center", justifyContent: "center", marginBottom: 14 }, image: { width: "100%", height: "100%" }, imageText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, input: { minHeight: 54, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 14, marginBottom: 12, fontFamily: "Kanit_400Regular" }, multiline: { minHeight: 86, textAlignVertical: "top" }, button: { backgroundColor: Colors.goldPrimary, marginTop: 6 } });

@@ -2,17 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Image,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CommerceCard } from "../../src/components/CommerceCard";
 import { KeyboardAwareView } from "../../src/components/KeyboardAware";
@@ -79,7 +70,7 @@ export default function HomeScreen() {
 
           <View style={styles.searchBox}>
             <Ionicons name="search" size={21} color={Colors.textMuted} />
-            <TextInput
+            <AppTextInput
               value={query}
               onChangeText={setQuery}
               placeholder="ค้นหาตลาด ร้านค้า หรือสินค้า"

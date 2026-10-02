@@ -1,8 +1,8 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../src/components/Button";
@@ -44,7 +44,7 @@ export default function StoreDetail() {
     }
     setLoading(false);
   }, [id, session]);
-  useEffect(() => { void load(); }, [load]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 1800);
@@ -114,7 +114,7 @@ export default function StoreDetail() {
           <View><Text style={styles.quantityTitle}>เลือกจำนวน</Text><Text style={styles.quantityHint}>จำนวนที่ต้องการใส่ตะกร้า</Text></View>
           <View style={styles.quantityControl}>
             <TouchableOpacity style={styles.quantityButton} onPress={() => changeQuantity(quantity - 1)} disabled={quantity <= 1} accessibilityLabel="ลดจำนวน"><Ionicons name="remove" size={22} color={quantity <= 1 ? Colors.textLight : Colors.greenPrimary} /></TouchableOpacity>
-            <TextInput style={styles.quantityInput} value={String(quantity)} onChangeText={(value) => changeQuantity(Number(value.replace(/\D/g, "")) || 1)} keyboardType="number-pad" selectTextOnFocus accessibilityLabel="จำนวนสินค้า" />
+            <AppTextInput style={styles.quantityInput} value={String(quantity)} onChangeText={(value) => changeQuantity(Number(value.replace(/\D/g, "")) || 1)} keyboardType="number-pad" selectTextOnFocus accessibilityLabel="จำนวนสินค้า" />
             <TouchableOpacity style={styles.quantityButton} onPress={() => changeQuantity(quantity + 1)} disabled={quantity >= stock} accessibilityLabel="เพิ่มจำนวน"><Ionicons name="add" size={22} color={quantity >= stock ? Colors.textLight : Colors.greenPrimary} /></TouchableOpacity>
           </View>
         </View> : null}
@@ -123,8 +123,8 @@ export default function StoreDetail() {
         {!isManager && !isSeller && session ? <View style={styles.sellerBox}>
           <Text style={styles.sellerTitle}>มีสินค้าชนิดเดียวกัน?</Text>
           {application?.status === "pending" ? <Text style={styles.pending}>คำขอร่วมขายกำลังรอเจ้าของตลาดชุมชนตรวจสอบ</Text>
-            : application?.status === "rejected" ? <><Text style={styles.rejected}>คำขอเดิมไม่ผ่าน: {application.review_note || "ไม่ระบุเหตุผล"}</Text>{sellerImagePicker}<TextInput style={styles.note} placeholder="ข้อมูลเพิ่มเติมสำหรับสมัครใหม่" value={note} onChangeText={setNote} multiline /><Button title="ส่งคำขอใหม่" onPress={applyToSell} loading={sending} /></>
-              : sameArea ? <>{sellerImagePicker}<TextInput style={styles.note} placeholder="แนะนำตัวหรือรายละเอียดสินค้าของคุณ" value={note} onChangeText={setNote} multiline /><Button title="ขอเป็นผู้ขายร่วม" onPress={applyToSell} loading={sending} /></>
+            : application?.status === "rejected" ? <><Text style={styles.rejected}>คำขอเดิมไม่ผ่าน: {application.review_note || "ไม่ระบุเหตุผล"}</Text>{sellerImagePicker}<AppTextInput style={styles.note} placeholder="ข้อมูลเพิ่มเติมสำหรับสมัครใหม่" value={note} onChangeText={setNote} multiline /><Button title="ส่งคำขอใหม่" onPress={applyToSell} loading={sending} /></>
+              : sameArea ? <>{sellerImagePicker}<AppTextInput style={styles.note} placeholder="แนะนำตัวหรือรายละเอียดสินค้าของคุณ" value={note} onChangeText={setNote} multiline /><Button title="ขอเป็นผู้ขายร่วม" onPress={applyToSell} loading={sending} /></>
                 : <Text style={styles.rejected}>คุณจะร่วมขายได้เมื่อพื้นที่หลักอยู่ตำบลเดียวกับตลาดชุมชนนี้</Text>}
         </View> : null}
         {isSeller ? <TouchableOpacity onPress={() => router.push("/seller/listings" as never)}><Text style={styles.chat}>แก้ไขจำนวนสินค้าที่พร้อมขาย</Text></TouchableOpacity> : null}
