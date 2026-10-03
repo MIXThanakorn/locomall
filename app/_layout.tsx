@@ -1,4 +1,4 @@
-﻿import { Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Colors } from "../src/constants/theme";
@@ -8,13 +8,14 @@ import { Kanit_400Regular, Kanit_500Medium, Kanit_700Bold, useFonts } from "@exp
 import { Spectral_700Bold } from "@expo-google-fonts/spectral";
 import { AppAlertProvider } from "../src/components/AppAlertProvider";
 import { PushNotificationBootstrap } from "../src/components/PushNotificationBootstrap";
+import { BadgeProvider } from "../src/context/BadgeContext";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Kanit_400Regular, Kanit_500Medium, Kanit_700Bold, Spectral_700Bold });
   if (!fontsLoaded) return null;
   return (
     <SafeAreaProvider>
-      <AppAlertProvider><AuthProvider><LanguageProvider><PushNotificationBootstrap />
+      <AppAlertProvider><AuthProvider><LanguageProvider><BadgeProvider><PushNotificationBootstrap />
         <StatusBar style="dark" />
         <Stack
           screenOptions={{
@@ -22,7 +23,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: Colors.background },
           }}
         />
-      </LanguageProvider></AuthProvider></AppAlertProvider>
+      </BadgeProvider></LanguageProvider></AuthProvider></AppAlertProvider>
     </SafeAreaProvider>
   );
 }

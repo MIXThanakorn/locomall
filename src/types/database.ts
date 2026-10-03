@@ -1244,6 +1244,29 @@ export type Database = {
         Args: { p_order_id: number; p_reason: string }
         Returns: undefined
       }
+      discover_catalog_page: {
+        Args: {
+          p_after_distance_km?: number | null
+          p_after_entity_id?: number | null
+          p_after_entity_type?: string | null
+          p_kind?: string
+          p_lat?: number | null
+          p_limit?: number
+          p_lng?: number | null
+          p_query?: string | null
+        }
+        Returns: {
+          available_stock: number
+          description: string
+          distance_km: number | null
+          entity_id: number
+          entity_type: string
+          image_url: string | null
+          market_id: number
+          name: string
+          radius_km: number
+        }[]
+      }
       discover_nearby: {
         Args: {
           p_kind?: string
@@ -1263,6 +1286,37 @@ export type Database = {
           name: string
           radius_km: number
         }[]
+      }
+      get_chat_room_header: {
+        Args: { p_room_id: number }
+        Returns: {
+          market_name: string
+          partner_name: string
+          partner_role: string
+          product_name: string
+          store_id: number
+          store_name: string
+        }[]
+      }
+      get_my_chat_inbox: {
+        Args: never
+        Returns: {
+          room_id: number
+          store_name: string
+          product_name: string | null
+          market_name: string
+          partner_name: string
+          partner_role: string
+          last_message: string | null
+          last_message_at: string | null
+          last_sender_id: string | null
+          sort_at: string
+          unread_count: number
+        }[]
+      }
+      get_public_store_prices: {
+        Args: { p_store_ids: number[] }
+        Returns: { store_id: number; unit_price: number }[]
       }
       get_market_catalog: { Args: { p_market_id: number }; Returns: Json }
       get_or_create_chat_room: { Args: { p_store_id: number }; Returns: number }
@@ -1311,6 +1365,8 @@ export type Database = {
         Args: { p_notification_id: number }
         Returns: undefined
       }
+      mark_my_chat_room_read: { Args: { p_room_id: number }; Returns: undefined }
+      mark_my_non_chat_notifications_read: { Args: never; Returns: undefined }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       disable_my_push_devices: { Args: never; Returns: undefined }
       disable_my_push_device: {

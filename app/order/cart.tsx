@@ -8,11 +8,14 @@ import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { formatThaiDateTime } from "../../src/lib/date";
 import { supabase } from "../../src/lib/supabase";
+import { useBadgeCounts } from "../../src/context/BadgeContext";
 
 export default function Cart() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { refreshBadges } = useBadgeCounts();
   const [cart, setCart] = useState<any>();
+  const [busyStoreId, setBusyStoreId] = useState<number | null>(null);
   const load = useCallback(async () => {
     const result = await supabase.from("carts").select("*,markets(name),cart_items(*,stores(name,product_name,unit,unit_price))").maybeSingle();
     setCart(result.data);
@@ -20,11 +23,31 @@ export default function Cart() {
   useEffect(() => { void load(); }, [load]);
 
   const change = async (storeId: number, quantity: number) => {
-    const { error } = quantity <= 0
-      ? await supabase.rpc("remove_cart_item", { p_store_id: storeId })
-      : await supabase.rpc("upsert_cart_item", { p_store_id: storeId, p_quantity: quantity });
-    if (error) Alert.alert("แก้ไขจำนวนสินค้าไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
-    await load();
+    if (busyStoreId !== null) return;
+    setBusyStoreId(storeId);
+    try {
+      const { error } = quantity <= 0
+        ? await supabase.rpc("remove_cart_item", { p_store_id: storeId })
+        : await supabase.rpc("upsert_cart_item", { p_store_id: storeId, p_quantity: quantity });
+      if (error) {
+        console.warn("Cart item update failed", error);
+        Alert.alert(quantity <= 0 ? "ลบสินค้าไม่สำเร็จ" : "แก้ไขจำนวนสินค้าไม่สำเร็จ", "กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง");
+        return;
+      }
+      await load();
+      await refreshBadges();
+    } catch (error) {
+      console.warn("Cart item update failed", error);
+      Alert.alert(quantity <= 0 ? "ลบสินค้าไม่สำเร็จ" : "แก้ไขจำนวนสินค้าไม่สำเร็จ", "กรุณาตรวจสอบการเชื่อมต่อแล้วลองใหม่อีกครั้ง");
+    } finally {
+      setBusyStoreId(null);
+    }
+  };
+  const confirmRemove = (storeId: number, productName: string) => {
+    Alert.alert("ลบสินค้าออกจากตะกร้า?", `ลบ ${productName} ออกจากตะกร้า`, [
+      { text: "ยกเลิก", style: "cancel" },
+      { text: "ลบสินค้า", style: "destructive", onPress: () => void change(storeId, 0) },
+    ]);
   };
 
   const items = cart?.cart_items ?? [];
@@ -57,11 +80,12 @@ export default function Cart() {
           <View style={styles.itemBottom}>
             <Text style={styles.quantityLabel}>จำนวน {item.quantity} {item.stores.unit}</Text>
             <View style={styles.qty}>
-              <TouchableOpacity onPress={() => change(item.store_id, item.quantity - 1)} accessibilityLabel="ลดจำนวน"><Ionicons name="remove-circle-outline" size={28} /></TouchableOpacity>
+              <TouchableOpacity disabled={busyStoreId !== null} onPress={() => item.quantity <= 1 ? confirmRemove(item.store_id, item.stores.product_name) : void change(item.store_id, item.quantity - 1)} accessibilityLabel={item.quantity <= 1 ? "ลบสินค้าออกจากตะกร้า" : "ลดจำนวน"}><Ionicons name="remove-circle-outline" size={28} /></TouchableOpacity>
               <Text style={styles.count}>{item.quantity}</Text>
-              <TouchableOpacity onPress={() => change(item.store_id, item.quantity + 1)} accessibilityLabel="เพิ่มจำนวน"><Ionicons name="add-circle" size={28} color={Colors.greenPrimary} /></TouchableOpacity>
+              <TouchableOpacity disabled={busyStoreId !== null} onPress={() => void change(item.store_id, item.quantity + 1)} accessibilityLabel="เพิ่มจำนวน"><Ionicons name="add-circle" size={28} color={Colors.greenPrimary} /></TouchableOpacity>
             </View>
           </View>
+          <TouchableOpacity disabled={busyStoreId !== null} style={styles.removeButton} onPress={() => confirmRemove(item.store_id, item.stores.product_name)} accessibilityLabel={`ลบ ${item.stores.product_name} ออกจากตะกร้า`}><Ionicons name="trash-outline" size={17} color={Colors.danger} /><Text style={styles.removeText}>ลบจากตะกร้า</Text></TouchableOpacity>
         </View>;
       })}
     </ScrollView>
@@ -92,6 +116,8 @@ const styles = StyleSheet.create({
   quantityLabel: { fontFamily: "Kanit_500Medium", color: Colors.textMedium },
   qty: { flexDirection: "row", alignItems: "center", gap: 10 },
   count: { fontFamily: "Kanit_700Bold", minWidth: 24, textAlign: "center" },
+  removeButton: { alignSelf: "flex-end", flexDirection: "row", alignItems: "center", gap: 5, marginTop: 12, paddingVertical: 4 },
+  removeText: { fontFamily: "Kanit_500Medium", color: Colors.danger, fontSize: 13 },
   empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, textAlign: "center", marginTop: 50 },
   bottom: { position: "absolute", bottom: 0, left: 0, right: 0, padding: Spacing.md, backgroundColor: "white", borderTopWidth: 1, borderTopColor: Colors.inputBorder },
   totalRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 10 },

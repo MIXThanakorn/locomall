@@ -8,20 +8,19 @@ import { useAuth } from "../../src/context/AuthContext";
 import { useNotifications } from "../../src/hooks/useCommerce";
 import { getPushPermissionState, notificationPath, openNotificationSettings, PushPermissionState, registerForPushNotifications } from "../../src/lib/pushNotifications";
 import { supabase } from "../../src/lib/supabase";
+import { useBadgeCounts } from "../../src/context/BadgeContext";
 
-type Category = "all" | "order" | "approval" | "chat" | "system";
+type Category = "all" | "order" | "approval" | "system";
 const FILTERS: { key: Category; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: "all", label: "ทั้งหมด", icon: "apps-outline" },
   { key: "order", label: "คำสั่งซื้อ", icon: "cube-outline" },
   { key: "approval", label: "คำขอ", icon: "checkmark-circle-outline" },
-  { key: "chat", label: "แชต", icon: "chatbubble-outline" },
   { key: "system", label: "ระบบ", icon: "information-circle-outline" },
 ];
 
 function categoryOf(item: { category?: string; type: string; entity_type: string | null }): Exclude<Category, "all"> {
-  if (["order", "approval", "chat", "system"].includes(item.category ?? "")) return item.category as Exclude<Category, "all">;
+  if (["order", "approval", "system"].includes(item.category ?? "")) return item.category as Exclude<Category, "all">;
   if (item.type.includes("approval") || ["market", "store", "seller"].includes(item.entity_type ?? "")) return "approval";
-  if (item.type.includes("chat") || item.entity_type === "chat") return "chat";
   if (item.type.includes("order") || item.entity_type === "order") return "order";
   return "system";
 }
@@ -29,7 +28,6 @@ function categoryOf(item: { category?: string; type: string; entity_type: string
 const CATEGORY_UI = {
   order: { label: "คำสั่งซื้อ", icon: "cube-outline" as const, color: Colors.info, background: "#EAF2FF" },
   approval: { label: "คำขอ", icon: "checkmark-circle-outline" as const, color: Colors.success, background: "#EAF6EE" },
-  chat: { label: "แชต", icon: "chatbubble-outline" as const, color: "#7C3AED", background: "#F1EAFE" },
   system: { label: "ระบบ", icon: "information-circle-outline" as const, color: Colors.goldDark, background: "#FFF6D8" },
 };
 
@@ -38,6 +36,7 @@ export default function NotificationScreen() {
   const auth = useAuth();
   const router = useRouter();
   const { items, loading, refresh } = useNotifications();
+  const { refreshBadges } = useBadgeCounts();
   const [category, setCategory] = useState<Category>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [pushState, setPushState] = useState<PushPermissionState>("unavailable");
@@ -54,24 +53,27 @@ export default function NotificationScreen() {
     return () => subscription.remove();
   }, [refreshPermission]);
 
-  const filtered = useMemo(() => items.filter((item) => {
+  const visibleItems = useMemo(() => items.filter((item) => item.category !== "chat" && item.entity_type !== "chat" && !item.type.includes("chat")), [items]);
+  const filtered = useMemo(() => visibleItems.filter((item) => {
     if (category !== "all" && categoryOf(item) !== category) return false;
     return !unreadOnly || !item.read_at;
-  }), [category, items, unreadOnly]);
-  const unreadCount = items.filter((item) => !item.read_at).length;
+  }), [category, visibleItems, unreadOnly]);
+  const unreadCount = visibleItems.filter((item) => !item.read_at).length;
 
   const read = async (id: number) => {
     await supabase.rpc("mark_notification_read", { p_notification_id: id });
     await refresh();
+    await refreshBadges();
   };
   const openItem = async (item: (typeof items)[number]) => {
     if (!item.read_at) await read(item.notification_id);
     router.push(notificationPath({ entity_type: item.entity_type ?? undefined, entity_id: item.entity_id ?? undefined }));
   };
   const markAllRead = async () => {
-    const { error } = await supabase.rpc("mark_all_notifications_read");
+    const { error } = await supabase.rpc("mark_my_non_chat_notifications_read");
     if (error) return Alert.alert("ทำรายการไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
     await refresh();
+    await refreshBadges();
   };
   const enablePush = async () => {
     if (pushState === "denied") return openNotificationSettings();
@@ -94,7 +96,7 @@ export default function NotificationScreen() {
   return <View style={styles.root}>
     <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
       <View style={styles.titleRow}>
-        <View><Text style={styles.title}>การแจ้งเตือน</Text><Text style={styles.sub}>ติดตามเรื่องสำคัญ แยกตามหมวดหมู่</Text></View>
+        <View><Text style={styles.title}>การแจ้งเตือน</Text><Text style={styles.sub}>คำสั่งซื้อ คำขอ และข่าวสาร · แชตอยู่ในแท็บแชต</Text></View>
         {unreadCount > 0 ? <TouchableOpacity onPress={markAllRead}><Text style={styles.readAll}>อ่านทั้งหมด</Text></TouchableOpacity> : null}
       </View>
     </View>

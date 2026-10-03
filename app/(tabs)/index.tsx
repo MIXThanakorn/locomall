@@ -9,6 +9,7 @@ import { CommerceCard } from "../../src/components/CommerceCard";
 import { KeyboardAwareView } from "../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useNearby } from "../../src/hooks/useCommerce";
+import { useBadgeCounts } from "../../src/context/BadgeContext";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -17,7 +18,8 @@ export default function HomeScreen() {
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
   const normalizedQuery = query.trim();
   const isSearching = normalizedQuery.length > 0;
-  const { items, loading, error, refresh } = useNearby(normalizedQuery, "all");
+  const { items, loading, loadingMore, hasMore, error, refresh, loadMore } = useNearby(normalizedQuery, "all");
+  const { cartCount } = useBadgeCounts();
 
   useEffect(() => {
     AsyncStorage.getItem("locomall-home-guide-dismissed-v1")
@@ -30,8 +32,6 @@ export default function HomeScreen() {
     await AsyncStorage.setItem("locomall-home-guide-dismissed-v1", "true");
   };
 
-  const marketItems = items.filter((item) => item.entity_type === "market");
-  const storeItems = items.filter((item) => item.entity_type === "store");
   const openResult = (entityType: string, entityId: number) => {
     router.push((entityType === "market" ? `/market/${entityId}` : `/store/${entityId}`) as never);
   };
@@ -61,9 +61,10 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={styles.headerButton}
                 onPress={() => router.push("/order/cart" as never)}
-                accessibilityLabel="เปิดตะกร้าสินค้า"
+                accessibilityLabel={`เปิดตะกร้าสินค้า มีสินค้า ${cartCount} รายการ`}
               >
                 <Ionicons name="cart-outline" size={23} color={Colors.greenPrimary} />
+                {cartCount > 0 ? <View style={styles.cartBadge}><Text style={styles.cartBadgeText}>{cartCount > 99 ? "99+" : cartCount}</Text></View> : null}
               </TouchableOpacity>
             </View>
           </View>
@@ -93,6 +94,11 @@ export default function HomeScreen() {
           refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          onScroll={({ nativeEvent }) => {
+            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 320) loadMore();
+          }}
+          scrollEventThrottle={250}
         >
           {!isSearching && showWelcomeGuide ? (
             <View style={styles.guideCard}>
@@ -120,7 +126,7 @@ export default function HomeScreen() {
               <View style={styles.searchHeading}>
                 <Text style={styles.eyebrow}>ผลการค้นหา</Text>
                 <Text style={styles.title} numberOfLines={2}>“{normalizedQuery}”</Text>
-                {!loading && !error ? <Text style={styles.resultCount}>พบ {items.length} รายการ</Text> : null}
+                {!loading && !error ? <Text style={styles.resultCount}>พบอย่างน้อย {items.length} รายการ · เรียงใกล้ก่อน</Text> : null}
               </View>
               {!loading && !error && !items.length ? (
                 <View style={styles.empty}>
@@ -129,51 +135,37 @@ export default function HomeScreen() {
                   <Text style={styles.message}>ลองค้นด้วยชื่อสินค้า ชื่อตลาด หรือชื่อร้านค้าอีกครั้ง</Text>
                 </View>
               ) : null}
-              {items.map((item) => (
+              <View style={styles.grid}>{items.map((item) => (
                 <CommerceCard
                   key={`${item.entity_type}-${item.entity_id}`}
                   item={item}
                   onPress={() => openResult(item.entity_type, item.entity_id)}
+                  compact
                 />
-              ))}
+              ))}</View>
             </>
           ) : (
             <>
               <View style={styles.heading}>
                 <View>
-                  <Text style={styles.eyebrow}>เริ่มจากชุมชนใกล้คุณ</Text>
-                  <Text style={styles.title}>ตลาดชุมชนใกล้บ้าน</Text>
+                  <Text style={styles.eyebrow}>ใกล้คุณก่อน · ดูได้ทุกพื้นที่</Text>
+                  <Text style={styles.title}>ตลาดและร้านค้า</Text>
                 </View>
-                <TouchableOpacity onPress={() => router.push("/(tabs)/nearby" as never)}>
-                  <Text style={styles.more}>ดูทั้งหมด</Text>
-                </TouchableOpacity>
               </View>
               {!loading && !error && !items.length ? (
                 <View style={styles.empty}>
                   <Ionicons name="leaf-outline" size={38} color={Colors.greenPrimary} />
-                  <Text style={styles.emptyTitle}>ยังไม่มีตลาดในพื้นที่</Text>
-                  <Text style={styles.message}>ระบบจะขยายระยะค้นหาจาก 10 กม. ทีละ 5 กม. ให้อัตโนมัติเมื่อมีตลาดเปิดใช้งาน</Text>
+                  <Text style={styles.emptyTitle}>ยังไม่มีตลาดหรือร้านค้า</Text>
+                  <Text style={styles.message}>เมื่อมีร้านค้าเปิดใช้งาน จะแสดงที่นี่โดยเรียงจากใกล้ไปไกล</Text>
                 </View>
               ) : null}
-              {marketItems.slice(0, 3).map((item) => (
-                <CommerceCard key={`market-${item.entity_id}`} item={item} onPress={() => openResult("market", item.entity_id)} />
-              ))}
-              {storeItems.length ? (
-                <View style={styles.heading}>
-                  <View>
-                    <Text style={styles.eyebrow}>เลือกซื้อได้ทันที</Text>
-                    <Text style={styles.title}>ร้านค้าและสินค้าใกล้คุณ</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => router.push("/(tabs)/nearby" as never)}>
-                    <Text style={styles.more}>ดูทั้งหมด</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-              {storeItems.slice(0, 6).map((item) => (
-                <CommerceCard key={`store-${item.entity_id}`} item={item} onPress={() => openResult("store", item.entity_id)} />
-              ))}
+              <View style={styles.grid}>{items.map((item) => (
+                <CommerceCard key={`${item.entity_type}-${item.entity_id}`} item={item} compact onPress={() => openResult(item.entity_type, item.entity_id)} />
+              ))}</View>
             </>
           )}
+          {loadingMore ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
+          {hasMore && !loadingMore ? <TouchableOpacity style={styles.loadMore} onPress={loadMore}><Text style={styles.more}>ดูเพิ่มเติม</Text></TouchableOpacity> : null}
         </ScrollView>
       </View>
     </KeyboardAwareView>
@@ -201,6 +193,7 @@ const styles = StyleSheet.create({
   },
   headerActions: { flexDirection: "row", gap: 8 },
   headerButton: {
+    position: "relative",
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -208,6 +201,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  cartBadge: { position: "absolute", top: -6, right: -7, minWidth: 19, height: 19, borderRadius: 10, paddingHorizontal: 3, backgroundColor: Colors.danger, alignItems: "center", justifyContent: "center" },
+  cartBadgeText: { fontFamily: "Kanit_700Bold", fontSize: 10, color: "#FFFFFF", lineHeight: 15 },
   searchBox: {
     height: 48,
     borderRadius: BorderRadius.round,
@@ -228,6 +223,8 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   content: { padding: Spacing.lg, paddingBottom: 80 },
+  grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  loadMore: { alignItems: "center", paddingVertical: Spacing.md },
   flex: { flex: 1 },
   guideCard: {
     flexDirection: "row",

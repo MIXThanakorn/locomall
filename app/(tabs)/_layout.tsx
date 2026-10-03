@@ -4,9 +4,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Platform } from "react-native";
 import { Colors } from "../../src/constants/theme";
+import { useBadgeCounts } from "../../src/context/BadgeContext";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { unreadCount, unreadChatCount } = useBadgeCounts();
 
   return (
     <Tabs
@@ -35,20 +37,15 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
         }}
       />
-      <Tabs.Screen name="nearby" options={{title:"ใกล้ฉัน",tabBarIcon:({color,size})=><Ionicons name="location-outline" size={size} color={color}/>}} />
+      <Tabs.Screen name="chat" options={{title:"แชต",tabBarIcon:({color,size})=><Ionicons name="chatbubble-ellipses-outline" size={size} color={color}/>,tabBarBadge:unreadChatCount>0?(unreadChatCount>99?"99+":unreadChatCount):undefined,tabBarBadgeStyle:{backgroundColor:"#D32F2F",color:"#FFFFFF",fontWeight:"700"}}} />
       <Tabs.Screen name="orders" options={{title:"คำสั่งซื้อ",tabBarIcon:({color,size})=><Ionicons name="receipt-outline" size={size} color={color}/>}} />
       <Tabs.Screen
         name="notification"
         options={{
           title: "แจ้งเตือน",
           tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="chat"
-        options={{
-          href: null,
-          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />,
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount) : undefined,
+          tabBarBadgeStyle: { backgroundColor: "#D32F2F", color: "#FFFFFF", fontWeight: "700" },
         }}
       />
       <Tabs.Screen

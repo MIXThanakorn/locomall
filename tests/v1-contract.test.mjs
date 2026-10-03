@@ -293,7 +293,7 @@ test("Every route with a text input opts into keyboard avoidance", () => {
     "app/market/manage/edit.tsx", "app/market/manage/index.tsx", "app/market/manage/logistics.tsx",
     "app/market/manage/request/[id].tsx", "app/profile/change-password.tsx", "app/profile/edit-profile.tsx",
     "app/(tabs)/index.tsx", "app/profile/language.tsx", "app/profile/shipping-address.tsx", "app/seller/listings/index.tsx",
-    "app/seller/listings/join.tsx", "app/store/[id].tsx", "app/store/manage/edit.tsx", "app/(tabs)/nearby.tsx",
+    "app/seller/listings/join.tsx", "app/store/[id].tsx", "app/store/manage/edit.tsx",
   ];
   for (const path of routes) {
     assert.match(read(path), /KeyboardAware|KeyboardAvoidingView/, path);
@@ -327,19 +327,82 @@ test("Store detail selects quantity before cart and uses a transient success mes
   assert.doesNotMatch(store, /Alert\.alert\("เพิ่มลงตะกร้าแล้ว"/);
 });
 
-test("Home separates community Markets from purchasable stores", () => {
+test("Home shows a two-column near-first catalog without cutting off distant stores", () => {
   const home = read("app/(tabs)/index.tsx");
   const card = read("src/components/CommerceCard.tsx");
-  assert.match(home, /marketItems = items\.filter/);
-  assert.match(home, /storeItems = items\.filter/);
-  assert.match(home, /ตลาดชุมชนใกล้บ้าน/);
-  assert.match(home, /ร้านค้าและสินค้าใกล้คุณ/);
+  const discovery = read("supabase/migrations/20261003021710_show_all_catalog_and_chat_partner.sql");
+  assert.match(home, /styles\.grid/);
+  assert.match(home, /items\.map/);
+  assert.doesNotMatch(home, /marketItems\.slice|storeItems\.slice/);
+  assert.match(card, /compactCard:\s*\{width:"48\.5%"\}/);
   assert.match(home, /useNearby\(normalizedQuery, "all"\)/);
   assert.match(home, /placeholder="ค้นหาตลาด ร้านค้า หรือสินค้า"/);
   assert.match(home, /ผลการค้นหา/);
   assert.match(home, /ล้างคำค้นหา/);
-  assert.match(read("supabase/migrations/20260928032318_improve_discovery_product_search.sql"), /c\.product_name ilike/);
-  assert.match(card, /สินค้าพร้อมขาย/);
+  assert.match(discovery, /create or replace function public\.discover_catalog_page/);
+  assert.match(discovery, /order by o\.sort_distance,o\.entity_type,o\.entity_id/);
+  assert.doesNotMatch(discovery, /b\.bucket=c\.b/);
+});
+
+test("Cart and notifications show numeric badges, and chat header is participant-only", () => {
+  const home = read("app/(tabs)/index.tsx");
+  const tabs = read("app/(tabs)/_layout.tsx");
+  const badges = read("src/context/BadgeContext.tsx");
+  const chat = read("app/chat/[id].tsx");
+  const migration = read("supabase/migrations/20261003021710_show_all_catalog_and_chat_partner.sql");
+  assert.match(home, /cartCount > 0/);
+  assert.match(tabs, /tabBarBadge: unreadCount/);
+  assert.match(badges, /cart_items\(cart_item_id\)/);
+  assert.match(badges, /is\("read_at", null\)/);
+  assert.match(chat, /แชตกับ/);
+  assert.match(chat, /header\.store_name/);
+  assert.match(migration, /r\.buyer_id=auth\.uid\(\) or s\.manager_id=auth\.uid\(\)/);
+  assert.match(migration, /revoke execute on function public\.get_chat_room_header\(bigint\) from public,anon/);
+});
+
+test("Approved store cards show price without unit and cart items have an explicit remove action", () => {
+  const discovery = read("src/hooks/useCommerce.ts");
+  const card = read("src/components/CommerceCard.tsx");
+  const cart = read("app/order/cart.tsx");
+  const migration = read("supabase/migrations/20261003022441_public_store_card_prices.sql");
+  assert.match(discovery, /get_public_store_prices/);
+  assert.match(card, /Number\(item\.unit_price\)\.toLocaleString/);
+  assert.match(cart, /ลบจากตะกร้า/);
+  assert.match(cart, /change\(storeId, 0\)/);
+  assert.match(migration, /s\.approval_status='approved'/);
+  assert.match(migration, /m\.approval_status='approved'/);
+});
+
+test("Cart removal is owner-scoped and minus from one item removes it", () => {
+  const cart = read("app/order/cart.tsx");
+  const migration = read("supabase/migrations/20261003023629_fix_cart_item_removal.sql");
+  assert.match(cart, /quantity <= 0[\s\S]*remove_cart_item/);
+  assert.match(cart, /item\.quantity <= 1 \? confirmRemove/);
+  assert.match(migration, /private\.remove_my_cart_item/);
+  assert.match(migration, /v_user_id uuid := auth\.uid\(\)/);
+  assert.match(migration, /c\.buyer_id = v_user_id/);
+  assert.match(migration, /ci\.cart_id = v_cart_id and ci\.store_id = p_store_id/);
+  assert.match(migration, /public\.remove_cart_item\(p_store_id bigint\)[\s\S]*security invoker/);
+  assert.doesNotMatch(migration, /grant delete on public\.cart_items/);
+});
+
+test("Chat replaces Nearby, shows history, and keeps chat events out of notification list", () => {
+  const tabs = read("app/(tabs)/_layout.tsx");
+  const inbox = read("app/(tabs)/chat.tsx");
+  const room = read("app/chat/[id].tsx");
+  const notifications = read("app/(tabs)/notification.tsx");
+  const badges = read("src/context/BadgeContext.tsx");
+  const migration = read("supabase/migrations/20261003024909_chat_inbox_and_read_state.sql");
+  assert.match(tabs, /name="chat" options=\{\{title:"แชต"/);
+  assert.doesNotMatch(tabs, /name="nearby"/);
+  assert.match(inbox, /get_my_chat_inbox/);
+  assert.match(inbox, /last_message/);
+  assert.match(room, /mark_my_chat_room_read/);
+  assert.match(notifications, /item\.category !== "chat"/);
+  assert.doesNotMatch(notifications, /\{ key: "chat", label:/);
+  assert.match(badges, /unreadChatCount/);
+  assert.match(migration, /r\.buyer_id=auth\.uid\(\) or s\.manager_id=auth\.uid\(\)/);
+  assert.match(migration, /n\.category<>'chat'/);
 });
 
 test("Cart and buyer/seller order history show item, price, fulfillment, and Thai dates", () => {
@@ -460,7 +523,7 @@ test("Notifications request native permission, register devices securely and sup
   assert.match(bootstrap, /registerForPushNotifications\(true\)/);
   assert.match(screen, /คำสั่งซื้อ/);
   assert.match(screen, /แสดงเฉพาะที่ยังไม่ได้อ่าน/);
-  assert.match(screen, /mark_all_notifications_read/);
+  assert.match(screen, /mark_my_non_chat_notifications_read/);
   assert.doesNotMatch(screen, /Push ใช้ไม่ได้ใน Expo Go/);
   assert.match(migration, /create table if not exists public\.user_push_devices/);
   assert.match(migration, /revoke all on public\.user_push_devices from public, anon, authenticated/);
