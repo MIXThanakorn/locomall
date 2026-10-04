@@ -334,8 +334,10 @@ three Sellers and Buyer accounts on Android, iOS and web.
 
 ขั้นตอนเชื่อม EAS credentials, Supabase webhook และการทดสอบ Push บนเครื่องจริงอยู่ใน
 [`docs/push-notifications.md`](docs/push-notifications.md).
+ขั้นตอนสร้าง APK สำหรับติดตั้งทดสอบอยู่ใน [`docs/BUILD_APK.md`](docs/BUILD_APK.md)
+และการตั้งค่า Google Sign-In บน APK อยู่ใน [`docs/GOOGLE_SIGN_IN_ANDROID.md`](docs/GOOGLE_SIGN_IN_ANDROID.md).
 
-Contract/unit suite ปัจจุบันมี 44 tests. การผ่านชุดนี้ไม่แทน penetration test,
+Contract/unit suite ปัจจุบันมี 60 tests. การผ่านชุดนี้ไม่แทน penetration test,
 concurrent database test หรือการทดสอบ role boundary กับ live Supabase.
 
 ## Release checklist

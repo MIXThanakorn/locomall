@@ -10,6 +10,7 @@ import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
 import { supabase } from "../../src/lib/supabase";
 import { translateAuthError } from "../../src/lib/authError";
+import { GOOGLE_OAUTH_CALLBACK_PATH, parseGoogleOAuthCallback, withGoogleOAuthTimeout } from "../../src/lib/googleOAuth";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -43,36 +44,30 @@ export default function SignInScreen() {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      const redirectUrl = makeRedirectUri({
-        path: '/(auth)/sign-in'
+      // Route groups are not part of a native deep link. In the APK this is
+      // locomall://sign-in; it must also be allowlisted in Supabase Auth.
+      const redirectUrl = makeRedirectUri({ scheme: "locomall", path: GOOGLE_OAUTH_CALLBACK_PATH });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: redirectUrl, skipBrowserRedirect: true },
       });
-      
-      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-      const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
+      if (error) throw error;
+      if (!data.url) throw new Error("ไม่สามารถเปิดหน้าเข้าสู่ระบบ Google ได้");
 
-      const res = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
-      if (res.type === 'success') {
-        // Parse url to get the session from the hash
-        const urlObj = new URL(res.url);
-        const hashParams = new URLSearchParams(urlObj.hash.substring(1));
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
+      const result = await withGoogleOAuthTimeout(WebBrowser.openAuthSessionAsync(data.url, redirectUrl));
+      if (result.type === "cancel" || result.type === "dismiss") return;
+      if (result.type !== "success") throw new Error("Google ไม่ส่งผลการเข้าสู่ระบบกลับมาที่แอป");
 
-        if (accessToken && refreshToken) {
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (sessionError) throw sessionError;
-          router.replace("/" as any);
-        } else {
-          // Check if there's an error in URL
-          const errorDesc = hashParams.get("error_description");
-          if (errorDesc) throw new Error(errorDesc);
-        }
-      }
-    } catch (error: any) {
-      Alert.alert("เข้าสู่ระบบด้วย Google ไม่สำเร็จ", translateAuthError(error));
+      const callback = parseGoogleOAuthCallback(result.url, redirectUrl);
+      const sessionResult = callback.kind === "code"
+        ? await supabase.auth.exchangeCodeForSession(callback.code)
+        : await supabase.auth.setSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken });
+      if (sessionResult.error) throw sessionResult.error;
+      if (!sessionResult.data.session) throw new Error("ไม่สามารถบันทึกการเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง");
+      router.replace("/" as any);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "";
+      Alert.alert("เข้าสู่ระบบด้วย Google ไม่สำเร็จ", message || translateAuthError(null));
     } finally {
       setLoading(false);
     }
