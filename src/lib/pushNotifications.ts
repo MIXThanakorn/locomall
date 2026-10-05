@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Linking, Platform } from "react-native";
+import { Platform } from "react-native";
 import { supabase } from "./supabase";
 
 export type PushPermissionState = "granted" | "denied" | "undetermined" | "unavailable" | "not_configured";
@@ -48,14 +48,6 @@ async function ensureAndroidChannel(notifications: NotificationsModule) {
   });
 }
 
-export async function getPushPermissionState(): Promise<PushPermissionState> {
-  const notifications = await loadNotifications();
-  if (!notifications) return "unavailable";
-  const permission = await notifications.getPermissionsAsync();
-  if (permission.status === "granted" && !getProjectId()) return "not_configured";
-  return permission.status;
-}
-
 export async function registerForPushNotifications(requestPermission = true): Promise<PushPermissionState> {
   const notifications = await loadNotifications();
   if (!notifications) return "unavailable";
@@ -63,7 +55,7 @@ export async function registerForPushNotifications(requestPermission = true): Pr
   await ensureAndroidChannel(notifications);
 
   let permission = await notifications.getPermissionsAsync();
-  if (permission.status === "undetermined" && requestPermission) {
+  if (permission.status !== "granted" && permission.canAskAgain && requestPermission) {
     permission = await notifications.requestPermissionsAsync({
       ios: { allowAlert: true, allowBadge: true, allowSound: true },
     });
@@ -94,10 +86,6 @@ export async function disableCurrentPushDevice() {
   const { error } = await supabase.rpc("disable_my_push_device", { p_expo_push_token: token });
   if (error) throw error;
   await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
-}
-
-export async function openNotificationSettings() {
-  await Linking.openSettings();
 }
 
 export function notificationPath(data: Record<string, unknown> | undefined) {

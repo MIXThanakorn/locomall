@@ -24,6 +24,8 @@ export default function AdminLayout() {
     <Tabs.Screen name="orders" options={{ title: "คำสั่งซื้อ", tabBarIcon: ({ color, size }) => <Ionicons name="cube-outline" size={size} color={color} /> }} />
     <Tabs.Screen name="audit" options={{ title: "ประวัติ", tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> }} />
     <Tabs.Screen name="security" options={{ href: null }} />
+    <Tabs.Screen name="finance" options={{ href: null }} />
+    <Tabs.Screen name="reviews" options={{ href: null }} />
   </Tabs>;
 }
 

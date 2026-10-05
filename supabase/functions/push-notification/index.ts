@@ -15,7 +15,7 @@ type WebhookPayload = {
   type: "INSERT" | "UPDATE" | "DELETE";
   table: string;
   schema: string;
-  record: NotificationRecord | null;
+  record: Pick<NotificationRecord, "notification_id"> | null;
 };
 
 function adminKey() {
@@ -24,30 +24,34 @@ function adminKey() {
   return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 }
 
-function isServiceRequest(request: Request) {
-  const configured = Deno.env.get("SUPABASE_SECRET_KEYS");
-  const secretKeys = configured ? Object.values(JSON.parse(configured)) as string[] : [];
-  const legacy = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (legacy) secretKeys.push(legacy);
-  const bearer = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const apiKey = request.headers.get("apikey");
-  return secretKeys.some((key) => key === bearer || key === apiKey);
+function isWebhookRequest(request: Request) {
+  const secret = Deno.env.get("LOCOMALL_PUSH_WEBHOOK_SECRET");
+  return !!secret && request.headers.get("x-locomall-webhook-secret") === secret;
 }
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  // The database webhook must use a Supabase service/secret key. A normal app
-  // session or public anon key must never be able to send arbitrary Push text.
-  if (!isServiceRequest(request)) return new Response("Unauthorized", { status: 401 });
+  // JWT verification is disabled for this webhook; only the private database
+  // trigger knows this high-entropy secret. Never trust notification text sent
+  // by the caller, even if the caller has the secret.
+  if (!isWebhookRequest(request)) return new Response("Unauthorized", { status: 401 });
   const payload = await request.json() as WebhookPayload;
-  const notification = payload.record;
-  if (payload.type !== "INSERT" || payload.schema !== "public" || payload.table !== "notifications" || !notification) {
+  const notificationId = Number(payload.record?.notification_id);
+  if (payload.type !== "INSERT" || payload.schema !== "public" || payload.table !== "notifications" ||
+      !Number.isSafeInteger(notificationId) || notificationId <= 0) {
     return Response.json({ skipped: true });
   }
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, adminKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+  const { data: notification, error: notificationError } = await supabase
+    .from("notifications")
+    .select("notification_id,user_id,category,title,body,entity_type,entity_id")
+    .eq("notification_id", notificationId)
+    .maybeSingle();
+  if (notificationError) return Response.json({ error: notificationError.message }, { status: 500 });
+  if (!notification) return Response.json({ skipped: true });
   const { data: devices, error } = await supabase
     .from("user_push_devices")
     .select("push_device_id,expo_push_token")

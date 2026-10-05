@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -17,31 +17,35 @@ export default function Profile() {
   const [profile, setProfile] = useState<any>();
   const [isAdmin, setAdmin] = useState(false);
   const [hasMarket, setHasMarket] = useState(false);
+  const [leavingAccount, setLeavingAccount] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(useCallback(() => {
+  const load = useCallback(async () => {
     if (!userId) return;
-    let active = true;
-    Promise.all([
+    const [profileResult, roleResult, marketResult] = await Promise.all([
       supabase.from("profiles").select("display_name,full_name,username,user_img_url").eq("user_id", userId).single(),
       supabase.from("platform_roles").select("role").eq("user_id", userId).maybeSingle(),
       supabase.from("markets").select("market_id").eq("owner_id", userId).limit(1),
-    ]).then(([profileResult, roleResult, marketResult]) => {
-      if (!active) return;
-      setProfile(profileResult.data);
-      setAdmin(roleResult.data?.role === "platform_admin");
-      setHasMarket(Boolean(marketResult.data?.length));
-    });
-    return () => { active = false; };
-  }, [userId]));
+    ]);
+    setProfile(profileResult.data);
+    setAdmin(roleResult.data?.role === "platform_admin");
+    setHasMarket(Boolean(marketResult.data?.length));
+  }, [userId]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  const logout = () => Alert.alert(
-    "ออกจากระบบ",
-    "เมื่อออกจากระบบ คุณจะต้องเข้าสู่ระบบอีกครั้งเพื่อซื้อสินค้าและดูข้อมูลบัญชี",
+  const leaveAccount = (switching: boolean) => Alert.alert(
+    switching ? "สลับบัญชี" : "ออกจากระบบ",
+    switching
+      ? "จะออกจากบัญชีนี้และเปิดหน้าเข้าสู่ระบบ เพื่อให้คุณใช้บัญชีอื่น ข้อมูลบัญชีเดิมจะไม่ถูกลบ"
+      : "เมื่อออกจากระบบ คุณจะต้องเข้าสู่ระบบอีกครั้งเพื่อซื้อสินค้าและดูข้อมูลบัญชี",
     [
       { text: "ยกเลิก", style: "cancel" },
-      { text: "ออกจากระบบ", style: "destructive", onPress: async () => {
+      { text: switching ? "ไปหน้าเข้าสู่ระบบ" : "ออกจากระบบ", style: switching ? "default" : "destructive", onPress: async () => {
+        if (leavingAccount) return;
+        setLeavingAccount(true);
         try { await signOut(); router.replace("/(auth)/sign-in" as never); }
-        catch { Alert.alert("ออกจากระบบไม่สำเร็จ", "กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง"); }
+        catch { Alert.alert(switching ? "สลับบัญชีไม่สำเร็จ" : "ออกจากระบบไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง"); }
+        finally { setLeavingAccount(false); }
       } },
     ],
   );
@@ -50,6 +54,8 @@ export default function Profile() {
     { title: "แก้ไขโปรไฟล์", icon: "person-outline", route: "/profile/edit-profile" },
     { title: "พื้นที่หลัก", icon: "navigate-outline", route: "/profile/location" },
     { title: "ที่อยู่จัดส่ง", icon: "location-outline", route: "/profile/shipping-address" },
+    { title: "Wallet เงินจำลอง", icon: "wallet-outline", route: "/profile/wallet" },
+    { title: "รายการที่บันทึกและติดตาม", icon: "heart-outline", route: "/profile/saved" },
     { title: "เปลี่ยนรหัสผ่าน", icon: "lock-closed-outline", route: "/profile/change-password" },
     { title: "คู่มือการใช้งาน", icon: "help-circle-outline", route: "/guide" },
     { title: "งานขายสินค้าของฉัน", icon: "storefront-outline", route: "/seller/dashboard" },
@@ -70,7 +76,7 @@ export default function Profile() {
       <Text style={styles.email}>{session.user.email}</Text>
       {hasMarket ? <Text style={styles.badge}>เจ้าของตลาดชุมชน · ซื้อสินค้าได้ตามปกติ</Text> : null}
     </View>
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
       {actions.map((action) => <TouchableOpacity key={action.route} style={styles.row} onPress={() => router.push(action.route as never)}>
         <Ionicons name={action.icon} size={21} color={Colors.greenPrimary} />
         <Text style={styles.action}>{action.title}</Text>
@@ -81,7 +87,12 @@ export default function Profile() {
         <Text style={styles.action}>เปิดหน้าผู้ดูแลระบบ</Text>
         <Ionicons name="chevron-forward" size={18} />
       </TouchableOpacity> : null}
-      <TouchableOpacity style={styles.logout} onPress={logout}><Text style={styles.logoutText}>ออกจากระบบ</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.row} disabled={leavingAccount} onPress={() => leaveAccount(true)}>
+        <Ionicons name="swap-horizontal-outline" size={21} color={Colors.greenPrimary} />
+        <Text style={styles.action}>สลับบัญชี</Text>
+        <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.logout} disabled={leavingAccount} onPress={() => leaveAccount(false)}><Text style={styles.logoutText}>ออกจากระบบ</Text></TouchableOpacity>
     </ScrollView>
   </View>;
 }

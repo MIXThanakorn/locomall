@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
@@ -11,6 +11,7 @@ import { formatThaiDateTime } from "../../../src/lib/date";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { sellerAllocationStatusLabel } from "../../../src/lib/displayText";
 import { supabase } from "../../../src/lib/supabase";
+import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
 
 const steps = ["awaiting_preparation", "preparing", "ready_for_pickup", "collected", "at_hub"];
 const stepLabels: Record<string, string> = { awaiting_preparation: "รับออเดอร์", preparing: "เตรียมสินค้า", ready_for_pickup: "พร้อมส่งมอบ", collected: "เจ้าของตลาดรับสินค้า", at_hub: "สินค้าถึงจุดรวม" };
@@ -25,15 +26,17 @@ export default function SellerAllocationDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     if (!userId) { setAllocation(null); setLoading(false); return; }
     const { data, error } = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name,hub_address)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("allocation_id", Number(id)).eq("seller_id", userId).single();
     setAllocation(error ? null : data);
     setLoading(false);
   }, [id, userId]);
   useEffect(() => { void load(); }, [load]);
+  const watches = useMemo<RealtimeWatch[]>(() => [{ table: "order_allocations", event: "UPDATE", filter: `allocation_id=eq.${Number(id)}` }], [id]);
+  useRealtimeRefresh(`allocation-detail-${id}`, load, watches, Boolean(userId) && Number.isSafeInteger(Number(id)) && Number(id) > 0);
 
   const transition = async (name: "accept_allocation" | "mark_allocation_ready", success: string) => {
     setSaving(true);
@@ -53,7 +56,7 @@ export default function SellerAllocationDetail() {
   const current = steps.indexOf(allocation.status);
   const subtotal = allocation.quantity * Number(item?.unit_price ?? 0);
 
-  return <ScrollView contentContainerStyle={[styles.root, { paddingTop: insets.top + 16 }]}>
+  return <ScrollView contentContainerStyle={[styles.root, { paddingTop: insets.top + 16 }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={22} color={Colors.greenPrimary} /><Text style={styles.backText}>กลับไปรายการที่ขาย</Text></TouchableOpacity>
     <Text style={styles.eyebrow}>งานขายของคุณ</Text>
     <Text style={styles.number}>{order?.order_number}</Text>

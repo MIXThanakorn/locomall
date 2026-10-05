@@ -1,6 +1,6 @@
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -19,7 +19,7 @@ export default function OrdersTab() {
   const capabilities = useCapabilities();
   const buyer = useOrders();
   const seller = useSellerAllocations();
-  const canSell = capabilities.isSeller || seller.allocations.length > 0;
+  const canSell = capabilities.canViewSellerOrders;
   const active: OrderView = view === "selling" && canSell ? "selling" : "buying";
 
   if (auth.loading) return <View style={[styles.root, styles.center]}><ActivityIndicator color={Colors.greenPrimary} /></View>;
@@ -29,14 +29,14 @@ export default function OrdersTab() {
 
   return <View style={styles.root}>
     <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
-      <Text style={styles.title}>{canSell ? "คำสั่งซื้อและงานขาย" : "คำสั่งซื้อของฉัน"}</Text>
+      <Text style={styles.title}>{active === "buying" ? "คำสั่งซื้อของฉัน" : "รายการที่ขาย"}</Text>
       <Text style={styles.sub}>{active === "buying" ? "ติดตามสินค้าที่คุณสั่งซื้อ" : "รับงานและติดตามสินค้าที่คุณต้องเตรียม"}</Text>
       {canSell ? <View style={styles.tabs}>
         <TouchableOpacity style={[styles.tab, active === "buying" && styles.tabActive]} onPress={() => router.setParams({ view: "buying" })}><Text style={[styles.tabText, active === "buying" && styles.tabTextActive]}>รายการที่ซื้อ</Text></TouchableOpacity>
         <TouchableOpacity style={[styles.tab, active === "selling" && styles.tabActive]} onPress={() => router.setParams({ view: "selling" })}><Text style={[styles.tabText, active === "selling" && styles.tabTextActive]}>รายการที่ขาย</Text></TouchableOpacity>
       </View> : null}
     </View>
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([buyer.refresh(), seller.refresh()]); }} tintColor={Colors.greenPrimary} />}>
       {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
       {error ? <Text style={styles.error}>โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</Text> : null}
       {active === "buying" ? <>

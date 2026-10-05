@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareView } from "../../src/components/KeyboardAware";
@@ -26,6 +26,7 @@ export default function ChatRoom() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadMessages = useCallback(async () => {
     if (!Number.isSafeInteger(roomId) || roomId <= 0) return;
@@ -68,12 +69,12 @@ export default function ChatRoom() {
     <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
       <TouchableOpacity onPress={() => router.back()} accessibilityLabel="กลับ"><Ionicons name="arrow-back" size={24} color={Colors.greenPrimary} /></TouchableOpacity>
       <View style={styles.headerCopy}>
-        <Text style={styles.headerTitle} numberOfLines={1}>{header ? `แชตกับ ${header.partner_name}` : "ข้อความ"}</Text>
-        {header ? <Text style={styles.headerDetail} numberOfLines={2}>{header.partner_role} · ร้าน {header.store_name}{header.product_name ? ` · สินค้า ${header.product_name}` : ""}{header.market_name ? ` · ตลาด ${header.market_name}` : ""}</Text> : null}
+        <Text style={styles.headerTitle} numberOfLines={1}>{header?.partner_name ?? "ข้อความ"}</Text>
+        {header?.product_name ? <Text style={styles.headerDetail} numberOfLines={2}>{header.product_name}</Text> : null}
       </View>
     </View>
     {loading ? <Text style={styles.info}>กำลังเปิดบทสนทนา...</Text> : !header ? <Text style={styles.info}>ไม่พบบทสนทนานี้ หรือคุณไม่มีสิทธิ์เข้าถึง</Text> : <>
-      <ScrollView contentContainerStyle={styles.messages} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView contentContainerStyle={styles.messages} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void Promise.all([loadMessages(), markRoomRead()]).finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
         {messages.map((message, index) => {
           const mine = message.sender_id === session?.user.id;
           return <React.Fragment key={message.message_id}>

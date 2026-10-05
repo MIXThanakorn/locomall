@@ -5,8 +5,8 @@ Locomall คือแพลตฟอร์ม Community Commerce สำหรั
 
 > Market ชุมชน → ร้านค้าหนึ่งสินค้า → ผู้ขายหลายราย → กระจายออเดอร์อย่างเป็นธรรม → รวมสินค้าที่ Market → ส่งหนึ่งพัสดุ
 
-V1 รองรับ COD และการยืนยันด้วยคน Payment Gateway, Wallet, Review และ social
-features ถูกแยกเป็น milestone หลัง Commerce Core.
+V1 รองรับ COD และ Wallet **เงินจำลองสำหรับโปรเจ็กต์สาธิตเท่านั้น** รวมถึงรีวิว,
+บันทึกและติดตามตลาด/ร้านที่อนุมัติแล้ว ไม่รับหรือโอนเงินจริง.
 
 ## Technology stack
 
@@ -48,6 +48,7 @@ flowchart LR
 หลักแบ่งความรับผิดชอบ:
 
 - Client รับ input, แสดงผล และ subscribe Realtime
+- Wallet, คำสั่งซื้อ, งานขาย, ตะกร้า และคิวงานสำคัญอัปเดตผ่าน Realtime; ทุกหน้าข้อมูลหลักยังดึงลงรีเฟรชได้เมื่อเครือข่ายสะดุด
 - RLS ตัดสินว่าใครอ่าน/เขียน row ใดได้
 - RPC ตรวจ identity, ownership, state transition และทำ transaction/row locking
 - Client ไม่สามารถกำหนดราคา, seller, allocation หรือยอดรวมของ order
@@ -58,11 +59,11 @@ flowchart LR
 | Role | ความสามารถหลัก |
 |---|---|
 | Guest | ดู Market และร้านที่ approved |
-| Buyer | ตะกร้า, COD checkout, order tracking, chat |
+| Buyer | ตะกร้า, COD/ยอดจำลอง checkout, order tracking, รีวิวหลังรับสินค้า, chat |
 | Seller | จัดการ stock และเตรียม allocation ของตนเอง |
 | Store manager | ดูแลร้านหนึ่งสินค้าและ chat กับ buyer |
 | Market owner | อนุมัติร้าน/ผู้ขาย, รับของ, รวมและจัดส่ง order |
-| Platform Admin | อนุมัติ Market, self-approval escalation และ audited override |
+| Platform Admin | อนุมัติ Market, ตรวจยอดจำลอง, ดูแลรีวิว และ audited override |
 
 ผู้ใช้หนึ่งบัญชีเป็น Buyer, Seller, Store manager และ Market owner พร้อมกันได้
 สิทธิ์เหล่านี้อนุมานจาก relationship; Platform Admin เป็นสิทธิ์พิเศษแยกต่างหาก.
@@ -250,15 +251,15 @@ leaked-password protection ต้องใส่ provider/เปิดใน Sup
 locomall/
 ├─ app/                         Expo Router screens
 │  ├─ (auth)/                  sign in/up, recovery, location onboarding
-│  ├─ (tabs)/                  Home, Nearby, Orders, Notifications, Profile
-│  ├─ admin/                   Admin dashboard, approvals, orders, audit
+│  ├─ (tabs)/                  Home, Chat, Orders, Notifications, Profile
+│  ├─ admin/                   Admin dashboard, approvals, orders, demo finance, reviews, audit
 │  ├─ guide.tsx                คู่มือผู้ซื้อ ผู้ขาย และเจ้าของตลาด
 │  ├─ market/                  catalog, application, edit, owner approval/logistics
 │  ├─ store/                   one-product store detail and management
 │  ├─ seller/                  stock and allocation operations
-│  ├─ order/                   cart, COD checkout and tracking
+│  ├─ order/                   cart, COD/demo checkout, tracking and reviews
 │  ├─ chat/                    buyer ↔ store manager room
-│  └─ profile/                 profile, password and shipping addresses
+│  └─ profile/                 profile, demo wallet, saved catalog and shipping addresses
 ├─ src/
 │  ├─ components/              reusable UI and permission gate
 │  ├─ constants/               Figma-derived design tokens
@@ -337,12 +338,15 @@ three Sellers and Buyer accounts on Android, iOS and web.
 ขั้นตอนสร้าง APK สำหรับติดตั้งทดสอบอยู่ใน [`docs/BUILD_APK.md`](docs/BUILD_APK.md)
 และการตั้งค่า Google Sign-In บน APK อยู่ใน [`docs/GOOGLE_SIGN_IN_ANDROID.md`](docs/GOOGLE_SIGN_IN_ANDROID.md).
 
-Contract/unit suite ปัจจุบันมี 60 tests. การผ่านชุดนี้ไม่แทน penetration test,
+Contract/unit suite ปัจจุบันมี 69 tests. การผ่านชุดนี้ไม่แทน penetration test,
 concurrent database test หรือการทดสอบ role boundary กับ live Supabase.
 
 ## Release checklist
 
 - Run migrations and regenerate TypeScript types
+- ตรวจว่าการบันทึกและติดตามแสดงเฉพาะตลาด/ร้านที่อนุมัติแล้ว (ระบบแชร์พักไว้ก่อน)
+- Rebuild APK after adding QR/native dependencies; test demo top-up, refund, seller settlement and review with Buyer/Seller/Admin accounts
+- Check every wallet/QR amount visibly says “เงินจำลอง” and no real bank-app payment is possible
 - Run Security/Performance Advisors and record accepted warnings
 - Verify Auth production settings and redirect URLs
 - Link EAS project, configure Android FCM V1/iOS APNs credentials และสร้าง Development/Production Build
@@ -356,10 +360,12 @@ concurrent database test หรือการทดสอบ role boundary ก�
 
 ## V1 non-goals
 
-- Payment Gateway, QR PromptPay and bank transfer
-- Buyer/Seller Wallet and settlement
-- Reviews/ratings
-- Favorite, Follow and Share
+- **เงินจริง**: Payment Gateway, PromptPay QR ที่ใช้โอนได้, bank transfer,
+  การเติม/ถอนเงินจริง และการโอนผู้ขายจริง
+- ค่าคอมมิชชันและค่าจัดส่งในแอป
+- AI (เลื่อนไป milestone หลัง V1)
 
-These features must not be added by weakening the COD transaction, RLS or audit
-model established for Commerce Core.
+ระบบ Wallet, QR อ้างอิง, การคืนยอด และการบันทึกโอนผู้ขายใน V1 เป็น **ข้อมูลจำลอง**
+เท่านั้น คู่มือการติดตั้ง migration/Edge Function, การทดสอบและรีเซ็ตข้อมูลทดสอบอยู่ที่
+[`docs/demo-v1.md`](docs/demo-v1.md). ยอดจริงไม่อ่านจาก `profiles.wallet_balance`;
+รายการใหม่เก็บใน `demo_accounts`/`demo_ledger` และแก้ได้ผ่าน RPC ที่ตรวจสิทธิ์เท่านั้น.

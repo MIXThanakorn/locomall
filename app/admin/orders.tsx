@@ -7,8 +7,10 @@ import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { formatThaiDateTime } from "../../src/lib/date";
 import { supabase } from "../../src/lib/supabase";
+import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
 
 const statusLabels: Record<string, string> = { awaiting_preparation: "รอผู้ขายรับออเดอร์", preparing: "กำลังเตรียม", at_hub: "ถึงจุดรวม", consolidated: "รวมพัสดุแล้ว", shipped: "จัดส่งแล้ว", cancelled: "ยกเลิกแล้ว" };
+const ORDER_WATCHES: RealtimeWatch[] = [{ table: "orders", event: "INSERT" }, { table: "orders", event: "UPDATE" }];
 
 export default function AdminOrders() {
   const router = useRouter();
@@ -22,6 +24,7 @@ export default function AdminOrders() {
     setOrders(data ?? []); setRefreshing(false);
   }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useRealtimeRefresh("admin-orders", load, ORDER_WATCHES);
   const cancel = (order: any) => Alert.alert("ผู้ดูแลระบบยกเลิกคำสั่งซื้อ", `ต้องการยกเลิก ${order.order_number} ใช่หรือไม่? ระบบจะคืนจำนวนสินค้าให้ผู้ขายเพียงครั้งเดียว`, [
     { text: "กลับ", style: "cancel" },
     { text: "ยืนยันการยกเลิก", style: "destructive", onPress: async () => { setWorking(order.order_id); const { error } = await supabase.rpc("cancel_order", { p_order_id: order.order_id, p_reason: "ยกเลิกโดยผู้ดูแลระบบ", p_admin_override: true }); setWorking(null); if (error) return Alert.alert("ยกเลิกไม่สำเร็จ", translateDatabaseError(error)); await load(); } },

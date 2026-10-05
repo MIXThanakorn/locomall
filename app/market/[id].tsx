@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
+import { CatalogActions } from "../../src/components/CatalogActions";
 import { useAuth } from "../../src/context/AuthContext";
 import { supabase } from "../../src/lib/supabase";
 
@@ -16,9 +17,10 @@ export default function MarketDetail() {
   const [stores, setStores] = useState<any[]>([]);
   const [sameArea, setSameArea] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
-  useFocusEffect(useCallback(() => {
-    void (async () => {
+  const load = useCallback(async () => {
       const [marketResult, locationResult] = await Promise.all([
         supabase.rpc("get_market_catalog", { p_market_id: Number(id) }),
         session ? supabase.from("user_locations").select("subdistrict_code").eq("user_id", session.user.id).maybeSingle() : Promise.resolve({ data: null }),
@@ -27,8 +29,8 @@ export default function MarketDetail() {
       setMarket(catalog); setStores(catalog?.stores ?? []);
       setSameArea(Boolean(catalog && locationResult.data?.subdistrict_code === catalog.subdistrict_code));
       setLoading(false);
-    })();
-  }, [id, session]));
+  }, [id, session]);
+  useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!market) return <View style={styles.center}><Text>ไม่พบตลาดชุมชนนี้</Text></View>;
@@ -40,7 +42,8 @@ export default function MarketDetail() {
       <Text style={styles.heroTitle}>{market.name}</Text><Text style={styles.heroDesc}>{market.description}</Text>
       <View style={styles.location}><Ionicons name="location-outline" size={16} color={Colors.goldPrimary} /><Text style={styles.locationText}>{market.hub_address}</Text></View>
     </View>
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().then(() => setRefreshVersion((value) => value + 1)).finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
+      <CatalogActions targetType="market" targetId={Number(id)} refreshVersion={refreshVersion} />
       {isOwner ? <TouchableOpacity style={styles.manage} onPress={() => router.push("/market/manage/home" as never)}>
         <Ionicons name="settings-outline" size={20} color={Colors.greenPrimary} /><Text style={styles.manageText}>จัดการตลาดชุมชนนี้</Text><Ionicons name="chevron-forward" size={18} />
       </TouchableOpacity> : null}

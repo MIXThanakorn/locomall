@@ -1,12 +1,17 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import type { Tables } from "../types/database";
+import { RealtimeWatch, useRealtimeRefresh } from "./useRealtimeRefresh";
 
-export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number; unit_price?: number | null };
+export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number; unit_price?: number | null; rating_average?: number; rating_count?: number; sold_quantity?: number };
 const DISCOVERY_PAGE_SIZE = 24;
+const CATALOG_WATCHES: RealtimeWatch[] = [
+  { table: "markets", event: "INSERT" }, { table: "markets", event: "UPDATE" },
+  { table: "stores", event: "INSERT" }, { table: "stores", event: "UPDATE" },
+];
 
 export function useNearby(query = "", kind = "all") {
   const { deviceLocation, deviceLocationReady } = useAuth();
@@ -29,11 +34,15 @@ export function useNearby(query = "", kind = "all") {
       p_after_entity_id: after?.entity_id,
     });
     if (result.error || !result.data) return result;
+    const marketIds = result.data.filter((item) => item.entity_type === "market").map((item) => item.entity_id);
     const storeIds = result.data.filter((item) => item.entity_type === "store").map((item) => item.entity_id);
-    if (!storeIds.length) return result;
-    const { data: prices } = await supabase.rpc("get_public_store_prices", { p_store_ids: storeIds });
-    const priceByStore = new Map((prices ?? []).map((price) => [price.store_id, Number(price.unit_price)]));
-    return { ...result, data: result.data.map((item) => ({ ...item, unit_price: priceByStore.get(item.entity_id) ?? null })) };
+    const { data: metrics, error: metricsError } = await (supabase as any).rpc("get_catalog_card_metrics", { p_market_ids: marketIds, p_store_ids: storeIds });
+    if (metricsError) return { ...result, error: metricsError };
+    const byEntity = new Map<string, Record<string, unknown>>((metrics ?? []).map((metric: any) => [`${metric.entity_type}-${metric.entity_id}`, metric]));
+    return { ...result, data: result.data.map((item) => {
+      const metric = byEntity.get(`${item.entity_type}-${item.entity_id}`);
+      return { ...item, ...metric, unit_price: metric?.min_price ?? null };
+    }) };
   }, [query, kind, deviceLocation]);
   const refresh = useCallback(async () => {
     if (!deviceLocationReady) return;
@@ -72,32 +81,50 @@ export function useNearby(query = "", kind = "all") {
     const timer = setTimeout(() => void refresh(), 250);
     return () => { clearTimeout(timer); requestId.current += 1; };
   }, [refresh]));
+  useRealtimeRefresh("home-catalog", refresh, CATALOG_WATCHES, deviceLocationReady);
   return { items, loading, loadingMore, hasMore, error, refresh, loadMore };
 }
 
 export function useOrders() {
-  const [orders, setOrders] = useState<any[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth();
+  const userId = session?.user.id;
+  const [result, setResult] = useState<{ userId?: string; orders: any[]; loading: boolean; error: string | null }>({ orders: [], loading: true, error: null });
+  const requestId = useRef(0);
   const refresh = useCallback(async () => {
-    setLoading(true);
-    const result = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name,image_url))").order("created_at", { ascending: false });
-    setOrders(result.data ?? []); setError(result.error?.message ?? null); setLoading(false);
-  }, []);
+    const currentRequest = ++requestId.current;
+    if (!userId) { setResult({ userId, orders: [], loading: false, error: null }); return; }
+    setResult((current) => ({ userId, orders: current.userId === userId ? current.orders : [], loading: true, error: null }));
+    const response = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name,image_url))").eq("buyer_id", userId).order("created_at", { ascending: false });
+    if (currentRequest === requestId.current) setResult({ userId, orders: response.data ?? [], error: response.error?.message ?? null, loading: false });
+  }, [userId]);
   useEffect(() => { void refresh(); }, [refresh]);
-  return { orders, loading, error, refresh };
+  const watches = useMemo<RealtimeWatch[]>(() => userId ? [
+    { table: "orders", event: "INSERT", filter: `buyer_id=eq.${userId}` },
+    { table: "orders", event: "UPDATE", filter: `buyer_id=eq.${userId}` },
+  ] : [], [userId]);
+  useRealtimeRefresh(`buyer-orders-${userId}`, refresh, watches, Boolean(userId));
+  return { orders: result.userId === userId ? result.orders : [], loading: result.userId !== userId || result.loading, error: result.userId === userId ? result.error : null, refresh };
 }
 
 export function useSellerAllocations() {
   const { session } = useAuth();
   const userId = session?.user.id;
-  const [allocations, setAllocations] = useState<any[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ userId?: string; allocations: any[]; loading: boolean; error: string | null }>({ allocations: [], loading: true, error: null });
+  const requestId = useRef(0);
   const refresh = useCallback(async () => {
-    if (!userId) { setAllocations([]); setLoading(false); return; }
-    setLoading(true);
-    const result = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("seller_id", userId).order("created_at", { ascending: false });
-    setAllocations(result.data ?? []); setError(result.error?.message ?? null); setLoading(false);
+    const currentRequest = ++requestId.current;
+    if (!userId) { setResult({ userId, allocations: [], loading: false, error: null }); return; }
+    setResult((current) => ({ userId, allocations: current.userId === userId ? current.allocations : [], loading: true, error: null }));
+    const response = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("seller_id", userId).order("created_at", { ascending: false });
+    if (currentRequest === requestId.current) setResult({ userId, allocations: response.data ?? [], error: response.error?.message ?? null, loading: false });
   }, [userId]);
   useEffect(() => { void refresh(); }, [refresh]);
-  return { allocations, loading, error, refresh };
+  const watches = useMemo<RealtimeWatch[]>(() => userId ? [
+    { table: "order_allocations", event: "INSERT", filter: `seller_id=eq.${userId}` },
+    { table: "order_allocations", event: "UPDATE", filter: `seller_id=eq.${userId}` },
+  ] : [], [userId]);
+  useRealtimeRefresh(`seller-allocations-${userId}`, refresh, watches, Boolean(userId));
+  return { allocations: result.userId === userId ? result.allocations : [], loading: result.userId !== userId || result.loading, error: result.userId === userId ? result.error : null, refresh };
 }
 
 export function useNotifications() {
@@ -113,7 +140,10 @@ export function useNotifications() {
   useEffect(() => {
     if (!userId) return;
     void refresh();
-    const channel = supabase.channel(`my-notifications-${userId}`).on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh()).subscribe();
+    const channel = supabase.channel(`my-notifications-${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh())
+      .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [refresh, userId]);
   return { items, loading, refresh };

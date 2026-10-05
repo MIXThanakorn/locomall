@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { Button } from "../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
@@ -27,6 +27,7 @@ export default function ShippingAddress() {
   const [addressLine, setAddressLine] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadAddresses = useCallback(async () => {
     const result = await supabase.from("user_addresses").select("*,thai_subdistricts(name_th,thai_districts(name_th,thai_provinces(name_th)))").order("is_default", { ascending: false });
@@ -118,7 +119,7 @@ export default function ShippingAddress() {
     Alert.alert(wasEditing ? "แก้ไขที่อยู่แล้ว" : "บันทึกที่อยู่แล้ว");
   };
 
-  return <KeyboardAwareScrollView ref={scrollRef} style={styles.root} contentContainerStyle={styles.content}>
+  return <KeyboardAwareScrollView ref={scrollRef} style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadAddresses().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <Text style={styles.title}>ที่อยู่จัดส่ง</Text>
     {list.map((address) => {
       const sub = address.thai_subdistricts;

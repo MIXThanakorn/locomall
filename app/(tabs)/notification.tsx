@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, AppState, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useNotifications } from "../../src/hooks/useCommerce";
-import { getPushPermissionState, notificationPath, openNotificationSettings, PushPermissionState, registerForPushNotifications } from "../../src/lib/pushNotifications";
+import { notificationPath } from "../../src/lib/pushNotifications";
 import { supabase } from "../../src/lib/supabase";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
 
@@ -39,19 +39,6 @@ export default function NotificationScreen() {
   const { refreshBadges } = useBadgeCounts();
   const [category, setCategory] = useState<Category>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
-  const [pushState, setPushState] = useState<PushPermissionState>("unavailable");
-  const [pushBusy, setPushBusy] = useState(false);
-
-  const refreshPermission = useCallback(() => {
-    void getPushPermissionState().then(setPushState).catch(() => setPushState("unavailable"));
-  }, []);
-  useEffect(() => {
-    refreshPermission();
-    const subscription = AppState.addEventListener("change", (state) => {
-      if (state === "active") refreshPermission();
-    });
-    return () => subscription.remove();
-  }, [refreshPermission]);
 
   const visibleItems = useMemo(() => items.filter((item) => item.category !== "chat" && item.entity_type !== "chat" && !item.type.includes("chat")), [items]);
   const filtered = useMemo(() => visibleItems.filter((item) => {
@@ -75,24 +62,9 @@ export default function NotificationScreen() {
     await refresh();
     await refreshBadges();
   };
-  const enablePush = async () => {
-    if (pushState === "denied") return openNotificationSettings();
-    setPushBusy(true);
-    try {
-      const next = await registerForPushNotifications(true);
-      setPushState(next);
-      if (next === "not_configured") Alert.alert("อนุญาตการแจ้งเตือนแล้ว", "เครื่องนี้พร้อมรับแจ้งเตือนหลังติดตั้งแอปเวอร์ชัน Development หรือ Production Build");
-    } catch {
-      Alert.alert("เปิดการแจ้งเตือนไม่สำเร็จ", "ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง");
-    } finally { setPushBusy(false); }
-  };
-
   if (auth.loading) return <View style={[styles.root, styles.center]}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!auth.session) return <Redirect href="/(auth)/sign-in" />;
 
-  const pushGranted = pushState === "granted";
-  const pushPermissionOnly = pushState === "not_configured";
-  const pushUnavailable = pushState === "unavailable";
   return <View style={styles.root}>
     <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
       <View style={styles.titleRow}>
@@ -100,13 +72,7 @@ export default function NotificationScreen() {
         {unreadCount > 0 ? <TouchableOpacity onPress={markAllRead}><Text style={styles.readAll}>อ่านทั้งหมด</Text></TouchableOpacity> : null}
       </View>
     </View>
-    <ScrollView contentContainerStyle={styles.content}>
-      {Platform.OS !== "web" && !pushUnavailable ? <View style={[styles.pushCard, pushGranted && styles.pushCardOn]}>
-        <View style={[styles.pushIcon, pushGranted && styles.pushIconOn]}><Ionicons name={pushGranted ? "notifications" : "notifications-outline"} size={22} color={Colors.greenPrimary} /></View>
-        <View style={styles.pushCopy}><Text style={styles.pushTitle}>{pushGranted ? "แจ้งเตือนนอกแอปเปิดอยู่" : pushPermissionOnly ? "อนุญาตแล้ว — รอแอปเวอร์ชัน Build" : "รับแจ้งเตือนแม้ไม่ได้เปิดแอป"}</Text><Text style={styles.pushBody}>{pushState === "denied" ? "สิทธิ์ถูกปิดอยู่ แตะเพื่อเปิดในการตั้งค่าเครื่อง" : pushGranted ? "คุณจะไม่พลาดคำสั่งซื้อ คำขอ และข้อความสำคัญ" : pushPermissionOnly ? "เครื่องพร้อมรับ Push หลังตั้งค่าโครงการสำหรับ Development หรือ Production Build" : "อนุญาตเพื่อรับคำสั่งซื้อ คำขอ และข้อความสำคัญ"}</Text></View>
-        {!pushGranted && !pushPermissionOnly ? <TouchableOpacity disabled={pushBusy} style={styles.enableButton} onPress={enablePush}><Text style={styles.enableText}>{pushBusy ? "กำลังเปิด..." : pushState === "denied" ? "ตั้งค่า" : "เปิดใช้"}</Text></TouchableOpacity> : null}
-      </View> : null}
-
+    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([refresh(), refreshBadges()]); }} tintColor={Colors.greenPrimary} />}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
         {FILTERS.map((filter) => <TouchableOpacity key={filter.key} onPress={() => setCategory(filter.key)} style={[styles.filter, category === filter.key && styles.filterActive]}>
           <Ionicons name={filter.icon} size={17} color={category === filter.key ? Colors.textWhite : Colors.textMedium} />
@@ -140,7 +106,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { alignItems: "center", justifyContent: "center" },
   head: { padding: Spacing.lg, backgroundColor: Colors.goldPrimary, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.greenDark }, readAll: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textDecorationLine: "underline" },
-  content: { padding: Spacing.lg, paddingBottom: 110 }, pushCard: { flexDirection: "row", alignItems: "center", gap: 10, padding: 14, borderRadius: BorderRadius.lg, backgroundColor: "#FFF7DD", borderWidth: 1, borderColor: "#F4D572", marginBottom: 16 }, pushCardOn: { backgroundColor: "#ECF6EF", borderColor: "#B8D9C3" }, pushIcon: { width: 42, height: 42, borderRadius: 21, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" }, pushIconOn: { backgroundColor: "#D9EDDF" }, pushCopy: { flex: 1 }, pushTitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 14 }, pushBody: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12, lineHeight: 18 }, enableButton: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: BorderRadius.round, backgroundColor: Colors.greenPrimary }, enableText: { fontFamily: "Kanit_500Medium", color: Colors.textWhite, fontSize: 12 },
+  content: { padding: Spacing.lg, paddingBottom: 110 },
   filters: { gap: 8, paddingRight: 16, marginBottom: 13 }, filter: { flexDirection: "row", gap: 6, alignItems: "center", paddingHorizontal: 14, paddingVertical: 9, borderRadius: BorderRadius.round, borderWidth: 1, borderColor: Colors.inputBorder, backgroundColor: Colors.cardBackground }, filterActive: { backgroundColor: Colors.greenPrimary, borderColor: Colors.greenPrimary }, filterText: { fontFamily: "Kanit_500Medium", color: Colors.textMedium, fontSize: 13 }, filterTextActive: { color: Colors.textWhite },
   unreadToggle: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }, unreadToggleText: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, flex: 1 }, count: { minWidth: 24, height: 24, paddingHorizontal: 7, borderRadius: 12, backgroundColor: Colors.goldPrimary, alignItems: "center", justifyContent: "center" }, countText: { fontFamily: "Kanit_700Bold", color: Colors.greenDark, fontSize: 11 },
   card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", padding: Spacing.md, borderRadius: BorderRadius.lg, marginBottom: 10, borderWidth: 1, borderColor: Colors.inputBorder }, unread: { borderLeftWidth: 4, borderLeftColor: Colors.goldPrimary }, icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" }, cardCopy: { flex: 1 }, cardTop: { flexDirection: "row", alignItems: "center", gap: 7 }, categoryLabel: { fontFamily: "Kanit_500Medium", fontSize: 11, color: Colors.textMuted }, dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.goldPrimary }, itemTitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, body: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, lineHeight: 21 }, date: { fontFamily: "Kanit_400Regular", fontSize: 11, color: Colors.textMuted, marginTop: 5 }, empty: { alignItems: "center", marginTop: 54 }, emptyTitle: { fontFamily: "Kanit_700Bold", color: Colors.textMedium, marginTop: 9 }, emptyText: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginTop: 2 },

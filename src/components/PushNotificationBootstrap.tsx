@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { canUseNativePushNotifications, configureNotificationHandler, notificationPath, registerForPushNotifications } from "../lib/pushNotifications";
 
@@ -8,18 +8,23 @@ type NotificationResponseLike = {
 };
 
 export function PushNotificationBootstrap() {
-  const { session, loading } = useAuth();
+  const { session, loading, hasLocation, isAdmin, deviceLocationReady } = useAuth();
   const router = useRouter();
+  const attemptedUser = useRef<string | null>(null);
 
   useEffect(() => {
-    if (loading || !session?.user.id) return;
+    const userId = session?.user.id;
+    if (!userId) { attemptedUser.current = null; return; }
+    if (loading || hasLocation === null || isAdmin === null || (hasLocation && !isAdmin && !deviceLocationReady)) return;
+    if (attemptedUser.current === userId) return;
     const timer = setTimeout(() => {
+      attemptedUser.current = userId;
       void registerForPushNotifications(true).catch(() => {
         // Push is an enhancement; failure must never block the signed-in app.
       });
     }, 1200);
     return () => clearTimeout(timer);
-  }, [loading, session?.user.id]);
+  }, [loading, session?.user.id, hasLocation, isAdmin, deviceLocationReady]);
 
   useEffect(() => {
     if (!canUseNativePushNotifications()) return;

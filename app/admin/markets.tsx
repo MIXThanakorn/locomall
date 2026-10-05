@@ -10,8 +10,14 @@ import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { signedPrivateImageUrl } from "../../src/lib/storage";
 import { supabase } from "../../src/lib/supabase";
+import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
 
 type QueueKind = "market" | "store" | "seller";
+const APPROVAL_WATCHES: RealtimeWatch[] = [
+  { table: "markets", event: "INSERT" }, { table: "markets", event: "UPDATE" },
+  { table: "stores", event: "INSERT" }, { table: "stores", event: "UPDATE" },
+  { table: "store_seller_applications", event: "INSERT" }, { table: "store_seller_applications", event: "UPDATE" },
+];
 
 export default function AdminApprovals() {
   const [markets, setMarkets] = useState<any[]>([]);
@@ -38,6 +44,7 @@ export default function AdminApprovals() {
   }, []);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useRealtimeRefresh("admin-approvals", load, APPROVAL_WATCHES);
 
   const review = async (kind: QueueKind, id: number, approve: boolean) => {
     const key = `${kind}-${id}`;

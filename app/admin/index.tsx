@@ -6,6 +6,14 @@ import { AdminGate } from "../../src/components/AdminGate";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { supabase } from "../../src/lib/supabase";
+import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
+
+const DASHBOARD_WATCHES: RealtimeWatch[] = [
+  { table: "markets", event: "INSERT" }, { table: "markets", event: "UPDATE" },
+  { table: "stores", event: "INSERT" }, { table: "stores", event: "UPDATE" },
+  { table: "store_seller_applications", event: "INSERT" }, { table: "store_seller_applications", event: "UPDATE" },
+  { table: "orders", event: "INSERT" }, { table: "orders", event: "UPDATE" },
+];
 
 type Stats = { markets: number; stores: number; sellers: number; orders: number };
 
@@ -28,6 +36,7 @@ export default function AdminDashboard() {
   }, []);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useRealtimeRefresh("admin-dashboard", load, DASHBOARD_WATCHES);
 
   const logout = () => Alert.alert("ออกจากระบบผู้ดูแล", "ยืนยันออกจากระบบ?", [
     { text: "ยกเลิก", style: "cancel" },
@@ -51,6 +60,8 @@ export default function AdminDashboard() {
     <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/markets" as never)}><Ionicons name="checkmark-circle-outline" size={24} color={Colors.greenPrimary} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ตรวจคำขอทั้งหมด</Text><Text style={styles.actionDesc}>ตลาดชุมชน ร้านค้า และผู้สมัครร่วมขาย</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
     <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/orders" as never)}><Ionicons name="warning-outline" size={24} color={Colors.warning} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ติดตามคำสั่งซื้อ</Text><Text style={styles.actionDesc}>ตรวจสถานะและจัดการกรณีผิดปกติ</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
     <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/audit" as never)}><Ionicons name="shield-checkmark-outline" size={24} color={Colors.info} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ประวัติการดำเนินการ</Text><Text style={styles.actionDesc}>ตรวจสอบการอนุมัติและการแก้ไขกรณีพิเศษ</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
+    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/finance" as never)}><Ionicons name="wallet-outline" size={24} color={Colors.greenPrimary} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ยอดเงินจำลอง</Text><Text style={styles.actionDesc}>อนุมัติคำขอทดสอบและบันทึกยอดรอโอนผู้ขาย</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
+    <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/reviews" as never)}><Ionicons name="star-outline" size={24} color={Colors.goldDark} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ดูแลรีวิว</Text><Text style={styles.actionDesc}>ซ่อนรีวิวที่ไม่เหมาะสมพร้อมเหตุผล</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
     <View style={styles.notice}><Ionicons name="lock-closed-outline" size={19} color={Colors.greenPrimary} /><Text style={styles.noticeText}>สิทธิ์ของผู้ดูแลระบบถูกกำหนดไว้ในฐานข้อมูล และไม่ต้องยืนยันผ่านอีเมลหรือแอปยืนยันตัวตน</Text></View>
   </ScrollView></AdminGate>;
 }

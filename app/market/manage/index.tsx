@@ -2,7 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { Button } from "../../../src/components/Button";
@@ -12,10 +12,17 @@ import { useCapabilities } from "../../../src/hooks/useCapabilities";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { signedPrivateImageUrl } from "../../../src/lib/storage";
 import { supabase } from "../../../src/lib/supabase";
+import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
+
+const APPROVAL_WATCHES: RealtimeWatch[] = [
+  { table: "stores", event: "INSERT" }, { table: "stores", event: "UPDATE" },
+  { table: "store_seller_applications", event: "INSERT" }, { table: "store_seller_applications", event: "UPDATE" },
+];
 
 export default function ApprovalQueue() {
   const permissions = useCapabilities(); const router = useRouter();
   const [stores, setStores] = useState<any[]>([]); const [sellers, setSellers] = useState<any[]>([]); const [notes, setNotes] = useState<Record<number, string>>({});
+  const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => {
     if (!permissions.isMarketOwner && !permissions.isAdmin) return;
     const [storeResult, sellerResult] = await Promise.all([
@@ -29,13 +36,14 @@ export default function ApprovalQueue() {
     setStores(storeResult.data ?? []); setSellers(sellerRows);
   }, [permissions.isAdmin, permissions.isMarketOwner]);
   useEffect(() => { void load(); }, [load]);
+  useRealtimeRefresh("market-approval-queue", load, APPROVAL_WATCHES, permissions.isMarketOwner || permissions.isAdmin);
   const reviewSeller = async (id: number, approve: boolean) => {
     const note = notes[id]?.trim(); if (!approve && !note) return Alert.alert("กรุณาระบุเหตุผลที่ปฏิเสธ");
     const { error } = await supabase.rpc("review_store_seller", { p_application_id: id, p_approve: approve, p_note: note || undefined });
     if (error) Alert.alert("ดำเนินการไม่สำเร็จ", translateDatabaseError(error)); else { setNotes((current) => ({ ...current, [id]: "" })); await load(); }
   };
   return <PermissionGate allow={permissions.isMarketOwner || permissions.isAdmin} loading={permissions.loading}>
-    <KeyboardAwareScrollView contentContainerStyle={styles.root}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
       <Text style={styles.title}>คิวอนุมัติ</Text><Text style={styles.sub}>แตะคำขอร้านค้าเพื่อดูผู้สมัคร สินค้า ราคา และรายละเอียดทั้งหมด</Text>
       <Text style={styles.section}>ร้านใหม่</Text>
       {!stores.length ? <Text style={styles.empty}>ไม่มีร้านรอตรวจสอบ</Text> : null}

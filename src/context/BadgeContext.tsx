@@ -47,8 +47,14 @@ export function BadgeProvider({ children }: React.PropsWithChildren) {
   useEffect(() => { void refreshBadges(); }, [refreshBadges, pathname]);
   useEffect(() => {
     if (!userId) return;
-    const channel = supabase.channel(`badge-notifications-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+    const channel = supabase.channel(`badge-counts-${userId}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        () => void refreshBadges())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
+        () => void refreshBadges())
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "carts", filter: `buyer_id=eq.${userId}` },
+        () => void refreshBadges())
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "carts", filter: `buyer_id=eq.${userId}` },
         () => void refreshBadges()).subscribe();
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") void refreshBadges();

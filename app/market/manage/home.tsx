@@ -1,28 +1,40 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
 import { ContextHelp } from "../../../src/components/ContextHelp";
 import { useAuth } from "../../../src/context/AuthContext";
 import { supabase } from "../../../src/lib/supabase";
 import { approvalStatusLabel } from "../../../src/lib/displayText";
+import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
+
+const MARKET_WATCHES: RealtimeWatch[] = [
+  { table: "markets", event: "INSERT" }, { table: "markets", event: "UPDATE" },
+  { table: "stores", event: "INSERT" }, { table: "stores", event: "UPDATE" },
+];
 
 export default function MarketManagementHome() {
   const router = useRouter();
   const { session, isAdmin } = useAuth();
+  const userId = session?.user.id;
   const [markets, setMarkets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    if (!session?.user.id) return;
+  const load = useCallback(async () => {
+    if (!userId) return;
     let query = supabase.from("markets").select("*,stores(store_id,name,product_name,approval_status,manager_id)").order("created_at");
-    if (!isAdmin) query = query.eq("owner_id", session.user.id);
-    query.then(({ data }) => { setMarkets(data ?? []); setLoading(false); });
-  }, [isAdmin, session?.user.id]);
+    if (!isAdmin) query = query.eq("owner_id", userId);
+    const { data } = await query;
+    setMarkets(data ?? []); setLoading(false);
+  }, [isAdmin, userId]);
+  useEffect(() => { void load(); }, [load]);
+  useRealtimeRefresh(`market-management-${userId}`, load, MARKET_WATCHES, Boolean(userId));
 
   if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
-  return <ScrollView contentContainerStyle={styles.root}>
+  return <ScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <Text style={styles.title}>จัดการตลาดชุมชน</Text>
     <Text style={styles.sub}>แก้ไขข้อมูล ตรวจคำขอ ดูร้านค้า และดูแลจุดรวมสินค้า</Text>
     <ContextHelp title="งานหลักของเจ้าของตลาด" steps={["ตรวจรายละเอียดคำขอเปิดร้านและผู้สมัครร่วมขาย", "รับสินค้าที่ผู้ขายเตรียมเสร็จ แล้วนำไปยังจุดรวม", "เมื่อสินค้าครบทุกชิ้น จึงรวมและส่งให้ลูกค้า"]} />

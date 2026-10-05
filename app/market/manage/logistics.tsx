@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useCallback, useEffect, useState } from "react";
+import { Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "../../../src/components/AppTextInput";
 import { Button } from "../../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
@@ -8,24 +9,28 @@ import { Colors, Spacing } from "../../../src/constants/theme";
 import { useCapabilities } from "../../../src/hooks/useCapabilities";
 import { supabase } from "../../../src/lib/supabase";
 import { allocationStatusLabel } from "../../../src/lib/displayText";
+import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
+
+const LOGISTICS_WATCHES: RealtimeWatch[] = [
+  { table: "orders", event: "INSERT" }, { table: "orders", event: "UPDATE" },
+  { table: "order_allocations", event: "UPDATE" },
+];
 
 export default function Logistics() {
   const permissions = useCapabilities();
   const [orders, setOrders] = useState<any[]>([]);
   const [tracking, setTracking] = useState<Record<number, string>>({});
-  const load = async () => {
+  const [refreshing, setRefreshing] = useState(false);
+  const load = useCallback(async () => {
     if (!permissions.isMarketOwner && !permissions.isAdmin) return;
     const { data } = await supabase.from("orders").select("*,order_items(*,order_allocations(*))").neq("status", "delivered").neq("status", "cancelled").order("created_at");
     setOrders(data ?? []);
-  };
-  useEffect(() => {
-    if (!permissions.isMarketOwner && !permissions.isAdmin) return;
-    supabase.from("orders").select("*,order_items(*,order_allocations(*))").neq("status", "delivered").neq("status", "cancelled").order("created_at")
-      .then(({ data }) => setOrders(data ?? []));
   }, [permissions.isMarketOwner, permissions.isAdmin]);
+  useEffect(() => { void load(); }, [load]);
+  useRealtimeRefresh("market-logistics", load, LOGISTICS_WATCHES, permissions.isMarketOwner || permissions.isAdmin);
   const rpc = async (name: any, args: any) => { const { error } = await supabase.rpc(name, args); if (error) Alert.alert("บันทึกข้อมูลไม่สำเร็จ", "กรุณาตรวจสอบสถานะสินค้าแล้วลองอีกครั้ง"); else await load(); };
   return <PermissionGate allow={permissions.isMarketOwner || permissions.isAdmin} loading={permissions.loading}>
-    <KeyboardAwareScrollView contentContainerStyle={styles.root}><Text style={styles.title}>งานที่จุดรวมสินค้า</Text><Text style={styles.sub}>บันทึกเมื่อรับสินค้าจากผู้ขาย แล้วรวมสินค้าเพื่อจัดส่งหรือรอให้ลูกค้ามารับ</Text>
+    <KeyboardAwareScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}><Text style={styles.title}>งานที่จุดรวมสินค้า</Text><Text style={styles.sub}>บันทึกเมื่อรับสินค้าจากผู้ขาย แล้วรวมสินค้าเพื่อจัดส่งหรือรอให้ลูกค้ามารับ</Text>
       {orders.map((order) => <View key={order.order_id} style={styles.order}><Text style={styles.number}>{order.order_number}</Text><Text style={styles.method}>{order.fulfillment_method === "pickup" ? "นัดรับที่จุดรวม" : "จัดส่งถึงลูกค้า"}</Text>
         {order.order_items.flatMap((item: any) => item.order_allocations.map((allocation: any) => <View key={allocation.allocation_id} style={styles.alloc}><Text style={styles.item}>{item.product_name} × {allocation.quantity} · {allocationStatusLabel(allocation.status)}</Text>{allocation.status === "ready_for_pickup" ? <Button title="รับสินค้าจากผู้ขายแล้ว" size="sm" onPress={() => rpc("record_allocation_collected", { p_allocation_id: allocation.allocation_id })} /> : null}{allocation.status === "collected" ? <Button title="นำสินค้าถึงจุดรวมแล้ว" size="sm" onPress={() => rpc("record_allocation_at_hub", { p_allocation_id: allocation.allocation_id })} /> : null}</View>))}
         {order.status === "at_hub" && order.fulfillment_method === "pickup" ? <View style={styles.ready}><Text style={styles.readyText}>สินค้าครบแล้ว พร้อมให้ลูกค้ามารับและยืนยันด้วยตนเอง</Text></View> : null}

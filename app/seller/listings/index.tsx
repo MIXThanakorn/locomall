@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/preserve-manual-memoization */
 import { useFocusEffect } from "expo-router";
-import React, { useCallback, useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useMemo, useState } from "react";
+import { Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { Button } from "../../../src/components/Button";
@@ -11,11 +11,13 @@ import { useAuth } from "../../../src/context/AuthContext";
 import { useCapabilities } from "../../../src/hooks/useCapabilities";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { supabase } from "../../../src/lib/supabase";
+import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
 
 export default function Stock() {
   const permissions = useCapabilities();
   const { session } = useAuth();
   const [list, setList] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!session?.user.id) return setList([]);
@@ -29,6 +31,11 @@ export default function Stock() {
   }, [session?.user.id]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const watches = useMemo<RealtimeWatch[]>(() => session?.user.id ? [
+    { table: "seller_listings", event: "INSERT", filter: `seller_id=eq.${session.user.id}` },
+    { table: "seller_listings", event: "UPDATE", filter: `seller_id=eq.${session.user.id}` },
+  ] : [], [session?.user.id]);
+  useRealtimeRefresh(`seller-stock-${session?.user.id}`, load, watches, Boolean(session?.user.id));
 
   const save = async (listing: any) => {
     const quantity = Number(listing.draft ?? listing.stock_quantity);
@@ -45,7 +52,7 @@ export default function Stock() {
   };
 
   return <PermissionGate allow={permissions.isSeller || permissions.isStoreManager} loading={permissions.loading}>
-    <KeyboardAwareScrollView contentContainerStyle={styles.root}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
       <Text style={styles.title}>จัดการสต็อกสินค้า</Text>
       <Text style={styles.sub}>กรอกจำนวนสินค้าที่มีอยู่จริงทั้งหมด รวมชิ้นที่ลูกค้าสั่งแล้ว ระบบจะกันสินค้าไว้ทันทีเมื่อมีคำสั่งซื้อ และหักจากยอดคงเหลือเมื่อผู้ซื้อยืนยันรับสินค้า</Text>
       {!list.length ? <View style={styles.empty}><Text style={styles.emptyText}>ยังไม่มีรายการขายที่ผ่านการอนุมัติ</Text></View> : null}

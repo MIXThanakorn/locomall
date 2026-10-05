@@ -68,7 +68,7 @@ test("Production routes do not import mock data", () => {
   roots.forEach((directory) => visit(`${directory}/`));
 });
 
-test("Deferred payment and wallet routes are absent", () => {
+test("Demo wallet exists without live PromptPay or bank-transfer screens", () => {
   const appFiles = [];
   const visit = (relative) => {
     for (const entry of readdirSync(new URL(relative, root), { withFileTypes: true })) {
@@ -77,7 +77,8 @@ test("Deferred payment and wallet routes are absent", () => {
     }
   };
   visit("app/");
-  assert.equal(appFiles.some((path) => /wallet|promptpay|bank-transfer/i.test(path)), false);
+  assert.equal(appFiles.some((path) => /wallet/i.test(path)), true);
+  assert.equal(appFiles.some((path) => /promptpay|bank-transfer/i.test(path)), false);
 });
 
 test("Password policy matches the hardened Supabase Auth configuration", () => {
@@ -150,6 +151,8 @@ test("Logout clears local auth state and routes directly to sign in", () => {
   assert.match(context, /setSession\(null\)/);
   assert.match(profile, /await signOut\(\)/);
   assert.match(profile, /router\.replace\("\/\(auth\)\/sign-in"/);
+  assert.match(profile, /สลับบัญชี/);
+  assert.match(profile, /leaveAccount\(true\)/);
 });
 
 test("Native alerts are presented with the Locomall themed modal", () => {
@@ -215,7 +218,7 @@ test("Store applications stay in the Market subdistrict and expose a review deta
 });
 
 test("Order history keeps a product-image snapshot for buyer and seller views", () => {
-  const sql = read("supabase/migrations/20260928033114_order_and_approval_product_images.sql");
+  const sql = read("supabase/migrations/20260928033549_order_and_approval_product_images.sql");
   assert.match(sql, /alter table public\.order_items[\s\S]*add column if not exists product_image_url text/i);
   assert.match(sql, /create trigger snapshot_order_item_image[\s\S]*before insert on public\.order_items/i);
   assert.match(read("app/(tabs)/orders.tsx"), /product_image_url[\s\S]*<Image/);
@@ -224,7 +227,7 @@ test("Order history keeps a product-image snapshot for buyer and seller views", 
 });
 
 test("Store and co-seller approvals show a product photo before review", () => {
-  const sql = read("supabase/migrations/20260928033114_order_and_approval_product_images.sql");
+  const sql = read("supabase/migrations/20260928033549_order_and_approval_product_images.sql");
   assert.match(sql, /alter table public\.store_seller_applications[\s\S]*add column if not exists product_image_url text/i);
   assert.match(sql, /valid product image required/);
   const store = read("app/store/[id].tsx");
@@ -354,8 +357,9 @@ test("Cart and notifications show numeric badges, and chat header is participant
   assert.match(tabs, /tabBarBadge: unreadCount/);
   assert.match(badges, /cart_items\(cart_item_id\)/);
   assert.match(badges, /is\("read_at", null\)/);
-  assert.match(chat, /แชตกับ/);
-  assert.match(chat, /header\.store_name/);
+  assert.doesNotMatch(chat, /แชตกับ/);
+  assert.match(chat, /header\?\.partner_name/);
+  assert.match(chat, /header\.product_name/);
   assert.match(migration, /r\.buyer_id=auth\.uid\(\) or s\.manager_id=auth\.uid\(\)/);
   assert.match(migration, /revoke execute on function public\.get_chat_room_header\(bigint\) from public,anon/);
 });
@@ -364,9 +368,12 @@ test("Approved store cards show price without unit and cart items have an explic
   const discovery = read("src/hooks/useCommerce.ts");
   const card = read("src/components/CommerceCard.tsx");
   const cart = read("app/order/cart.tsx");
-  const migration = read("supabase/migrations/20261003022441_public_store_card_prices.sql");
-  assert.match(discovery, /get_public_store_prices/);
+  const migration = read("supabase/migrations/20261004061208_demo_wallet_reviews_social_v1.sql");
+  assert.match(discovery, /get_catalog_card_metrics/);
   assert.match(card, /Number\(item\.unit_price\)\.toLocaleString/);
+  assert.doesNotMatch(card, /item\.description/);
+  assert.match(card, /rating_average/);
+  assert.match(card, /sold_quantity/);
   assert.match(cart, /ลบจากตะกร้า/);
   assert.match(cart, /change\(storeId, 0\)/);
   assert.match(migration, /s\.approval_status='approved'/);
@@ -521,6 +528,11 @@ test("Notifications request native permission, register devices securely and sup
   assert.doesNotMatch(push, /^import .*expo-notifications/m);
   assert.doesNotMatch(bootstrap, /^import .*expo-notifications/m);
   assert.match(bootstrap, /registerForPushNotifications\(true\)/);
+  assert.match(bootstrap, /hasLocation && !isAdmin && !deviceLocationReady/);
+  assert.match(bootstrap, /attemptedUser\.current === userId/);
+  assert.match(push, /permission\.canAskAgain/);
+  assert.doesNotMatch(screen, /แจ้งเตือนนอกแอปเปิดอยู่|pushCard/);
+  assert.match(read("app.json"), /POST_NOTIFICATIONS/);
   assert.match(screen, /คำสั่งซื้อ/);
   assert.match(screen, /แสดงเฉพาะที่ยังไม่ได้อ่าน/);
   assert.match(screen, /mark_my_non_chat_notifications_read/);
@@ -528,7 +540,7 @@ test("Notifications request native permission, register devices securely and sup
   assert.match(migration, /create table if not exists public\.user_push_devices/);
   assert.match(migration, /revoke all on public\.user_push_devices from public, anon, authenticated/);
   assert.match(edge, /exp\.host\/--\/api\/v2\/push\/send/);
-  assert.match(edge, /isServiceRequest/);
+  assert.match(edge, /isWebhookRequest/);
   assert.match(edge, /return new Response\("Unauthorized", \{ status: 401 \}\)/);
   assert.match(events, /notify_new_order_allocation/);
   assert.match(events, /notify_order_status_change/);

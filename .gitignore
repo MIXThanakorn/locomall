@@ -7,6 +7,7 @@ node_modules/
 
 # Expo
 .expo/
+.eas/
 dist/
 /dist-*/
 web-build/
@@ -70,6 +71,9 @@ supabase/.temp/
 # Project outputs & temporary files
 outputs/
 .codex-spreadsheet/
+.codex-test/
+coverage/
+test-results/
 
 # Firebase Admin / FCM V1 private keys (never commit)
 **/*firebase-adminsdk*.json

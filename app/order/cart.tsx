@@ -1,26 +1,40 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { formatThaiDateTime } from "../../src/lib/date";
 import { supabase } from "../../src/lib/supabase";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
+import { useAuth } from "../../src/context/AuthContext";
+import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
 
 export default function Cart() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { refreshBadges } = useBadgeCounts();
+  const { session } = useAuth();
+  const userId = session?.user.id;
   const [cart, setCart] = useState<any>();
   const [busyStoreId, setBusyStoreId] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => {
     const result = await supabase.from("carts").select("*,markets(name),cart_items(*,stores(name,product_name,unit,unit_price))").maybeSingle();
     setCart(result.data);
   }, []);
   useEffect(() => { void load(); }, [load]);
+  const watches = useMemo<RealtimeWatch[]>(() => userId ? [
+    { table: "carts", event: "INSERT", filter: `buyer_id=eq.${userId}` },
+    { table: "carts", event: "UPDATE", filter: `buyer_id=eq.${userId}` },
+  ] : [], [userId]);
+  useRealtimeRefresh(`cart-${userId}`, load, watches, Boolean(userId));
+  const refresh = async () => {
+    setRefreshing(true);
+    try { await Promise.all([load(), refreshBadges()]); } finally { setRefreshing(false); }
+  };
 
   const change = async (storeId: number, quantity: number) => {
     if (busyStoreId !== null) return;
@@ -59,7 +73,7 @@ export default function Cart() {
       <TouchableOpacity onPress={() => router.back()} accessibilityLabel="ย้อนกลับ"><Ionicons name="arrow-back" size={24} /></TouchableOpacity>
       <Text style={styles.title}>ตะกร้าสินค้า</Text><View style={{ width: 24 }} />
     </View>
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={Colors.greenPrimary} />}>
       {items.length ? <View style={styles.summary}>
         <Text style={styles.summaryTitle}>{cart.markets?.name ?? "ตลาดชุมชน"}</Text>
         <Text style={styles.summaryText}>{items.length} รายการ · รวม {totalQuantity} ชิ้น</Text>

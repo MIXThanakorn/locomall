@@ -9,9 +9,9 @@ export function CommerceCard({ item, onPress, compact = false }: { item: NearbyR
     <View style={[styles.body, compact && styles.compactBody]}>
       {compact ? <Text style={styles.compactType}>{item.entity_type === "market" ? "ตลาดชุมชน" : "ร้านค้า"}</Text> : null}
       <View style={styles.row}><Text style={[styles.name, compact && styles.compactName]} numberOfLines={compact ? 2 : 1}>{item.name}</Text>{!compact ? <Text style={styles.type}>{item.entity_type === "market" ? "ตลาดชุมชน" : "ร้านค้า"}</Text> : null}</View>
-      <Text style={styles.description} numberOfLines={2}>{item.description || "สินค้าจากชุมชน"}</Text>
-      {item.entity_type === "store" && item.unit_price != null ? <Text style={styles.price}>฿{Number(item.unit_price).toLocaleString("th-TH")}</Text> : null}
-      {compact ? <><View style={styles.compactMeta}><Ionicons name="location-outline" size={14} color={Colors.greenPrimary} /><Text style={styles.metaText}>{item.distance_km == null ? "ทุกพื้นที่" : `${item.distance_km} กม.`}</Text></View><Text style={styles.compactStock}>{item.entity_type === "market" ? `สินค้าพร้อมขาย ${item.available_stock}` : `คงเหลือ ${item.available_stock}`}</Text></> : <View style={styles.meta}><Ionicons name="location-outline" size={14} color={Colors.greenPrimary} /><Text style={styles.metaText}>{item.distance_km == null ? "ทุกพื้นที่" : `${item.distance_km} กม.`}</Text><Text style={styles.dot}>•</Text><Text style={styles.metaText}>{item.entity_type === "market" ? `สินค้าพร้อมขาย ${item.available_stock}` : `คงเหลือ ${item.available_stock}`}</Text></View>}
+      <Text style={styles.price}>{item.unit_price == null ? "ยังไม่มีราคา" : `${item.entity_type === "market" ? "เริ่มต้น " : ""}฿${Number(item.unit_price).toLocaleString("th-TH")}`}</Text>
+      <View style={styles.compactMeta}><Ionicons name="location-outline" size={14} color={Colors.greenPrimary} /><Text style={styles.metaText}>{item.distance_km == null ? "ไม่ทราบระยะทาง" : `${item.distance_km} กม.`}</Text></View>
+      <Text style={styles.compactStock}>★ {item.rating_count ? `${Number(item.rating_average ?? 0).toFixed(1)} (${item.rating_count})` : "ยังไม่มีคะแนน"} · ขายแล้ว {Number(item.sold_quantity ?? 0).toLocaleString()} ชิ้น</Text>
     </View>
   </TouchableOpacity>;
 }
