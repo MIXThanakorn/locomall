@@ -24,6 +24,7 @@ export default function DemoWallet() {
   const { session } = useAuth();
   const userId = session?.user.id;
   const [account, setAccount] = useState<any>();
+  const [sellerHeld, setSellerHeld] = useState(0);
   const [requests, setRequests] = useState<any[]>([]);
   const [entries, setEntries] = useState<any[]>([]);
   const [amount, setAmount] = useState("100");
@@ -36,15 +37,17 @@ export default function DemoWallet() {
   const load = useCallback(async () => {
     if (!userId) return;
     const version = ++loadVersion.current;
-    const [a, r, e] = await Promise.all([
+    const [a, r, e, h] = await Promise.all([
       (supabase as any).from("demo_accounts").select("*").eq("user_id", userId).maybeSingle(),
       (supabase as any).from("demo_topup_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
       (supabase as any).from("demo_ledger").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+      (supabase as any).rpc("get_my_demo_seller_held"),
     ]);
     if (version !== loadVersion.current) return;
-    if (a.error || r.error || e.error) setLoadError(true);
+    if (a.error || r.error || e.error || h.error) setLoadError(true);
     else {
       setAccount(a.data); setRequests(r.data ?? []); setEntries(e.data ?? []);
+      setSellerHeld(Number(h.data ?? 0));
       setLoadError(false);
     }
     setLoading(false);
@@ -59,6 +62,8 @@ export default function DemoWallet() {
     { table: "demo_topup_requests", event: "INSERT", filter: `user_id=eq.${userId}` },
     { table: "demo_topup_requests", event: "UPDATE", filter: `user_id=eq.${userId}` },
     { table: "demo_ledger", event: "INSERT", filter: `user_id=eq.${userId}` },
+    { table: "order_allocations", event: "INSERT", filter: `seller_id=eq.${userId}` },
+    { table: "orders", event: "UPDATE" },
   ] : [], [userId]);
   useRealtimeRefresh(`demo-wallet-${userId}`, load, watches, Boolean(userId));
   const refresh = useCallback(async () => {
@@ -85,6 +90,7 @@ export default function DemoWallet() {
     {loadError ? <Text style={styles.warning}>อัปเดตข้อมูลไม่สำเร็จ ดึงลงเพื่อลองใหม่</Text> : null}
     {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : <>
       <View style={styles.summary}><Text style={styles.label}>ยอดสำหรับสั่งซื้อ · เงินจำลอง</Text><Text style={styles.balance}>฿{Number(account?.wallet_balance ?? 0).toLocaleString()}</Text></View>
+      <View style={styles.held}><Text style={styles.label}>ยอดชำระรอส่งมอบ · สาธิต</Text><Text style={styles.heldValue}>฿{sellerHeld.toLocaleString()}</Text><Text style={styles.label}>ผู้ซื้อชำระด้วยเงินจำลองแล้ว ยอดนี้จะย้ายไปยอดขายรอโอนเมื่อผู้ซื้อยืนยันรับสินค้า</Text></View>
       <View style={styles.row}><View style={styles.mini}><Text style={styles.label}>ยอดขายรอโอน · สาธิต</Text><Text style={styles.value}>฿{Number(account?.seller_pending ?? 0).toLocaleString()}</Text></View><View style={styles.mini}><Text style={styles.label}>บันทึกโอนแล้ว · สาธิต</Text><Text style={styles.value}>฿{Number(account?.seller_settled ?? 0).toLocaleString()}</Text></View></View>
       <Text style={styles.heading}>ขอยอดทดสอบ</Text>
       <AppTextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={styles.input} placeholder="จำนวนเงินจำลอง" />
@@ -98,4 +104,4 @@ export default function DemoWallet() {
   </KeyboardAwareScrollView></View>;
 }
 
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 70 }, back: { flexDirection: "row", alignItems: "center", gap: 6 }, backText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginVertical: 12 }, warning: { fontFamily: "Kanit_500Medium", color: Colors.danger, textAlign: "center", marginVertical: 8 }, summary: { backgroundColor: Colors.greenPrimary, padding: 20, borderRadius: BorderRadius.lg, marginTop: 14 }, label: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13 }, balance: { fontFamily: "Kanit_700Bold", color: "white", fontSize: 32 }, row: { flexDirection: "row", gap: 8, marginTop: 8 }, mini: { flex: 1, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md }, value: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, heading: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 20, marginTop: 22, marginBottom: 8 }, input: { backgroundColor: "white", color: Colors.textDark, padding: 14, borderRadius: BorderRadius.md, marginBottom: 10, borderWidth: 1, borderColor: Colors.inputBorder }, qrCard: { backgroundColor: "white", borderRadius: BorderRadius.lg, padding: 18, marginTop: 16, alignItems: "center" }, reference: { fontFamily: "Kanit_400Regular", color: Colors.textDark, marginTop: 12, fontSize: 11 }, entry: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md, marginBottom: 8 } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 70 }, back: { flexDirection: "row", alignItems: "center", gap: 6 }, backText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginVertical: 12 }, warning: { fontFamily: "Kanit_500Medium", color: Colors.danger, textAlign: "center", marginVertical: 8 }, summary: { backgroundColor: Colors.greenPrimary, padding: 20, borderRadius: BorderRadius.lg, marginTop: 14 }, held: { backgroundColor: "white", padding: 16, borderRadius: BorderRadius.md, marginTop: 10 }, heldValue: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 24 }, label: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13 }, balance: { fontFamily: "Kanit_700Bold", color: "white", fontSize: 32 }, row: { flexDirection: "row", gap: 8, marginTop: 8 }, mini: { flex: 1, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md }, value: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, heading: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 20, marginTop: 22, marginBottom: 8 }, input: { backgroundColor: "white", color: Colors.textDark, padding: 14, borderRadius: BorderRadius.md, marginBottom: 10, borderWidth: 1, borderColor: Colors.inputBorder }, qrCard: { backgroundColor: "white", borderRadius: BorderRadius.lg, padding: 18, marginTop: 16, alignItems: "center" }, reference: { fontFamily: "Kanit_400Regular", color: Colors.textDark, marginTop: 12, fontSize: 11 }, entry: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md, marginBottom: 8 } });

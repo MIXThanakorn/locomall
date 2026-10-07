@@ -7,6 +7,7 @@ import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { CatalogActions } from "../../src/components/CatalogActions";
 import { useAuth } from "../../src/context/AuthContext";
 import { supabase } from "../../src/lib/supabase";
+import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 export default function MarketDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,7 +58,7 @@ export default function MarketDetail() {
         const stock = Number(store.available_stock ?? 0);
         return <TouchableOpacity key={store.store_id} style={styles.card} onPress={() => router.push(`/store/${store.store_id}` as never)}>
           <View style={styles.icon}><Ionicons name="basket" size={27} color={Colors.greenPrimary} /></View>
-          <View style={{ flex: 1 }}><Text style={styles.store}>{store.name}</Text><Text style={styles.product}>{store.product_name} · ฿{Number(store.unit_price).toLocaleString()}/{store.unit}</Text><Text style={styles.stock}>พร้อมขาย {stock} {store.unit}</Text></View>
+          <View style={{ flex: 1 }}><Text style={styles.store}>{store.name}</Text><Text style={styles.product}>{store.product_name} · ฿{Number(store.unit_price).toLocaleString()}/{store.unit}</Text><Text style={styles.stock}>พร้อมขาย {formatSaleQuantity(stock, store.unit)}</Text></View>
           <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
         </TouchableOpacity>;
       })}

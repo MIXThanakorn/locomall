@@ -12,6 +12,7 @@ import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { sellerAllocationStatusLabel } from "../../../src/lib/displayText";
 import { supabase } from "../../../src/lib/supabase";
 import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
+import { formatSaleQuantity } from "../../../src/lib/productUnit";
 
 const steps = ["awaiting_preparation", "preparing", "ready_for_pickup", "collected", "at_hub"];
 const stepLabels: Record<string, string> = { awaiting_preparation: "รับออเดอร์", preparing: "เตรียมสินค้า", ready_for_pickup: "พร้อมส่งมอบ", collected: "เจ้าของตลาดรับสินค้า", at_hub: "สินค้าถึงจุดรวม" };
@@ -63,7 +64,7 @@ export default function SellerAllocationDetail() {
     <Text style={styles.status}>{sellerAllocationStatusLabel(allocation.status)}</Text>
     <Text style={styles.date}>ลูกค้าสั่งเมื่อ {formatThaiDateTime(order?.created_at)}</Text>
     {message ? <View style={styles.success}><Ionicons name="checkmark-circle" size={22} color={Colors.greenPrimary} /><Text style={styles.successText}>{message}</Text></View> : null}
-    <View style={styles.card}>{image ? <Image source={{ uri: image }} style={styles.image} /> : null}<View style={styles.productBody}><Text style={styles.product}>{item?.product_name}</Text><Text style={styles.meta}>ร้าน {item?.stores?.name} · {item?.stores?.markets?.name}</Text><Text style={styles.quantity}>เตรียม {allocation.quantity} {item?.unit}</Text><Text style={styles.value}>มูลค่าสินค้าส่วนนี้ ฿{subtotal.toLocaleString()}</Text></View></View>
+    <View style={styles.card}>{image ? <Image source={{ uri: image }} style={styles.image} /> : null}<View style={styles.productBody}><Text style={styles.product}>{item?.product_name}</Text><Text style={styles.meta}>ร้าน {item?.stores?.name} · {item?.stores?.markets?.name}</Text><Text style={styles.quantity}>เตรียม {formatSaleQuantity(allocation.quantity, item?.unit)}</Text><Text style={styles.value}>มูลค่าสินค้าส่วนนี้ ฿{subtotal.toLocaleString()}</Text></View></View>
     <View style={styles.method}><Text style={styles.methodLabel}>วิธีรับสินค้า</Text><Text style={styles.methodTitle}>{order?.fulfillment_method === "pickup" ? "ลูกค้านัดรับที่จุดรวม" : "จัดส่งถึงลูกค้า"}</Text><Text style={styles.meta}>เมื่อเตรียมเสร็จ ให้นำสินค้าไปส่งตามขั้นตอนของตลาดที่ {item?.stores?.markets?.hub_address}</Text></View>
     <Text style={styles.section}>ขั้นตอนงานของคุณ</Text>
     <View style={styles.timeline}>{steps.map((step, index) => <View key={step} style={styles.step}><View style={[styles.dot, index <= current && styles.dotDone]} /><Text style={[styles.stepText, index <= current && styles.stepDone]}>{stepLabels[step]}</Text></View>)}</View>

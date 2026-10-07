@@ -11,6 +11,7 @@ import { supabase } from "../../src/lib/supabase";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
 import { useAuth } from "../../src/context/AuthContext";
 import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
+import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 export default function Cart() {
   const router = useRouter();
@@ -76,7 +77,7 @@ export default function Cart() {
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={Colors.greenPrimary} />}>
       {items.length ? <View style={styles.summary}>
         <Text style={styles.summaryTitle}>{cart.markets?.name ?? "ตลาดชุมชน"}</Text>
-        <Text style={styles.summaryText}>{items.length} รายการ · รวม {totalQuantity} ชิ้น</Text>
+        <Text style={styles.summaryText}>{items.length} รายการ · รวม {totalQuantity} หน่วยสั่งซื้อ</Text>
         <Text style={styles.updated}>แก้ไขล่าสุด {formatThaiDateTime(cart.updated_at)}</Text>
         <Text style={styles.summaryHint}>สินค้าทั้งหมดมาจากตลาดชุมชนเดียวกัน เพื่อรวมส่งหรือรับที่จุดรวมครั้งเดียว</Text>
       </View> : <Text style={styles.empty}>ยังไม่มีสินค้าในตะกร้า</Text>}
@@ -92,7 +93,7 @@ export default function Cart() {
             <Text style={styles.subtotal}>฿{subtotal.toLocaleString()}</Text>
           </View>
           <View style={styles.itemBottom}>
-            <Text style={styles.quantityLabel}>จำนวน {item.quantity} {item.stores.unit}</Text>
+            <Text style={styles.quantityLabel}>จำนวน {formatSaleQuantity(item.quantity, item.stores.unit)}</Text>
             <View style={styles.qty}>
               <TouchableOpacity disabled={busyStoreId !== null} onPress={() => item.quantity <= 1 ? confirmRemove(item.store_id, item.stores.product_name) : void change(item.store_id, item.quantity - 1)} accessibilityLabel={item.quantity <= 1 ? "ลบสินค้าออกจากตะกร้า" : "ลดจำนวน"}><Ionicons name="remove-circle-outline" size={28} /></TouchableOpacity>
               <Text style={styles.count}>{item.quantity}</Text>
@@ -104,7 +105,7 @@ export default function Cart() {
       })}
     </ScrollView>
     {items.length ? <View style={styles.bottom}>
-      <View style={styles.totalRow}><Text style={styles.totalLabel}>ยอดรวม {totalQuantity} ชิ้น</Text><Text style={styles.total}>฿{total.toLocaleString()}</Text></View>
+      <View style={styles.totalRow}><Text style={styles.totalLabel}>ยอดรวม {totalQuantity} หน่วยสั่งซื้อ</Text><Text style={styles.total}>฿{total.toLocaleString()}</Text></View>
       <Button title="เลือกวิธีรับสินค้าและสั่งซื้อ" onPress={() => router.push("/order/checkout" as never)} style={{ backgroundColor: Colors.goldPrimary }} />
     </View> : null}
   </View>;

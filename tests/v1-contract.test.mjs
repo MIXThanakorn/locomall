@@ -138,21 +138,27 @@ test("Sign-up is Thai, confirms password, and supports showing both password fie
 test("Authentication forms avoid the keyboard and Android resizes its window", () => {
   for (const path of ["app/(auth)/sign-in.tsx", "app/(auth)/sign-up.tsx"]) {
     const source = read(path);
-    assert.match(source, /KeyboardAvoidingView/, path);
-    assert.match(source, /keyboardShouldPersistTaps="handled"/, path);
+    assert.match(source, /KeyboardAwareScrollView/, path);
   }
+  assert.match(read("src/components/KeyboardAware.tsx"), /keyboardShouldPersistTaps \?\? "handled"/);
+  assert.match(read("src/components/KeyboardAware.tsx"), /scrollResponderScrollNativeHandleToKeyboard/);
   assert.match(read("app.json"), /"softwareKeyboardLayoutMode": "resize"/);
 });
 
-test("Logout clears local auth state and routes directly to sign in", () => {
+test("Logout removes the current saved account while account switching keeps other sessions", () => {
   const context = read("src/context/AuthContext.tsx");
   const profile = read("app/(tabs)/profile.tsx");
+  const vault = read("src/lib/accountVault.ts");
+  const picker = read("app/(auth)/switch-account.tsx");
   assert.match(context, /signOut\(\{ scope: "local" \}\)/);
+  assert.match(context, /await forgetAccount\(userId\)/);
   assert.match(context, /setSession\(null\)/);
   assert.match(profile, /await signOut\(\)/);
   assert.match(profile, /router\.replace\("\/\(auth\)\/sign-in"/);
-  assert.match(profile, /สลับบัญชี/);
-  assert.match(profile, /leaveAccount\(true\)/);
+  assert.match(profile, /router\.push\("\/\(auth\)\/switch-account"/);
+  assert.match(picker, /await switchAccount\(id\)/);
+  assert.match(vault, /expo-secure-store/);
+  assert.doesNotMatch(vault, /AsyncStorage/);
 });
 
 test("Native alerts are presented with the Locomall themed modal", () => {
@@ -297,6 +303,7 @@ test("Every route with a text input opts into keyboard avoidance", () => {
     "app/market/manage/request/[id].tsx", "app/profile/change-password.tsx", "app/profile/edit-profile.tsx",
     "app/(tabs)/index.tsx", "app/profile/language.tsx", "app/profile/shipping-address.tsx", "app/seller/listings/index.tsx",
     "app/seller/listings/join.tsx", "app/store/[id].tsx", "app/store/manage/edit.tsx",
+    "app/admin/finance.tsx", "app/admin/reviews.tsx", "app/order/review.tsx", "app/profile/wallet.tsx",
   ];
   for (const path of routes) {
     assert.match(read(path), /KeyboardAware|KeyboardAvoidingView/, path);
@@ -419,7 +426,7 @@ test("Cart and buyer/seller order history show item, price, fulfillment, and Tha
   const detail = read("app/order/[id].tsx");
   assert.match(cart, /แก้ไขล่าสุด/);
   assert.match(cart, /subtotal/);
-  assert.match(cart, /รวม \{totalQuantity\} ชิ้น/);
+  assert.match(cart, /รวม \{totalQuantity\} หน่วยสั่งซื้อ/);
   assert.match(buyer, /วันที่สั่ง/);
   assert.match(buyer, /fulfillment_method/);
   assert.match(buyer, /item\?\.unit_price/);

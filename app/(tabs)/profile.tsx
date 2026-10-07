@@ -33,18 +33,16 @@ export default function Profile() {
   }, [userId]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  const leaveAccount = (switching: boolean) => Alert.alert(
-    switching ? "สลับบัญชี" : "ออกจากระบบ",
-    switching
-      ? "จะออกจากบัญชีนี้และเปิดหน้าเข้าสู่ระบบ เพื่อให้คุณใช้บัญชีอื่น ข้อมูลบัญชีเดิมจะไม่ถูกลบ"
-      : "เมื่อออกจากระบบ คุณจะต้องเข้าสู่ระบบอีกครั้งเพื่อซื้อสินค้าและดูข้อมูลบัญชี",
+  const leaveAccount = () => Alert.alert(
+    "ออกจากระบบ",
+    "บัญชีนี้จะถูกนำออกจากรายการสลับบัญชีบนเครื่อง คุณจะต้องเข้าสู่ระบบอีกครั้ง",
     [
       { text: "ยกเลิก", style: "cancel" },
-      { text: switching ? "ไปหน้าเข้าสู่ระบบ" : "ออกจากระบบ", style: switching ? "default" : "destructive", onPress: async () => {
+      { text: "ออกจากระบบ", style: "destructive", onPress: async () => {
         if (leavingAccount) return;
         setLeavingAccount(true);
         try { await signOut(); router.replace("/(auth)/sign-in" as never); }
-        catch { Alert.alert(switching ? "สลับบัญชีไม่สำเร็จ" : "ออกจากระบบไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง"); }
+        catch { Alert.alert("ออกจากระบบไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง"); }
         finally { setLeavingAccount(false); }
       } },
     ],
@@ -87,12 +85,12 @@ export default function Profile() {
         <Text style={styles.action}>เปิดหน้าผู้ดูแลระบบ</Text>
         <Ionicons name="chevron-forward" size={18} />
       </TouchableOpacity> : null}
-      <TouchableOpacity style={styles.row} disabled={leavingAccount} onPress={() => leaveAccount(true)}>
+      <TouchableOpacity style={styles.row} disabled={leavingAccount} onPress={() => router.push("/(auth)/switch-account" as never)}>
         <Ionicons name="swap-horizontal-outline" size={21} color={Colors.greenPrimary} />
         <Text style={styles.action}>สลับบัญชี</Text>
         <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.logout} disabled={leavingAccount} onPress={() => leaveAccount(false)}><Text style={styles.logoutText}>ออกจากระบบ</Text></TouchableOpacity>
+      <TouchableOpacity style={styles.logout} disabled={leavingAccount} onPress={leaveAccount}><Text style={styles.logoutText}>ออกจากระบบ</Text></TouchableOpacity>
     </ScrollView>
   </View>;
 }

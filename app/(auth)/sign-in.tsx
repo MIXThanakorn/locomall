@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
+import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
@@ -11,11 +12,13 @@ import { Button } from "../../src/components/Button";
 import { supabase } from "../../src/lib/supabase";
 import { translateAuthError } from "../../src/lib/authError";
 import { GOOGLE_OAUTH_CALLBACK_PATH, parseGoogleOAuthCallback, withGoogleOAuthTimeout } from "../../src/lib/googleOAuth";
+import { useAuth } from "../../src/context/AuthContext";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const router = useRouter();
+  const { savedAccounts } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -74,7 +77,7 @@ export default function SignInScreen() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+    <View style={styles.container}>
       <HeaderGradient
         title="สวัสดี!"
         subtitle="ยินดีต้อนรับสู่ Locomall"
@@ -82,7 +85,7 @@ export default function SignInScreen() {
         style={styles.header}
       />
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}>
+      <KeyboardAwareScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>อีเมล</Text>
           <AppTextInput
@@ -90,6 +93,7 @@ export default function SignInScreen() {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+            autoComplete="email"
             autoCapitalize="none"
             placeholder="name@example.com"
           />
@@ -101,6 +105,7 @@ export default function SignInScreen() {
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+              autoComplete="current-password"
               placeholder="กรอกรหัสผ่าน"
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
@@ -153,9 +158,12 @@ export default function SignInScreen() {
             style={styles.signUpBtn}
             onPress={() => router.push("/(auth)/sign-up" as any)}
           />
+          {savedAccounts.length > 0 ? <TouchableOpacity style={styles.savedAccounts} onPress={() => router.push("/(auth)/switch-account" as any)}>
+            <Text style={styles.savedAccountsText}>เลือกบัญชีที่เคยใช้บนเครื่องนี้</Text>
+          </TouchableOpacity> : null}
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
@@ -249,4 +257,6 @@ const styles = StyleSheet.create({
   signUpBtn: {
     borderColor: Colors.goldDeep,
   },
+  savedAccounts: { marginTop: Spacing.lg, alignItems: "center" },
+  savedAccountsText: { color: Colors.greenPrimary, fontFamily: "Kanit_500Medium" },
 });

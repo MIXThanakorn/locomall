@@ -8,6 +8,8 @@ import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
 import { supabase } from "../../../src/lib/supabase";
 import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../../src/lib/storage";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
+import { ProductUnitField } from "../../../src/components/ProductUnitField";
+import { formatProductUnit } from "../../../src/lib/productUnit";
 
 export default function CreateStore() {
   const { marketId } = useLocalSearchParams<{ marketId: string }>();
@@ -15,7 +17,8 @@ export default function CreateStore() {
   const [name, setName] = useState("");
   const [product, setProduct] = useState("");
   const [description, setDescription] = useState("");
-  const [unit, setUnit] = useState("ชิ้น");
+  const [unitKind, setUnitKind] = useState("ชิ้น");
+  const [unitAmount, setUnitAmount] = useState("");
   const [price, setPrice] = useState("");
   const [image, setImage] = useState<SelectedImage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -28,11 +31,13 @@ export default function CreateStore() {
   const submit = async () => {
     const numericPrice = Number(price);
     if (!marketId || !name.trim() || !product.trim() || !Number.isFinite(numericPrice) || numericPrice <= 0) return Alert.alert("กรอกข้อมูลให้ครบและราคาต้องมากกว่า 0");
+    const formattedUnit = formatProductUnit(unitKind, unitAmount);
+    if (!formattedUnit.unit) return Alert.alert("หน่วยสินค้าไม่ถูกต้อง", formattedUnit.error ?? "กรุณาตรวจสอบหน่วยสินค้า");
     setLoading(true);
     try {
       const { data: storeId, error } = await supabase.rpc("apply_to_open_store", {
         p_market_id: Number(marketId), p_name: name.trim(), p_product_name: product.trim(),
-        p_description: description.trim(), p_unit: unit.trim(), p_unit_price: numericPrice,
+        p_description: description.trim(), p_unit: formattedUnit.unit, p_unit_price: numericPrice,
       });
       if (error) throw error;
       if (image && storeId) {
@@ -51,7 +56,6 @@ export default function CreateStore() {
 
   const inputs: [string, string, (value: string) => void][] = [
     ["ชื่อร้าน", name, setName], ["ชื่อสินค้า", product, setProduct], ["รายละเอียด", description, setDescription],
-    ["หน่วย เช่น กก. / ลูก / ขวด", unit, setUnit], ["ราคากลาง", price, setPrice],
   ];
 
   return <KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -60,7 +64,9 @@ export default function CreateStore() {
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปสินค้า/ร้าน</Text>}
     </TouchableOpacity>
-    {inputs.map(([label, value, setter]) => <AppTextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} keyboardType={label === "ราคากลาง" ? "decimal-pad" : "default"} />)}
+    {inputs.map(([label, value, setter]) => <AppTextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} />)}
+    <ProductUnitField kind={unitKind} amount={unitAmount} onKindChange={(value) => { setUnitKind(value); setUnitAmount(""); }} onAmountChange={setUnitAmount} />
+    <AppTextInput style={styles.input} placeholder="ราคากลางต่อ 1 หน่วยสั่งซื้อ" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
     <Button title="ส่งคำขอเปิดร้าน" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary, marginTop: 16 }} />
   </KeyboardAwareScrollView>;
 }

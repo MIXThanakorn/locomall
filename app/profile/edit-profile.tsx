@@ -64,7 +64,7 @@ export default function EditProfileScreen() {
 
   const handleUpdateProfile = async () => {
     if (!userId) return;
-    const phoneError = mobilePhoneError(phone, false);
+  const phoneError = mobilePhoneError(phone);
     if (phoneError) return Alert.alert("เบอร์มือถือไม่ถูกต้อง", phoneError);
     
     setUpdating(true);
@@ -154,11 +154,11 @@ export default function EditProfileScreen() {
           <Text style={styles.inputLabel}>อีเมล (แก้ไขไม่ได้)</Text>
           <AppTextInput style={[styles.input, { opacity: 0.7 }]} value={email} editable={false} />
 
-          <Text style={styles.inputLabel}>เบอร์โทรศัพท์</Text>
-          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="number-pad" maxLength={10} placeholder="เช่น 0812345678" />
+          <Text style={styles.inputLabel}>เบอร์มือถือ *</Text>
+          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="phone-pad" autoComplete="tel" maxLength={10} placeholder="เช่น 0812345678" />
 
           <Text style={styles.inputLabel}>อายุ</Text>
-          <AppTextInput style={styles.input} value={age} onChangeText={setAge} keyboardType="numeric" />
+          <AppTextInput style={styles.input} value={age} onChangeText={(value) => setAge(value.replace(/\D/g, ""))} keyboardType="number-pad" />
 
           <Button
             title="บันทึกข้อมูลส่วนตัว"

@@ -9,6 +9,7 @@ import { formatThaiDateTime } from "../../src/lib/date";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
 import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
+import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 const deliverySteps = ["awaiting_preparation", "preparing", "at_hub", "consolidated", "shipped", "delivered"];
 const pickupSteps = ["awaiting_preparation", "preparing", "at_hub", "delivered"];
@@ -32,7 +33,7 @@ export default function OrderDetail() {
     <Text style={styles.number}>{order.order_number}</Text><Text style={styles.market}>{order.markets?.name}</Text><Text style={styles.date}>วันที่สั่ง {formatThaiDateTime(order.created_at)}</Text>
     <View style={styles.method}><Text style={styles.methodTitle}>{pickup ? "นัดรับที่จุดรวมสินค้า" : "จัดส่งถึงที่อยู่"}</Text><Text style={styles.methodDetail}>{pickup ? `${order.markets?.hub_address}${order.pickup_distance_km ? ` · ${order.pickup_distance_km} กม.` : ""}` : "รวมส่งเป็นพัสดุเดียว"}</Text></View>
     <View style={styles.timeline}>{steps.map((step, index) => <View key={step} style={styles.step}><View style={[styles.dot, index <= current && styles.done]} /><Text style={[styles.stepText, index <= current && styles.doneText]}>{labels[step]}</Text></View>)}</View>
-    {order.order_items.map((item: any) => <View style={styles.card} key={item.order_item_id}>{item.product_image_url||item.stores?.image_url?<Image source={{uri:item.product_image_url||item.stores?.image_url}} style={styles.productImage}/>:null}<View style={styles.productBody}><Text style={styles.item}>{item.product_name}</Text><Text style={styles.store}>ร้าน {item.stores?.name ?? "ร้านค้า"}</Text><View style={styles.itemDetail}><Text style={styles.alloc}>{item.quantity} {item.unit} × ฿{Number(item.unit_price).toLocaleString()}</Text><Text style={styles.price}>฿{Number(item.total_amount).toLocaleString()}</Text></View></View></View>)}
+    {order.order_items.map((item: any) => <View style={styles.card} key={item.order_item_id}>{item.product_image_url||item.stores?.image_url?<Image source={{uri:item.product_image_url||item.stores?.image_url}} style={styles.productImage}/>:null}<View style={styles.productBody}><Text style={styles.item}>{item.product_name}</Text><Text style={styles.store}>ร้าน {item.stores?.name ?? "ร้านค้า"}</Text><View style={styles.itemDetail}><Text style={styles.alloc}>{formatSaleQuantity(item.quantity, item.unit)} × ฿{Number(item.unit_price).toLocaleString()}</Text><Text style={styles.price}>฿{Number(item.total_amount).toLocaleString()}</Text></View></View></View>)}
     <View style={styles.totalRow}><Text style={styles.item}>{order.payment_method === "demo_wallet" ? "ชำระด้วยยอดจำลองแล้ว · ไม่ใช่เงินจริง" : "ยอดชำระเมื่อได้รับสินค้า"}</Text><Text style={styles.total}>฿{Number(order.total_amount).toLocaleString()}</Text></View>
     {order.tracking_number ? <View style={styles.tracking}><Text style={styles.item}>เลขติดตาม: {order.tracking_number}</Text><Text style={styles.alloc}>{order.courier_name}</Text></View> : null}
     {canConfirm ? <Button title={pickup ? "ยืนยันว่าได้รับสินค้าที่จุดรวมแล้ว" : "ยืนยันว่าได้รับสินค้าแล้ว"} onPress={confirm} loading={loading} /> : null}

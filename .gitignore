@@ -48,6 +48,7 @@ pnpm-debug.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+~$*.docx
 
 # Local env files (NEVER commit secrets)
 .env

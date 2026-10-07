@@ -21,3 +21,15 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+// Validate an inactive account's refresh token without replacing the active
+// account unless refresh succeeds. This client never persists its session.
+export function createAccountSwitchClient() {
+  return createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}

@@ -1,7 +1,8 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
+import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { AdminGate } from "../../src/components/AdminGate";
 import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -29,7 +30,7 @@ export default function AdminReviews() {
     setBusy(null);
     if (error) Alert.alert("จัดการรีวิวไม่สำเร็จ", translateDatabaseError(error)); else await load();
   };
-  return <AdminGate><ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
+  return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <TouchableOpacity onPress={() => router.back()}><Text style={styles.back}>← กลับศูนย์ควบคุม</Text></TouchableOpacity>
     <Text style={styles.title}>ดูแลรีวิว</Text><Text style={styles.note}>รีวิวที่ซ่อนจะไม่ถูกรวมในคะแนนเฉลี่ยและไม่แสดงต่อสาธารณะ</Text>
     {reviews.map((review) => <View key={review.review_id} style={styles.card}>
@@ -40,6 +41,6 @@ export default function AdminReviews() {
         : <><AppTextInput placeholder="เหตุผลที่ซ่อนรีวิว" value={reasons[review.review_id] ?? ""} onChangeText={(value) => setReasons({ ...reasons, [review.review_id]: value })} style={styles.input} /><Button title="ซ่อนรีวิว" variant="outline" loading={busy===review.review_id} onPress={() => moderate(review, true)} /></>}
     </View>)}
     {!reviews.length ? <Text style={styles.note}>ยังไม่มีรีวิว</Text> : null}
-  </ScrollView></AdminGate>;
+  </KeyboardAwareScrollView></AdminGate>;
 }
 const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 90 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 12 }, note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, card: { padding: 14, backgroundColor: "white", borderRadius: BorderRadius.lg, marginTop: 12 }, bold: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, body: { fontFamily: "Kanit_400Regular", color: Colors.textDark, marginVertical: 10 }, hidden: { fontFamily: "Kanit_500Medium", color: Colors.danger }, input: { borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 10, marginVertical: 8, color: Colors.textDark } });

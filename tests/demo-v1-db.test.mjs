@@ -64,6 +64,7 @@ test("demo migration executes and protects wallet, refunds, reviews and settleme
   try {
     await db.exec(base);
     await db.exec(readFileSync(new URL("../supabase/migrations/20261004061208_demo_wallet_reviews_social_v1.sql", import.meta.url), "utf8"));
+    await db.exec(readFileSync(new URL("../supabase/migrations/20261007024139_scope_order_notifications_and_demo_seller_hold.sql", import.meta.url), "utf8"));
     await db.exec(`insert into public.profiles values('${buyer}'),('${seller}'),('${admin}');
       insert into public.markets values(1,'${seller}','Market','','','approved');
       insert into public.stores values(1,1,'${seller}','Store','','','Product','approved',30);
@@ -83,6 +84,9 @@ test("demo migration executes and protects wallet, refunds, reviews and settleme
     const again = (await db.query("select public.create_demo_wallet_order($1::uuid,$2::bigint,$3::bigint,$4::jsonb)", args)).rows[0].create_demo_wallet_order;
     assert.equal(first, again);
     assert.equal(Number((await db.query(`select wallet_balance from public.demo_accounts where user_id='${buyer}'`)).rows[0].wallet_balance), 40);
+    await db.exec(`set test.uid='${seller}';`);
+    assert.equal(Number((await db.query("select public.get_my_demo_seller_held() amount")).rows[0].amount), 60);
+    await db.exec(`set test.uid='${buyer}';`);
     assert.equal((await db.query("select reserved_quantity from public.seller_listings where listing_id=1")).rows[0].reserved_quantity, 2);
     await assert.rejects(db.query("select public.create_demo_wallet_order($1::uuid,1,null,$2::jsonb)",
       ["20000000-0000-4000-8000-000000000002", JSON.stringify([{ store_id: 1, quantity: 2 }])]), /insufficient demo balance/);
@@ -92,12 +96,26 @@ test("demo migration executes and protects wallet, refunds, reviews and settleme
     await db.query("update public.orders set status='cancelled',payment_status='failed' where order_id=$1", [first]);
     await db.query("update public.orders set status='cancelled' where order_id=$1", [first]);
     assert.equal(Number((await db.query(`select wallet_balance from public.demo_accounts where user_id='${buyer}'`)).rows[0].wallet_balance), 100);
+    await db.exec(`set test.uid='${seller}';`);
+    assert.equal(Number((await db.query("select public.get_my_demo_seller_held() amount")).rows[0].amount), 0);
+    await db.exec(`set test.uid='${buyer}';`);
     assert.equal((await db.query("select count(*)::int n from public.demo_ledger where entry_type='refund'")).rows[0].n, 1);
     const second = (await db.query("select public.create_demo_wallet_order($1::uuid,1,null,$2::jsonb)",
       ["20000000-0000-4000-8000-000000000003", JSON.stringify([{ store_id: 1, quantity: 1 }])])).rows[0].create_demo_wallet_order;
+    await db.exec(`set test.uid='${seller}';`);
+    assert.equal(Number((await db.query("select public.get_my_demo_seller_held() amount")).rows[0].amount), 30);
+    await db.exec(`set test.uid='${buyer}';`);
     await db.query("update public.orders set status='delivered',payment_status='collected' where order_id=$1", [second]);
+    await db.exec(`set test.uid='${seller}';`);
+    assert.equal(Number((await db.query("select public.get_my_demo_seller_held() amount")).rows[0].amount), 0);
+    await db.exec(`set test.uid='${buyer}';`);
     assert.equal((await db.query("select payment_status from public.orders where order_id=$1", [second])).rows[0].payment_status, "demo_paid");
     assert.equal(Number((await db.query(`select seller_pending from public.demo_accounts where user_id='${seller}'`)).rows[0].seller_pending), 30);
+    const codOrder = (await db.query("select public.create_cod_order(1,null,$1::jsonb) order_id",
+      [JSON.stringify([{ store_id: 1, quantity: 1 }])])).rows[0].order_id;
+    await db.query("update public.orders set status='delivered',payment_status='collected' where order_id=$1", [codOrder]);
+    assert.equal(Number((await db.query(`select seller_pending from public.demo_accounts where user_id='${seller}'`)).rows[0].seller_pending), 30);
+    assert.equal((await db.query("select count(*)::int n from public.demo_ledger where entry_type='seller_sale'")).rows[0].n, 1);
     const item = (await db.query("select order_item_id from public.order_items where order_id=$1", [second])).rows[0].order_item_id;
     await db.query("select public.save_purchase_review($1,null,5,'good')", [second]);
     await db.query("select public.save_purchase_review($1,null,4,'edited')", [second]);
@@ -124,7 +142,7 @@ test("demo migration executes and protects wallet, refunds, reviews and settleme
     assert.equal((await db.query("select count(*)::int n from public.notifications where type='follow_new_store'")).rows[0].n, 1);
     const metric = (await db.query("select * from public.get_catalog_card_metrics(array[1]::bigint[],array[1]::bigint[])")).rows;
     assert.equal(Number(metric.find((row) => row.entity_type === "market").min_price), 20);
-    assert.equal(Number(metric.find((row) => row.entity_type === "store").sold_quantity), 1);
+    assert.equal(Number(metric.find((row) => row.entity_type === "store").sold_quantity), 2);
     const publicReviews = (await db.query("select public.get_catalog_reviews('store',1) value")).rows[0].value;
     assert.equal(publicReviews.length, 1);
     assert.equal("buyer_id" in publicReviews[0], false);
@@ -138,5 +156,53 @@ test("demo migration executes and protects wallet, refunds, reviews and settleme
     assert.equal((await db.query("select count(*)::int n from public.user_catalog_links")).rows[0].n, 0);
     await assert.rejects(db.query("select public.save_purchase_review($1,null,5,'not my order')", [second]), /owned by you/);
     await db.exec("reset role");
+  } finally { await db.close(); }
+});
+
+test("order notices reach only the buyer, seller, or market owner at their requested milestones", async () => {
+  const db = new PGlite();
+  const secondSeller = "00000000-0000-4000-8000-000000000004";
+  try {
+    await db.exec(base);
+    await db.exec(`alter table public.orders add column order_number text default 'LM-20261007-12345678';
+      alter table public.order_items add column product_name text default 'Demo product';
+      alter table public.order_allocations add column status text default 'awaiting_preparation';`);
+    await db.exec(readFileSync(new URL("../supabase/migrations/20261004061208_demo_wallet_reviews_social_v1.sql", import.meta.url), "utf8"));
+    await db.exec(readFileSync(new URL("../supabase/migrations/20261007024139_scope_order_notifications_and_demo_seller_hold.sql", import.meta.url), "utf8"));
+    await db.exec(`create trigger test_order_notice after update of status on public.orders
+        for each row execute function private.notify_order_status_change();
+      create trigger test_allocation_notice after update of status on public.order_allocations
+        for each row execute function private.notify_allocation_ready();
+      insert into public.profiles values ('${buyer}'),('${seller}'),('${secondSeller}');
+      insert into public.markets(market_id,owner_id,name,approval_status) values(1,'${seller}','Test market','approved');
+      insert into public.stores(store_id,market_id,manager_id,name,product_name,approval_status,unit_price)
+        values(1,1,'${seller}','Test store','Demo product','approved',30);
+      insert into public.seller_listings values(1,1,'${seller}',5,0,'active'),
+        (2,1,'${secondSeller}',5,0,'active');
+      insert into public.orders(buyer_id,market_id,total_amount) values('${buyer}',1,60);
+      insert into public.order_items(order_id,store_id,quantity,unit_price) values(1,1,2,30);
+      insert into public.order_allocations(order_item_id,listing_id,seller_id,quantity)
+        values(1,1,'${seller}',1),(1,2,'${secondSeller}',1);`);
+    await db.exec(`set test.uid='${seller}';
+      update public.orders set status='preparing' where order_id=1;
+      update public.order_allocations set status='ready_for_pickup' where allocation_id=1;`);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${buyer}'`)).rows[0].n, 2);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${seller}'`)).rows[0].n, 0);
+    await db.exec(`set test.uid='${secondSeller}';
+      update public.order_allocations set status='ready_for_pickup' where allocation_id=2;`);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${buyer}'`)).rows[0].n, 3);
+    await db.exec(`set test.uid='${seller}';
+      update public.order_allocations set status='at_hub' where allocation_id=1;`);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${seller}'`)).rows[0].n, 0);
+    await db.exec(`update public.order_allocations set status='at_hub' where allocation_id=2;
+      update public.orders set status='at_hub' where order_id=1;
+      update public.orders set status='consolidated' where order_id=1;
+      update public.orders set status='shipped' where order_id=1;`);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${seller}' and type='order_all_at_hub'`)).rows[0].n, 1);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${buyer}'`)).rows[0].n, 3);
+    await db.exec(`set test.uid='${buyer}'; update public.orders set status='delivered' where order_id=1;`);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${buyer}'`)).rows[0].n, 3);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${seller}' and body='ผู้ซื้อยืนยันรับสินค้าแล้ว'`)).rows[0].n, 1);
+    assert.equal((await db.query(`select count(*)::int n from public.notifications where user_id='${secondSeller}' and body='ผู้ซื้อยืนยันรับสินค้าแล้ว'`)).rows[0].n, 1);
   } finally { await db.close(); }
 });

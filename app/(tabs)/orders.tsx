@@ -8,6 +8,7 @@ import { useCapabilities } from "../../src/hooks/useCapabilities";
 import { useOrders, useSellerAllocations } from "../../src/hooks/useCommerce";
 import { formatThaiDateTime } from "../../src/lib/date";
 import { buyerOrderStatusLabel, sellerAllocationStatusLabel } from "../../src/lib/displayText";
+import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 type OrderView = "buying" | "selling";
 
@@ -67,7 +68,7 @@ export default function OrdersTab() {
 
 function ProductRow({ item, quantity, total }: { item: any; quantity: number; total: number }) {
   const image = item?.product_image_url || item?.stores?.image_url;
-  return <View style={styles.itemRow}>{image ? <Image source={{ uri: image }} style={styles.itemImage} /> : <View style={styles.itemImagePlaceholder} />}<View style={styles.itemText}><Text style={styles.item}>{item?.product_name} × {quantity} {item?.unit}</Text><Text style={styles.store}>{item?.stores?.name ?? "ร้านค้า"} · ฿{Number(item?.unit_price ?? 0).toLocaleString()}/{item?.unit}</Text></View><Text style={styles.itemTotal}>฿{total.toLocaleString()}</Text></View>;
+  return <View style={styles.itemRow}>{image ? <Image source={{ uri: image }} style={styles.itemImage} /> : <View style={styles.itemImagePlaceholder} />}<View style={styles.itemText}><Text style={styles.item}>{item?.product_name} × {formatSaleQuantity(quantity, item?.unit)}</Text><Text style={styles.store}>{item?.stores?.name ?? "ร้านค้า"} · ฿{Number(item?.unit_price ?? 0).toLocaleString()}/{item?.unit}</Text></View><Text style={styles.itemTotal}>฿{total.toLocaleString()}</Text></View>;
 }
 
 const styles = StyleSheet.create({

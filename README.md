@@ -49,6 +49,8 @@ flowchart LR
 
 - Client รับ input, แสดงผล และ subscribe Realtime
 - Wallet, คำสั่งซื้อ, งานขาย, ตะกร้า และคิวงานสำคัญอัปเดตผ่าน Realtime; ทุกหน้าข้อมูลหลักยังดึงลงรีเฟรชได้เมื่อเครือข่ายสะดุด
+- Wallet เงินจำลองแยกยอดผู้ขายที่ชำระแล้วแต่ยังรอส่งมอบออกจากยอดขายรอโอน; COD ไม่สร้างเครดิตจำลอง
+- การแจ้งเตือนออเดอร์แยกผู้ซื้อ/ผู้ขาย/เจ้าของตลาดตามผู้ที่ดำเนินการและขั้นตอนของออเดอร์
 - RLS ตัดสินว่าใครอ่าน/เขียน row ใดได้
 - RPC ตรวจ identity, ownership, state transition และทำ transaction/row locking
 - Client ไม่สามารถกำหนดราคา, seller, allocation หรือยอดรวมของ order
@@ -209,6 +211,7 @@ audit log. Admin ลบถาวรได้เฉพาะ order ที่ย�
   วันที่สั่ง วิธีรับสินค้า และสถานะตามบทบาท
 - ผู้ตรวจสอบคำขอเปิดร้าน/สมัครผู้ขายเห็นรูปสินค้าก่อนอนุมัติ โดยคำขอผู้ขายต้องแนบรูป
 - Branding, app icon และ splash screen ใช้ `assets/images/APP_LOGO.png` เป็นแหล่งหลัก
+- หน้าโปรไฟล์สลับบัญชีที่เคยเข้าสู่ระบบบน Android/iOS ได้โดยไม่กรอกรหัสซ้ำ; refresh token ของบัญชีที่บันทึกเก็บใน SecureStore ของเครื่อง (ออกจากระบบจะลบบัญชีปัจจุบันออกจากรายการ)
 
 ## Nearby discovery
 
@@ -338,8 +341,14 @@ three Sellers and Buyer accounts on Android, iOS and web.
 ขั้นตอนสร้าง APK สำหรับติดตั้งทดสอบอยู่ใน [`docs/BUILD_APK.md`](docs/BUILD_APK.md)
 และการตั้งค่า Google Sign-In บน APK อยู่ใน [`docs/GOOGLE_SIGN_IN_ANDROID.md`](docs/GOOGLE_SIGN_IN_ANDROID.md).
 
-Contract/unit suite ปัจจุบันมี 69 tests. การผ่านชุดนี้ไม่แทน penetration test,
+Contract/unit suite ปัจจุบันมี 82 tests. การผ่านชุดนี้ไม่แทน penetration test,
 concurrent database test หรือการทดสอบ role boundary กับ live Supabase.
+
+สินค้าแบบชั่งน้ำหนักระบุปริมาณต่อหนึ่งหน่วยสั่งซื้อ เช่น `500 กรัม` หรือ
+`1 กิโลกรัม`; ราคา สต็อก การจอง และจำนวนในออเดอร์นับเป็นจำนวนหน่วยสั่งซื้อ
+ไม่ใช่น้ำหนักรวม หลังอนุมัติร้านหรือมีรายการสต็อก/ตะกร้า/ออเดอร์แล้ว
+ระบบจะล็อกหน่วยขายเพื่อไม่ให้จำนวนเดิมถูกตีความผิด บัญชีที่สมัครด้วย Google
+หรือบัญชีเก่าที่ยังไม่มีเบอร์มือถือถูกต้องต้องกรอกเบอร์ก่อนใช้งานส่วนอื่นของแอป.
 
 ## Release checklist
 

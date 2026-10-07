@@ -14,10 +14,11 @@ type Props = {
   value?: string;
   disabled?: boolean;
   searchPlaceholder?: string;
+  autoFocusSearch?: boolean;
   onChange: (value: string) => void;
 };
 
-export function SearchableDropdown({ label, placeholder, options, value, disabled, searchPlaceholder, onChange }: Props) {
+export function SearchableDropdown({ label, placeholder, options, value, disabled, searchPlaceholder, autoFocusSearch = true, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const selected = options.find((option) => option.value === value);
@@ -54,7 +55,7 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
           </View>
           <View style={styles.searchBox}>
             <Ionicons name="search" size={18} color={Colors.textMuted} />
-            <AppTextInput value={query} onChangeText={setQuery} placeholder={searchPlaceholder ?? `ค้นหา${label ?? "รายการ"}`} style={styles.searchInput} autoFocus />
+            <AppTextInput value={query} onChangeText={setQuery} placeholder={searchPlaceholder ?? `ค้นหา${label ?? "รายการ"}`} style={styles.searchInput} autoFocus={autoFocusSearch} scrollIntoViewOnFocus={false} />
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" style={styles.optionList}>
             {filtered.map((option) => <TouchableOpacity

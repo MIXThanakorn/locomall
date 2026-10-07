@@ -12,6 +12,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { SelectedImage, selectSquareImage, uploadPrivateImage } from "../../src/lib/storage";
 import { supabase } from "../../src/lib/supabase";
+import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 export default function StoreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -64,7 +65,7 @@ export default function StoreDetail() {
     setAdding(false);
     if (error) Alert.alert("เพิ่มไม่ได้", translateDatabaseError(error));
     else {
-      setToast(`เพิ่ม ${quantity} ${store.unit}แล้ว · ในตะกร้ามี ${data} ${store.unit}`);
+      setToast(`เพิ่ม ${formatSaleQuantity(quantity, store.unit)}แล้ว · ในตะกร้ามี ${formatSaleQuantity(Number(data), store.unit)}`);
       setQuantity(1);
     }
   };
@@ -111,7 +112,7 @@ export default function StoreDetail() {
       <TouchableOpacity style={[styles.back, { top: insets.top + 10 }]} onPress={() => router.back()}><Ionicons name="arrow-back" size={22} /></TouchableOpacity>
       <View style={styles.body}>
         <Text style={styles.market}>{store.markets?.name}</Text><Text style={styles.title}>{store.name}</Text><Text style={styles.product}>{store.product_name}</Text><Text style={styles.desc}>{store.description}</Text>
-        <View style={styles.info}><Text style={styles.price}>฿{Number(store.unit_price).toLocaleString()} / {store.unit}</Text><Text style={styles.stock}>พร้อมขาย {stock} {store.unit}</Text></View>
+        <View style={styles.info}><Text style={styles.price}>฿{Number(store.unit_price).toLocaleString()} / {store.unit}</Text><Text style={styles.stock}>พร้อมขาย {formatSaleQuantity(stock, store.unit)}</Text></View>
         <CatalogActions targetType="store" targetId={Number(id)} refreshVersion={refreshVersion} />
         {cannotBuyOwn ? <View style={styles.ownStoreNotice}><Ionicons name="information-circle-outline" size={22} color={Colors.greenPrimary} /><Text style={styles.ownStoreText}>นี่คือร้านที่คุณดูแลหรือร่วมขาย จึงไม่สามารถสั่งซื้อจากร้านนี้ด้วยบัญชีเดียวกันได้</Text></View> : null}
         {stock > 0 && !cannotBuyOwn ? <View style={styles.quantityBox}>
@@ -136,7 +137,7 @@ export default function StoreDetail() {
       </View>
     </KeyboardAwareScrollView>
     {toast ? <View style={styles.toast} accessibilityLiveRegion="polite"><Ionicons name="checkmark-circle" size={21} color={Colors.textWhite} /><Text style={styles.toastText}>{toast}</Text></View> : null}
-    <View style={styles.bottom}><Button title={cannotBuyOwn ? "ไม่สามารถสั่งสินค้าร้านของตนเอง" : stock > 0 ? `เพิ่ม ${quantity} ${store.unit}ลงตะกร้า` : "สินค้าหมด"} disabled={stock <= 0 || cannotBuyOwn} loading={adding} onPress={add} style={{ backgroundColor: Colors.goldPrimary }} /></View>
+    <View style={styles.bottom}><Button title={cannotBuyOwn ? "ไม่สามารถสั่งสินค้าร้านของตนเอง" : stock > 0 ? `เพิ่ม ${formatSaleQuantity(quantity, store.unit)}ลงตะกร้า` : "สินค้าหมด"} disabled={stock <= 0 || cannotBuyOwn} loading={adding} onPress={add} style={{ backgroundColor: Colors.goldPrimary }} /></View>
   </View>;
 }
 

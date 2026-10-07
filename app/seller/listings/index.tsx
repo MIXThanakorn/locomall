@@ -11,6 +11,7 @@ import { useAuth } from "../../../src/context/AuthContext";
 import { useCapabilities } from "../../../src/hooks/useCapabilities";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { supabase } from "../../../src/lib/supabase";
+import { formatSaleQuantity } from "../../../src/lib/productUnit";
 import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
 
 export default function Stock() {
@@ -40,7 +41,7 @@ export default function Stock() {
   const save = async (listing: any) => {
     const quantity = Number(listing.draft ?? listing.stock_quantity);
     if (!Number.isInteger(quantity) || quantity < listing.reserved_quantity) {
-      return Alert.alert("จำนวนสินค้าไม่ถูกต้อง", `จำนวนต้องไม่น้อยกว่าสินค้าที่มีลูกค้าสั่งไว้ ${listing.reserved_quantity} ${listing.stores?.unit ?? ""}`);
+      return Alert.alert("จำนวนสินค้าไม่ถูกต้อง", `จำนวนต้องไม่น้อยกว่าสินค้าที่มีลูกค้าสั่งไว้ ${formatSaleQuantity(listing.reserved_quantity, listing.stores?.unit)}`);
     }
     const { error } = await supabase.rpc("update_my_listing_stock", {
       p_listing_id: listing.listing_id,
@@ -54,12 +55,12 @@ export default function Stock() {
   return <PermissionGate allow={permissions.isSeller || permissions.isStoreManager} loading={permissions.loading}>
     <KeyboardAwareScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
       <Text style={styles.title}>จัดการสต็อกสินค้า</Text>
-      <Text style={styles.sub}>กรอกจำนวนสินค้าที่มีอยู่จริงทั้งหมด รวมชิ้นที่ลูกค้าสั่งแล้ว ระบบจะกันสินค้าไว้ทันทีเมื่อมีคำสั่งซื้อ และหักจากยอดคงเหลือเมื่อผู้ซื้อยืนยันรับสินค้า</Text>
+      <Text style={styles.sub}>กรอกจำนวนหน่วยสั่งซื้อที่มีอยู่จริงทั้งหมด รวมหน่วยที่ลูกค้าสั่งแล้ว เช่น สินค้าแบบ 500 กรัมต่อชุด ให้กรอกจำนวนชุด ระบบจะกันสินค้าไว้ทันทีเมื่อมีคำสั่งซื้อ และหักจากยอดคงเหลือเมื่อผู้ซื้อยืนยันรับสินค้า</Text>
       {!list.length ? <View style={styles.empty}><Text style={styles.emptyText}>ยังไม่มีรายการขายที่ผ่านการอนุมัติ</Text></View> : null}
       {list.map((listing, index) => <View style={styles.card} key={listing.listing_id}>
         <Text style={styles.name}>{listing.stores?.product_name} · {listing.stores?.name}</Text>
-        <Text style={styles.reserved}>คงเหลือทั้งหมด {listing.stock_quantity} {listing.stores?.unit} · จองแล้ว {listing.reserved_quantity} {listing.stores?.unit}</Text>
-        <Text style={styles.available}>พร้อมให้สั่ง {listing.status === "active" ? Math.max(0, listing.stock_quantity - listing.reserved_quantity) : 0} {listing.stores?.unit}{listing.status !== "active" ? " (หยุดขายชั่วคราว)" : ""}</Text>
+        <Text style={styles.reserved}>คงเหลือทั้งหมด {formatSaleQuantity(listing.stock_quantity, listing.stores?.unit)} · จองแล้ว {formatSaleQuantity(listing.reserved_quantity, listing.stores?.unit)}</Text>
+        <Text style={styles.available}>พร้อมให้สั่ง {formatSaleQuantity(listing.status === "active" ? Math.max(0, listing.stock_quantity - listing.reserved_quantity) : 0, listing.stores?.unit)}{listing.status !== "active" ? " (หยุดขายชั่วคราว)" : ""}</Text>
         <Text style={styles.inputLabel}>แก้ไขจำนวนคงเหลือทั้งหมด (รวมที่จองแล้ว)</Text>
         <AppTextInput
           style={styles.input}
