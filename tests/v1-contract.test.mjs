@@ -147,7 +147,7 @@ test("Authentication forms avoid the keyboard and Android resizes its window", (
 
 test("Logout removes the current saved account while account switching keeps other sessions", () => {
   const context = read("src/context/AuthContext.tsx");
-  const profile = read("app/(tabs)/profile.tsx");
+  const profile = read("app/(tabs)/setting.tsx");
   const vault = read("src/lib/accountVault.ts");
   const picker = read("app/(auth)/switch-account.tsx");
   assert.match(context, /signOut\(\{ scope: "local" \}\)/);
@@ -155,7 +155,8 @@ test("Logout removes the current saved account while account switching keeps oth
   assert.match(context, /setSession\(null\)/);
   assert.match(profile, /await signOut\(\)/);
   assert.match(profile, /router\.replace\("\/\(auth\)\/sign-in"/);
-  assert.match(profile, /router\.push\("\/\(auth\)\/switch-account"/);
+  assert.match(profile, /router\.push\(action\.route/);
+  assert.match(read("src/lib/settingsMenu.ts"), /route: "\/\(auth\)\/switch-account"/);
   assert.match(picker, /await switchAccount\(id\)/);
   assert.match(vault, /expo-secure-store/);
   assert.doesNotMatch(vault, /AsyncStorage/);
@@ -195,7 +196,7 @@ test("New Market requests notify Platform Admins once", () => {
 
 test("Protected profile and account tabs redirect Guests to sign in", () => {
   assert.match(read("app/profile/_layout.tsx"), /if \(!session\) return <Redirect href="\/\(auth\)\/sign-in"/);
-  for (const path of ["app/(tabs)/profile.tsx", "app/(tabs)/orders.tsx", "app/(tabs)/notification.tsx"]) {
+  for (const path of ["app/(tabs)/setting.tsx", "app/(tabs)/orders.tsx", "app/(tabs)/notification.tsx"]) {
     assert.match(read(path), /if\s*\(!.*session\)\s*return <Redirect href="\/\(auth\)\/sign-in"\s*\/>/, path);
   }
 });
@@ -280,9 +281,9 @@ test("Pickup is capped at 10 km and follows the short at-hub confirmation flow",
 });
 
 test("Market ownership adds management without removing buyer capabilities", () => {
-  const profile = read("app/(tabs)/profile.tsx");
+  const profile = read("app/(tabs)/setting.tsx");
   const checkout = read("app/order/checkout.tsx");
-  assert.match(profile, /จัดการตลาดชุมชน/);
+  assert.match(read("src/lib/settingsMenu.ts"), /จัดการตลาดชุมชน/);
   assert.match(profile, /เจ้าของตลาดชุมชน · ซื้อสินค้าได้ตามปกติ/);
   assert.doesNotMatch(checkout, /isMarketOwner.*disabled|!isMarketOwner/);
 });
@@ -314,13 +315,14 @@ test("Every route with a text input opts into keyboard avoidance", () => {
 
 test("Beginner guidance stays available without enlarging shared buttons", () => {
   const home = read("app/(tabs)/index.tsx");
-  const profile = read("app/(tabs)/profile.tsx");
+  const profile = read("app/(tabs)/setting.tsx");
   const guide = read("app/guide.tsx");
   const seller = read("app/seller/dashboard.tsx");
   const owner = read("app/market/manage/home.tsx");
   assert.match(home, /locomall-home-guide-dismissed-v1/);
   assert.match(home, /เปิดคู่มือการใช้งาน/);
-  assert.match(profile, /คู่มือการใช้งาน/);
+  assert.match(profile, /getSettingsGroups/);
+  assert.match(read("src/lib/settingsMenu.ts"), /คู่มือการใช้งาน/);
   assert.match(guide, /วิธีซื้อสินค้า/);
   assert.match(guide, /วิธีเริ่มขายสินค้า/);
   assert.match(guide, /วิธีดูแลตลาดชุมชน/);
@@ -345,7 +347,7 @@ test("Home shows a two-column near-first catalog without cutting off distant sto
   assert.match(home, /items\.map/);
   assert.doesNotMatch(home, /marketItems\.slice|storeItems\.slice/);
   assert.match(card, /compactCard:\s*\{width:"48\.5%"\}/);
-  assert.match(home, /useNearby\(normalizedQuery, "all"\)/);
+  assert.match(home, /useNearby\(normalizedQuery, "all", \{ sameArea, enabled: preferencesReady \}\)/);
   assert.match(home, /placeholder="ค้นหาตลาด ร้านค้า หรือสินค้า"/);
   assert.match(home, /ผลการค้นหา/);
   assert.match(home, /ล้างคำค้นหา/);

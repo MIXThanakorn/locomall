@@ -1178,6 +1178,17 @@ export type Database = {
         Args: { p_allocation_id: number }
         Returns: undefined
       }
+      get_catalog_review_page: {
+        Args: {
+          p_target_type: string
+          p_target_id: number
+          p_stars?: number | null
+          p_limit?: number
+          p_before_created_at?: string | null
+          p_before_review_id?: number | null
+        }
+        Returns: Json
+      }
       apply_for_market: {
         Args: {
           p_description: string
@@ -1245,6 +1256,29 @@ export type Database = {
         Returns: undefined
       }
       discover_catalog_page: {
+        Args: {
+          p_after_distance_km?: number | null
+          p_after_entity_id?: number | null
+          p_after_entity_type?: string | null
+          p_kind?: string
+          p_lat?: number | null
+          p_limit?: number
+          p_lng?: number | null
+          p_query?: string | null
+        }
+        Returns: {
+          available_stock: number
+          description: string
+          distance_km: number | null
+          entity_id: number
+          entity_type: string
+          image_url: string | null
+          market_id: number
+          name: string
+          radius_km: number
+        }[]
+      }
+      discover_same_area_catalog_page: {
         Args: {
           p_after_distance_km?: number | null
           p_after_entity_id?: number | null
@@ -1397,6 +1431,10 @@ export type Database = {
       review_store: {
         Args: { p_approve: boolean; p_note?: string; p_store_id: number }
         Returns: undefined
+      }
+      set_store_suspension: {
+        Args: { p_store_id: number; p_suspend: boolean; p_note: string; p_expected_updated_at: string }
+        Returns: boolean
       }
       review_store_seller: {
         Args: { p_application_id: number; p_approve: boolean; p_note?: string }

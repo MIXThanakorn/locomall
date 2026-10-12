@@ -1,0 +1,44 @@
+# Build inputs are deliberately independent from Git publication rules.
+# google-services.json is required for native FCM; its client config is not a
+# service-account key. All server credentials and local env files stay excluded.
+.git/
+node_modules/
+.expo/
+.eas/
+dist/
+dist-*/
+web-build/
+outputs/
+output/
+reports/
+coverage/
+test-results/
+.codex-test/
+.codex-spreadsheet/
+.claude/
+.vscode/
+docs/
+tests/
+supabase/
+.env
+.env.*
+!.env.example
+**/*firebase-adminsdk*.json
+**/*service-account*.json
+**/*service_account*.json
+**/serviceAccountKey.json
+credentials.json
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.pem
+*.apk
+*.aab
+*.apks
+*.ipa
+*.log
+*.tsbuildinfo
+/android/
+/ios/

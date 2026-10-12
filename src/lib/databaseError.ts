@@ -7,6 +7,10 @@ export function translateDatabaseError(error: ErrorLike) {
   if (message.includes("already pending") || message.includes("is not pending")) return "คำขอนี้ถูกดำเนินการไปแล้ว กรุณารีเฟรชข้อมูล";
   if (message.includes("market unavailable")) return "ตลาดชุมชนนี้ยังไม่พร้อมรับคำขอ";
   if (message.includes("store unavailable")) return "ร้านค้านี้ยังไม่พร้อมรับคำขอ";
+  if (message.includes("store moderation reason required")) return "กรุณาระบุเหตุผลที่ระงับหรือคืนสิทธิ์ร้านค้า ความยาวไม่เกิน 500 ตัวอักษร";
+  if (message.includes("store moderation state changed")) return "ข้อมูลร้านค้าเปลี่ยนไปแล้ว กรุณารีเฟรชและตรวจสถานะก่อนดำเนินการอีกครั้ง";
+  if (message.includes("invalid store moderation")) return "เปลี่ยนสถานะได้เฉพาะร้านที่เปิดขายหรือถูกระงับเท่านั้น กรุณารีเฟรชข้อมูล";
+  if (message === "invalid store") return "ร้านค้าในออเดอร์นี้ไม่พร้อมขาย (อาจปิดขายหรือถูกระงับ) กรุณานำออกจากตะกร้าก่อนสั่งซื้อ";
   if (message.includes("sale unit cannot change")) return "ร้านที่อนุมัติแล้วหรือมีสต็อก/ตะกร้า/ออเดอร์อยู่ เปลี่ยนหน่วยขายไม่ได้ หากต้องขายขนาดใหม่ให้ขอเปิดร้านสินค้าใหม่";
   if (message.includes("invalid sale unit")) return "หน่วยสินค้าไม่ถูกต้อง กรุณาเลือกหน่วยและระบุปริมาณใหม่";
   if (message.includes("rejection reason required")) return "กรุณาระบุเหตุผลที่ปฏิเสธคำขอ";

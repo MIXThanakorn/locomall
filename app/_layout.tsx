@@ -10,6 +10,7 @@ import { Spectral_700Bold } from "@expo-google-fonts/spectral";
 import { AppAlertProvider } from "../src/components/AppAlertProvider";
 import { PushNotificationBootstrap } from "../src/components/PushNotificationBootstrap";
 import { BadgeProvider } from "../src/context/BadgeContext";
+import { CatalogPreferencesProvider } from "../src/context/CatalogPreferencesContext";
 
 function PhoneCompletionGuard() {
   const { session, loading, hasPhone } = useAuth();
@@ -30,7 +31,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
   return (
     <SafeAreaProvider>
-      <AppAlertProvider><AuthProvider><LanguageProvider><BadgeProvider><PushNotificationBootstrap />
+      <AppAlertProvider><AuthProvider><CatalogPreferencesProvider><LanguageProvider><BadgeProvider><PushNotificationBootstrap />
         <StatusBar style="dark" />
         <Stack
           screenOptions={{
@@ -39,7 +40,7 @@ export default function RootLayout() {
           }}
         />
         <PhoneCompletionGuard />
-      </BadgeProvider></LanguageProvider></AuthProvider></AppAlertProvider>
+      </BadgeProvider></LanguageProvider></CatalogPreferencesProvider></AuthProvider></AppAlertProvider>
     </SafeAreaProvider>
   );
 }

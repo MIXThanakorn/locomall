@@ -10,6 +10,7 @@ import { Colors, Spacing } from "../../../src/constants/theme";
 import { useAuth } from "../../../src/context/AuthContext";
 import { useCapabilities } from "../../../src/hooks/useCapabilities";
 import { translateDatabaseError } from "../../../src/lib/databaseError";
+import { approvalStatusLabel } from "../../../src/lib/displayText";
 import { supabase } from "../../../src/lib/supabase";
 import { formatSaleQuantity } from "../../../src/lib/productUnit";
 import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
@@ -24,7 +25,7 @@ export default function Stock() {
     if (!session?.user.id) return setList([]);
     const { data, error } = await supabase
       .from("seller_listings")
-      .select("*,stores(name,product_name,unit)")
+      .select("*,stores(name,product_name,unit,approval_status,approval_note)")
       .eq("seller_id", session.user.id)
       .order("created_at");
     if (error) Alert.alert("โหลดจำนวนสินค้าไม่สำเร็จ", translateDatabaseError(error));
@@ -35,6 +36,7 @@ export default function Stock() {
   const watches = useMemo<RealtimeWatch[]>(() => session?.user.id ? [
     { table: "seller_listings", event: "INSERT", filter: `seller_id=eq.${session.user.id}` },
     { table: "seller_listings", event: "UPDATE", filter: `seller_id=eq.${session.user.id}` },
+    { table: "stores", event: "UPDATE" },
   ] : [], [session?.user.id]);
   useRealtimeRefresh(`seller-stock-${session?.user.id}`, load, watches, Boolean(session?.user.id));
 
@@ -60,7 +62,8 @@ export default function Stock() {
       {list.map((listing, index) => <View style={styles.card} key={listing.listing_id}>
         <Text style={styles.name}>{listing.stores?.product_name} · {listing.stores?.name}</Text>
         <Text style={styles.reserved}>คงเหลือทั้งหมด {formatSaleQuantity(listing.stock_quantity, listing.stores?.unit)} · จองแล้ว {formatSaleQuantity(listing.reserved_quantity, listing.stores?.unit)}</Text>
-        <Text style={styles.available}>พร้อมให้สั่ง {formatSaleQuantity(listing.status === "active" ? Math.max(0, listing.stock_quantity - listing.reserved_quantity) : 0, listing.stores?.unit)}{listing.status !== "active" ? " (หยุดขายชั่วคราว)" : ""}</Text>
+        <Text style={styles.available}>พร้อมให้สั่ง {formatSaleQuantity(listing.status === "active" && listing.stores?.approval_status === "approved" ? Math.max(0, listing.stock_quantity - listing.reserved_quantity) : 0, listing.stores?.unit)}{listing.status !== "active" ? " (หยุดขายชั่วคราว)" : ""}</Text>
+        {listing.stores?.approval_status === "suspended" ? <Text style={styles.suspension}>{approvalStatusLabel("suspended")} · {listing.stores.approval_note || "ติดต่อผู้ดูแลระบบ"} · ออเดอร์เดิมยังดำเนินการต่อได้</Text> : null}
         <Text style={styles.inputLabel}>แก้ไขจำนวนคงเหลือทั้งหมด (รวมที่จองแล้ว)</Text>
         <AppTextInput
           style={styles.input}
@@ -82,6 +85,7 @@ const styles = StyleSheet.create({
   name: { fontFamily: "Kanit_700Bold", color: Colors.textDark },
   reserved: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },
   available: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, marginTop: 3 },
+  suspension: { fontFamily: "Kanit_400Regular", color: Colors.danger, marginVertical: 8 },
   inputLabel: { fontFamily: "Kanit_500Medium", color: Colors.textDark, marginTop: 10 },
   input: { backgroundColor: Colors.inputBackground, padding: 10, marginVertical: 10, fontFamily: "Kanit_400Regular", borderRadius: 10 },
   empty: { backgroundColor: "white", padding: 18, borderRadius: 16, marginTop: 16 },

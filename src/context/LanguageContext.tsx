@@ -8,7 +8,7 @@ const translations: Record<Language, Record<string, string>> = {
     home: "Home",
     notification: "Notification",
     chat: "Chat",
-    profile: "Me",
+    setting: "Settings",
     
     // Auth
     signIn: "SIGN IN",
@@ -61,7 +61,7 @@ const translations: Record<Language, Record<string, string>> = {
     home: "หน้าแรก",
     notification: "การแจ้งเตือน",
     chat: "แชท",
-    profile: "โปรไฟล์",
+    setting: "ตั้งค่า",
 
     // Auth
     signIn: "เข้าสู่ระบบ",

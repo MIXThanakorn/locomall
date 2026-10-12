@@ -71,6 +71,8 @@ supabase/.temp/
 
 # Project outputs & temporary files
 outputs/
+output/
+reports/
 .codex-spreadsheet/
 .codex-test/
 coverage/
@@ -81,3 +83,17 @@ test-results/
 **/*service-account*.json
 **/*service_account*.json
 **/serviceAccountKey.json
+/google-services.json
+/credentials.json
+supabase/functions/.env*
+!supabase/functions/.env*.example
+
+# Local presentation/report artifacts (guides and source documentation stay tracked)
+/docs/*Presentation*.docx
+/docs/*presentation*.docx
+/docs/*report*.md
+/docs/*REPORT*.md
+/docs/*audit*.md
+/docs/security-advisor.md
+docs/ai-google-ai-studio-setup.md
+docs/ai-google-cloud-setup.md

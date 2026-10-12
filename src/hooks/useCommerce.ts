@@ -13,9 +13,14 @@ const CATALOG_WATCHES: RealtimeWatch[] = [
   { table: "stores", event: "INSERT" }, { table: "stores", event: "UPDATE" },
 ];
 
-export function useNearby(query = "", kind = "all") {
-  const { deviceLocation, deviceLocationReady } = useAuth();
-  const [items, setItems] = useState<NearbyResult[]>([]);
+export function useNearby(query = "", kind = "all", options: { sameArea?: boolean; enabled?: boolean } = {}) {
+  const { deviceLocation, deviceLocationReady, session } = useAuth();
+  const sameArea = options.sameArea ?? false;
+  const enabled = options.enabled ?? true;
+  const userId = session?.user.id;
+  const scope = JSON.stringify([userId, query, kind, sameArea, deviceLocation]);
+  const [pageResult, setPageResult] = useState<{ scope: string; items: NearbyResult[] } | null>(null);
+  const items = useMemo(() => pageResult?.scope === scope ? pageResult.items : [], [pageResult, scope]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -23,7 +28,7 @@ export function useNearby(query = "", kind = "all") {
   const requestId = useRef(0);
   const requestingMore = useRef(false);
   const fetchPage = useCallback(async (after?: NearbyResult) => {
-    const result = await supabase.rpc("discover_catalog_page", {
+    const result = await supabase.rpc(sameArea ? "discover_same_area_catalog_page" : "discover_catalog_page", {
       p_query: query || undefined,
       p_kind: kind,
       p_limit: DISCOVERY_PAGE_SIZE + 1,
@@ -43,9 +48,9 @@ export function useNearby(query = "", kind = "all") {
       const metric = byEntity.get(`${item.entity_type}-${item.entity_id}`);
       return { ...item, ...metric, unit_price: metric?.min_price ?? null };
     }) };
-  }, [query, kind, deviceLocation]);
+  }, [query, kind, deviceLocation, sameArea]);
   const refresh = useCallback(async () => {
-    if (!deviceLocationReady) return;
+    if (!deviceLocationReady || !enabled) return;
     const currentRequest = ++requestId.current;
     requestingMore.current = false;
     setLoadingMore(false);
@@ -53,13 +58,13 @@ export function useNearby(query = "", kind = "all") {
     const { data, error: requestError } = await fetchPage();
     if (currentRequest !== requestId.current) return;
     const page = (data ?? []) as NearbyResult[];
-    setItems(page.slice(0, DISCOVERY_PAGE_SIZE));
+    setPageResult({ scope, items: page.slice(0, DISCOVERY_PAGE_SIZE) });
     setHasMore(page.length > DISCOVERY_PAGE_SIZE);
     setError(requestError?.message ?? null);
     setLoading(false);
-  }, [deviceLocationReady, fetchPage]);
+  }, [deviceLocationReady, enabled, fetchPage, scope]);
   const loadMore = useCallback(async () => {
-    if (!deviceLocationReady || loading || !hasMore || !items.length || requestingMore.current) return;
+    if (!deviceLocationReady || !enabled || loading || !hasMore || !items.length || requestingMore.current) return;
     requestingMore.current = true;
     setLoadingMore(true);
     const currentRequest = requestId.current;
@@ -67,22 +72,24 @@ export function useNearby(query = "", kind = "all") {
     if (currentRequest === requestId.current) {
       const page = ((data ?? []) as NearbyResult[]).slice(0, DISCOVERY_PAGE_SIZE);
       if (!requestError) {
-        setItems((current) => {
-          const known = new Set(current.map((item) => `${item.entity_type}-${item.entity_id}`));
-          return [...current, ...page.filter((item) => !known.has(`${item.entity_type}-${item.entity_id}`))];
+        setPageResult((current) => {
+          if (!current || current.scope !== scope) return current;
+          const known = new Set(current.items.map((item) => `${item.entity_type}-${item.entity_id}`));
+          return { scope, items: [...current.items, ...page.filter((item) => !known.has(`${item.entity_type}-${item.entity_id}`))] };
         });
         setHasMore((data?.length ?? 0) > DISCOVERY_PAGE_SIZE);
       } else setError(requestError.message);
       setLoadingMore(false);
       requestingMore.current = false;
     }
-  }, [deviceLocationReady, loading, hasMore, items, fetchPage]);
+  }, [deviceLocationReady, enabled, loading, hasMore, items, fetchPage, scope]);
   useFocusEffect(useCallback(() => {
     const timer = setTimeout(() => void refresh(), 250);
     return () => { clearTimeout(timer); requestId.current += 1; };
   }, [refresh]));
-  useRealtimeRefresh("home-catalog", refresh, CATALOG_WATCHES, deviceLocationReady);
-  return { items, loading, loadingMore, hasMore, error, refresh, loadMore };
+  useRealtimeRefresh("home-catalog", refresh, CATALOG_WATCHES, deviceLocationReady && enabled);
+  const currentScope = enabled && pageResult?.scope === scope;
+  return { items: enabled ? items : [], loading: !currentScope || loading, loadingMore: currentScope && loadingMore, hasMore: currentScope && hasMore, error: currentScope ? error : null, refresh, loadMore };
 }
 
 export function useOrders() {

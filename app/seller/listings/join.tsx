@@ -10,6 +10,7 @@ import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../../sr
 import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { ProductUnitField } from "../../../src/components/ProductUnitField";
 import { formatProductUnit } from "../../../src/lib/productUnit";
+import { ListingAssistant } from "../../../src/components/ListingAssistant";
 
 export default function CreateStore() {
   const { marketId } = useLocalSearchParams<{ marketId: string }>();
@@ -64,7 +65,8 @@ export default function CreateStore() {
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปสินค้า/ร้าน</Text>}
     </TouchableOpacity>
-    {inputs.map(([label, value, setter]) => <AppTextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} />)}
+    {inputs.map(([label, value, setter]) => <AppTextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} maxLength={label === "รายละเอียด" ? 1500 : 120} multiline={label === "รายละเอียด"} />)}
+    <ListingAssistant marketId={Number(marketId)} productName={product} description={description} image={image} disabled={loading} onApply={(nextProduct, nextDescription) => { setProduct(nextProduct); setDescription(nextDescription); }} />
     <ProductUnitField kind={unitKind} amount={unitAmount} onKindChange={(value) => { setUnitKind(value); setUnitAmount(""); }} onAmountChange={setUnitAmount} />
     <AppTextInput style={styles.input} placeholder="ราคากลางต่อ 1 หน่วยสั่งซื้อ" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
     <Button title="ส่งคำขอเปิดร้าน" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary, marginTop: 16 }} />

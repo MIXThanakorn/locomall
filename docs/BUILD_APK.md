@@ -8,6 +8,9 @@
 2. ลงชื่อเข้าใช้ Expo account เจ้าของ EAS project: `npx eas-cli login` แล้วตรวจด้วย `npx eas-cli whoami`
 3. ตรวจว่า `app.json` มี `expo.extra.eas.projectId`, Android package `com.locomall.app`, และ `googleServicesFile` ชี้ไปยัง `./google-services.json`
 4. ตรวจว่า EAS environment `preview` มี `EXPO_PUBLIC_SUPABASE_URL` และ `EXPO_PUBLIC_SUPABASE_ANON_KEY` ตรงกับ Supabase project ที่ต้องการ ไม่ใส่ service-role key ลงในแอป และอย่า commit `.env.local` หรือ service-account private key
+   `.easignore` ไม่ส่ง `.env.local` ไป EAS เพราะมีคีย์ Gemini ฝั่ง backend อยู่ด้วย;
+   ใช้ EAS environment สำหรับค่า `EXPO_PUBLIC_*` เท่านั้น ส่วน `google-services.json`
+   อยู่ในเครื่องและส่งเป็น input ของ native build แต่ไม่เผยแพร่บน GitHub
 5. ถ้าจะทดสอบ Google Sign-In ให้เพิ่ม `locomall://sign-in` ใน Supabase Dashboard → Authentication → URL Configuration → Redirect URLs ก่อน ดูรายละเอียดใน [GOOGLE_SIGN_IN_ANDROID.md](GOOGLE_SIGN_IN_ANDROID.md)
 
 ## ตรวจและบิลด์

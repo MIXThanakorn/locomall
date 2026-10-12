@@ -10,6 +10,7 @@ import { KeyboardAwareView } from "../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useNearby } from "../../src/hooks/useCommerce";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
+import { useCatalogPreferences } from "../../src/context/CatalogPreferencesContext";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -18,7 +19,8 @@ export default function HomeScreen() {
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
   const normalizedQuery = query.trim();
   const isSearching = normalizedQuery.length > 0;
-  const { items, loading, loadingMore, hasMore, error, refresh, loadMore } = useNearby(normalizedQuery, "all");
+  const { sameArea, ready: preferencesReady } = useCatalogPreferences();
+  const { items, loading, loadingMore, hasMore, error, refresh, loadMore } = useNearby(normalizedQuery, "all", { sameArea, enabled: preferencesReady });
   const { cartCount } = useBadgeCounts();
 
   useEffect(() => {
@@ -118,6 +120,7 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
+          {sameArea ? <TouchableOpacity style={styles.areaFilter} accessibilityLabel="เปลี่ยนตัวกรองพื้นที่" onPress={() => router.push("/settings/catalog" as never)}><Ionicons name="filter" size={18} color={Colors.greenPrimary} /><Text style={styles.areaFilterText}>ตำบลเดียวกับพื้นที่หลัก · เปลี่ยนตัวกรอง</Text></TouchableOpacity> : null}
           {loading && !items.length ? <ActivityIndicator color={Colors.greenPrimary} style={styles.loader} /> : null}
           {error ? <Text style={styles.error}>ค้นหาข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</Text> : null}
 
@@ -132,7 +135,7 @@ export default function HomeScreen() {
                 <View style={styles.empty}>
                   <Ionicons name="search-outline" size={38} color={Colors.greenPrimary} />
                   <Text style={styles.emptyTitle}>ยังไม่พบสิ่งที่ค้นหา</Text>
-                  <Text style={styles.message}>ลองค้นด้วยชื่อสินค้า ชื่อตลาด หรือชื่อร้านค้าอีกครั้ง</Text>
+                  <Text style={styles.message}>{sameArea ? "ลองเปลี่ยนคำค้น หรือเลือกดูทุกพื้นที่ในหน้าตั้งค่า" : "ลองค้นด้วยชื่อสินค้า ชื่อตลาด หรือชื่อร้านค้าอีกครั้ง"}</Text>
                 </View>
               ) : null}
               <View style={styles.grid}>{items.map((item) => (
@@ -148,15 +151,15 @@ export default function HomeScreen() {
             <>
               <View style={styles.heading}>
                 <View>
-                  <Text style={styles.eyebrow}>ใกล้คุณก่อน · ดูได้ทุกพื้นที่</Text>
+                  <Text style={styles.eyebrow}>{sameArea ? "พื้นที่หลักของคุณ · เรียงใกล้ก่อน" : "ใกล้คุณก่อน · ดูได้ทุกพื้นที่"}</Text>
                   <Text style={styles.title}>ตลาดและร้านค้า</Text>
                 </View>
               </View>
               {!loading && !error && !items.length ? (
                 <View style={styles.empty}>
                   <Ionicons name="leaf-outline" size={38} color={Colors.greenPrimary} />
-                  <Text style={styles.emptyTitle}>ยังไม่มีตลาดหรือร้านค้า</Text>
-                  <Text style={styles.message}>เมื่อมีร้านค้าเปิดใช้งาน จะแสดงที่นี่โดยเรียงจากใกล้ไปไกล</Text>
+                  <Text style={styles.emptyTitle}>{sameArea ? "ยังไม่มีตลาดหรือร้านค้าในพื้นที่หลัก" : "ยังไม่มีตลาดหรือร้านค้า"}</Text>
+                  <Text style={styles.message}>{sameArea ? "ตรวจสอบพื้นที่หลัก หรือเปลี่ยนตัวกรองเป็นทุกพื้นที่ในหน้าตั้งค่า" : "เมื่อมีร้านค้าเปิดใช้งาน จะแสดงที่นี่โดยเรียงจากใกล้ไปไกล"}</Text>
                 </View>
               ) : null}
               <View style={styles.grid}>{items.map((item) => (
@@ -223,6 +226,8 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   content: { padding: Spacing.lg, paddingBottom: 80 },
+  areaFilter: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 },
+  areaFilterText: { flex: 1, fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, fontSize: 13 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
   loadMore: { alignItems: "center", paddingVertical: Spacing.md },
   flex: { flex: 1 },

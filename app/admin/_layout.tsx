@@ -26,6 +26,7 @@ export default function AdminLayout() {
     <Tabs.Screen name="security" options={{ href: null }} />
     <Tabs.Screen name="finance" options={{ href: null }} />
     <Tabs.Screen name="reviews" options={{ href: null }} />
+    <Tabs.Screen name="stores" options={{ href: null }} />
   </Tabs>;
 }
 

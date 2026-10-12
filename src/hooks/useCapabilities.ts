@@ -13,19 +13,19 @@ export type Capabilities = {
 
 const empty: Capabilities = { isAdmin: false, isMarketOwner: false, isStoreManager: false, isSeller: false, canViewSellerOrders: false };
 
-export function useCapabilities() {
+export function useCapabilities(refreshVersion = 0) {
   const { session } = useAuth();
   const userId = session?.user.id;
-  const [result, setResult] = useState<{ userId?: string; capabilities: Capabilities; loading: boolean }>({ capabilities: empty, loading: true });
+  const [result, setResult] = useState<{ userId?: string; refreshVersion: number; capabilities: Capabilities; loading: boolean }>({ refreshVersion, capabilities: empty, loading: true });
 
   useFocusEffect(useCallback(() => {
     let active = true;
     async function load() {
       if (!userId) {
-        if (active) setResult({ userId, capabilities: empty, loading: false });
+        if (active) setResult({ userId, refreshVersion, capabilities: empty, loading: false });
         return;
       }
-      setResult((current) => ({ userId, capabilities: current.userId === userId ? current.capabilities : empty, loading: true }));
+      setResult((current) => ({ userId, refreshVersion, capabilities: current.userId === userId ? current.capabilities : empty, loading: true }));
       const [role, markets, stores, listings, approvedStores, approvedStoreListings] = await Promise.all([
         supabase.from("platform_roles").select("role").eq("user_id", userId).maybeSingle(),
         supabase.from("markets").select("market_id").eq("owner_id", userId).limit(1),
@@ -35,7 +35,7 @@ export function useCapabilities() {
         supabase.from("seller_listings").select("listing_id,stores!inner(store_id)").eq("seller_id", userId).eq("stores.approval_status", "approved").limit(1),
       ]);
       if (active) {
-        setResult({ userId, capabilities: {
+        setResult({ userId, refreshVersion, capabilities: {
           isAdmin: role.data?.role === "platform_admin",
           isMarketOwner: Boolean(markets.data?.length),
           isStoreManager: Boolean(stores.data?.length),
@@ -46,7 +46,7 @@ export function useCapabilities() {
     }
     void load();
     return () => { active = false; };
-  }, [userId]));
+  }, [userId, refreshVersion]));
 
-  return { ...(result.userId === userId ? result.capabilities : empty), loading: result.userId !== userId || result.loading };
+  return { ...(result.userId === userId ? result.capabilities : empty), loading: result.userId !== userId || result.refreshVersion !== refreshVersion || result.loading };
 }

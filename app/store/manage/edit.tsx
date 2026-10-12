@@ -10,6 +10,7 @@ import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../../sr
 import { supabase } from "../../../src/lib/supabase";
 import { ProductUnitField } from "../../../src/components/ProductUnitField";
 import { formatProductUnit, parseProductUnit } from "../../../src/lib/productUnit";
+import { ListingAssistant } from "../../../src/components/ListingAssistant";
 
 export default function EditStore() {
   const { storeId } = useLocalSearchParams<{ storeId: string }>(); const router = useRouter();
@@ -35,8 +36,9 @@ export default function EditStore() {
     <TouchableOpacity style={styles.imageBox} onPress={async () => { try { setImage(await selectSquareImage()); } catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); } }}>
       {image?.uri || store?.image_url ? <Image source={{ uri: image?.uri ?? store.image_url }} style={styles.image} /> : <Text style={styles.imageText}>+ เปลี่ยนรูปร้าน/สินค้า</Text>}
     </TouchableOpacity>
-    <AppTextInput style={styles.input} placeholder="ชื่อร้าน" value={name} onChangeText={setName} /><AppTextInput style={styles.input} placeholder="ชื่อสินค้า" value={product} onChangeText={setProduct} />
-    <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline />
+    <AppTextInput style={styles.input} placeholder="ชื่อร้าน" value={name} onChangeText={setName} /><AppTextInput style={styles.input} placeholder="ชื่อสินค้า" value={product} onChangeText={setProduct} maxLength={120} />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline maxLength={1500} />
+    <ListingAssistant storeId={Number(storeId)} productName={product} description={description} image={image} existingImage={!!store?.image_url} disabled={saving || !store} onApply={(nextProduct, nextDescription) => { setProduct(nextProduct); setDescription(nextDescription); }} />
     <ProductUnitField kind={unitKind} amount={unitAmount} onKindChange={(value) => { setUnitKind(value); setUnitAmount(""); }} onAmountChange={setUnitAmount} disabled={store?.approval_status === "approved" || store?.approval_status === "suspended"} />
     <AppTextInput style={styles.input} placeholder="ราคากลางต่อ 1 หน่วยสั่งซื้อ" value={price} onChangeText={setPrice} keyboardType="decimal-pad" /><Button title="บันทึกการแก้ไข" onPress={save} loading={saving} style={styles.button} />
   </KeyboardAwareScrollView>;
