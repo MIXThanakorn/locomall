@@ -1,7 +1,5 @@
-import { realtimeChannelName } from "../lib/realtimeChannelName";
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import type { Tables } from "../types/database";
@@ -56,19 +54,26 @@ export function useNearby(query = "", kind = "all", options: { sameArea?: boolea
     requestingMore.current = false;
     setLoadingMore(false);
     setLoading(true);
+    try {
     const { data, error: requestError } = await fetchPage();
     if (currentRequest !== requestId.current) return;
+    if (requestError) throw requestError;
     const page = (data ?? []) as NearbyResult[];
     setPageResult({ scope, items: page.slice(0, DISCOVERY_PAGE_SIZE) });
     setHasMore(page.length > DISCOVERY_PAGE_SIZE);
     setError(requestError?.message ?? null);
-    setLoading(false);
+    } catch {
+      if (currentRequest !== requestId.current) return;
+      setPageResult((current) => current?.scope === scope ? current : { scope, items: [] });
+      setError("โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่");
+    } finally { if (currentRequest === requestId.current) setLoading(false); }
   }, [deviceLocationReady, enabled, fetchPage, scope]);
   const loadMore = useCallback(async () => {
     if (!deviceLocationReady || !enabled || loading || !hasMore || !items.length || requestingMore.current) return;
     requestingMore.current = true;
     setLoadingMore(true);
     const currentRequest = requestId.current;
+    try {
     const { data, error: requestError } = await fetchPage(items[items.length - 1]);
     if (currentRequest === requestId.current) {
       const page = ((data ?? []) as NearbyResult[]).slice(0, DISCOVERY_PAGE_SIZE);
@@ -80,9 +85,9 @@ export function useNearby(query = "", kind = "all", options: { sameArea?: boolea
         });
         setHasMore((data?.length ?? 0) > DISCOVERY_PAGE_SIZE);
       } else setError(requestError.message);
-      setLoadingMore(false);
-      requestingMore.current = false;
     }
+    } catch { if (currentRequest === requestId.current) setError("โหลดรายการเพิ่มเติมไม่สำเร็จ กรุณาลองใหม่"); }
+    finally { if (currentRequest === requestId.current) { setLoadingMore(false); requestingMore.current = false; } }
   }, [deviceLocationReady, enabled, loading, hasMore, items, fetchPage, scope]);
   useFocusEffect(useCallback(() => {
     const timer = setTimeout(() => void refresh(), 250);
@@ -102,10 +107,15 @@ export function useOrders() {
     const currentRequest = ++requestId.current;
     if (!userId) { setResult({ userId, orders: [], loading: false, error: null }); return; }
     setResult((current) => ({ userId, orders: current.userId === userId ? current.orders : [], loading: true, error: null }));
-    const response = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name,image_url))").eq("buyer_id", userId).order("created_at", { ascending: false });
-    if (currentRequest === requestId.current) setResult({ userId, orders: response.data ?? [], error: response.error?.message ?? null, loading: false });
+    try {
+      const response = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name,image_url))").eq("buyer_id", userId).order("created_at", { ascending: false });
+      if (response.error) throw response.error;
+      if (currentRequest === requestId.current) setResult({ userId, orders: response.data ?? [], error: null, loading: false });
+    } catch {
+      if (currentRequest === requestId.current) setResult((current) => ({ userId, orders: current.userId === userId ? current.orders : [], error: "โหลดคำสั่งซื้อไม่สำเร็จ", loading: false }));
+    }
   }, [userId]);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useFocusEffect(useCallback(() => { void refresh(); return () => { requestId.current++; }; }, [refresh]));
   const watches = useMemo<RealtimeWatch[]>(() => userId ? [
     { table: "orders", event: "INSERT", filter: `buyer_id=eq.${userId}` },
     { table: "orders", event: "UPDATE", filter: `buyer_id=eq.${userId}` },
@@ -123,10 +133,15 @@ export function useSellerAllocations() {
     const currentRequest = ++requestId.current;
     if (!userId) { setResult({ userId, allocations: [], loading: false, error: null }); return; }
     setResult((current) => ({ userId, allocations: current.userId === userId ? current.allocations : [], loading: true, error: null }));
-    const response = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("seller_id", userId).order("created_at", { ascending: false });
-    if (currentRequest === requestId.current) setResult({ userId, allocations: response.data ?? [], error: response.error?.message ?? null, loading: false });
+    try {
+      const response = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("seller_id", userId).order("created_at", { ascending: false });
+      if (response.error) throw response.error;
+      if (currentRequest === requestId.current) setResult({ userId, allocations: response.data ?? [], error: null, loading: false });
+    } catch {
+      if (currentRequest === requestId.current) setResult((current) => ({ userId, allocations: current.userId === userId ? current.allocations : [], error: "โหลดงานขายไม่สำเร็จ", loading: false }));
+    }
   }, [userId]);
-  useEffect(() => { void refresh(); }, [refresh]);
+  useFocusEffect(useCallback(() => { void refresh(); return () => { requestId.current++; }; }, [refresh]));
   const watches = useMemo<RealtimeWatch[]>(() => userId ? [
     { table: "order_allocations", event: "INSERT", filter: `seller_id=eq.${userId}` },
     { table: "order_allocations", event: "UPDATE", filter: `seller_id=eq.${userId}` },
@@ -138,21 +153,25 @@ export function useSellerAllocations() {
 export function useNotifications() {
   const { session } = useAuth();
   const userId = session?.user.id;
-  const [items, setItems] = useState<Tables<"notifications">[]>([]); const [loading, setLoading] = useState(true);
+  const [result, setResult] = useState<{ userId?: string; items: Tables<"notifications">[]; loading: boolean; error: boolean }>({ items: [], loading: true, error: false });
+  const generation = useRef(0);
   const refresh = useCallback(async () => {
-    if (!userId) { setItems([]); setLoading(false); return; }
-    setLoading(true);
-    const r = await supabase.from("notifications").select("*").neq("category", "chat").order("created_at", { ascending: false });
-    setItems(r.data ?? []); setLoading(false);
+    const request = ++generation.current;
+    if (!userId) { setResult({ userId, items: [], loading: false, error: false }); return; }
+    setResult((current) => ({ userId, items: current.userId === userId ? current.items : [], loading: true, error: false }));
+    try {
+      const r = await supabase.from("notifications").select("*").eq("user_id", userId).neq("category", "chat").order("created_at", { ascending: false });
+      if (r.error) throw r.error;
+      if (request === generation.current) setResult({ userId, items: r.data ?? [], loading: false, error: false });
+    } catch {
+      if (request === generation.current) setResult((current) => ({ userId, items: current.userId === userId ? current.items : [], loading: false, error: true }));
+    }
   }, [userId]);
-  useEffect(() => {
-    if (!userId) return;
-    void refresh();
-    const channel = supabase.channel(realtimeChannelName(`my-notifications-${userId}`))
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh())
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh())
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [refresh, userId]);
-  return { items, loading, refresh };
+  useFocusEffect(useCallback(() => { void refresh(); return () => { generation.current++; }; }, [refresh]));
+  const watches = useMemo<RealtimeWatch[]>(() => userId ? [
+    { table: "notifications", event: "INSERT", filter: `user_id=eq.${userId}` },
+    { table: "notifications", event: "UPDATE", filter: `user_id=eq.${userId}` },
+  ] : [], [userId]);
+  useRealtimeRefresh(`my-notifications-${userId}`, refresh, watches, !!userId);
+  return { items: result.userId === userId ? result.items : [], loading: result.userId !== userId || result.loading, error: result.userId === userId && result.error, refresh };
 }

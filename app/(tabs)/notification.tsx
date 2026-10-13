@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LoadNotice } from "../../src/components/LoadNotice";
 import { Redirect, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -35,7 +36,7 @@ export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const router = useRouter();
-  const { items, loading, refresh } = useNotifications();
+  const { items, loading, error, refresh } = useNotifications();
   const { refreshBadges } = useBadgeCounts();
   const [category, setCategory] = useState<Category>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -86,7 +87,8 @@ export default function NotificationScreen() {
       </TouchableOpacity>
 
       {loading ? <ActivityIndicator style={{ marginTop: 28 }} color={Colors.greenPrimary} /> : null}
-      {!loading && !filtered.length ? <View style={styles.empty}><Ionicons name="notifications-off-outline" size={38} color={Colors.textMuted} /><Text style={styles.emptyTitle}>ไม่มีรายการในหมวดนี้</Text><Text style={styles.emptyText}>เมื่อมีความคืบหน้า รายการจะแสดงที่นี่</Text></View> : null}
+      {error ? <LoadNotice onRetry={() => void refresh()} /> : null}
+      {!loading && !error && !filtered.length ? <View style={styles.empty}><Ionicons name="notifications-off-outline" size={38} color={Colors.textMuted} /><Text style={styles.emptyTitle}>ไม่มีรายการในหมวดนี้</Text><Text style={styles.emptyText}>เมื่อมีความคืบหน้า รายการจะแสดงที่นี่</Text></View> : null}
       {filtered.map((item) => {
         const kind = categoryOf(item); const ui = CATEGORY_UI[kind];
         return <TouchableOpacity key={item.notification_id} style={[styles.card, !item.read_at && styles.unread]} onPress={() => void openItem(item)}>

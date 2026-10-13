@@ -180,13 +180,15 @@ Business IDs ใช้ `bigint identity`; user IDs ใช้ UUID จาก `aut
 - Pickup: `get_pickup_eligibility`
 - Logistics: `accept_allocation`, `mark_allocation_ready`, `record_allocation_collected`, `record_allocation_at_hub`, `consolidate_order`, `ship_order`
 - Notifications: `mark_notification_read`, `mark_all_notifications_read`, `register_my_push_device`, `disable_my_push_devices`
-- Chat: `get_chat_room_header`, `get_my_chat_inbox`, `get_chat_order_context`, `mark_my_chat_room_read`
+- Chat: `get_chat_room_header`, `get_my_chat_inbox`, `get_my_chat_visuals`, `get_chat_order_context`, `mark_my_chat_room_read`
 
 Helper functions อยู่ใน private schema และไม่เปิดผ่าน Data API.
 
 ### Chat context and mobile navigation
 
 - หัวแชทแสดงคู่สนทนา/สินค้า พร้อมปุ่มเปิดหน้าสินค้า และปุ่มดูออเดอร์ที่เกี่ยวข้อง
+- รูปคู่สนทนามาจาก participant-scoped RPC ไม่เปิดตาราง profiles ให้ผู้อื่น; รูปสินค้าจะแยกอยู่ในการ์ดสินค้า และร้านค้าในตลาดใช้รูปสินค้าของร้านแทนไอคอน มี fallback เมื่อไม่มีรูป/โหลดล้มเหลว
+- แชทเลื่อนตามข้อความล่าสุดเมื่ออยู่ท้ายแชทและคีย์บอร์ดเปลี่ยนขนาดหน้าจอ แต่ไม่ดึงลงเมื่ออ่านย้อนหลัง; มีปุ่มกลับข้อความล่าสุด และจัดกลุ่มข้อความผู้ส่งเดียวกันในช่วงห้านาทีโดยยังแสดงเวลาทุกข้อความ
 - การ์ดแสดงไม่เกิน 3 รายการล่าสุดของผู้ซื้อและร้านในห้องนั้น: เลขออเดอร์ย่อ สินค้า จำนวน ยอดเฉพาะสินค้าร้านนี้ และสถานะปัจจุบัน ไม่ใช่ข้อความยืนยันการชำระเงิน
 - ผู้ซื้อเปิดรายละเอียดออเดอร์ของตนได้ ผู้ดูแลร้านเปิดงานขายได้เฉพาะ allocation ของตนเอง มิฉะนั้นเห็นเพียงสรุป ไม่มีที่อยู่ เบอร์โทร หรือสินค้าร้านอื่นใน DTO
 - สถานะการ์ดโหลดใหม่จาก RPC หลัง Realtime event, กลับเข้าแอป หรือ pull-to-refresh; ไม่มีการเปลี่ยนสิทธิ์อ่านตารางเดิม
@@ -391,6 +393,15 @@ concurrent database test หรือการทดสอบ role boundary ก�
 หรือบัญชีเก่าที่ยังไม่มีเบอร์มือถือถูกต้องต้องกรอกเบอร์ก่อนใช้งานส่วนอื่นของแอป.
 
 ## Release checklist
+
+### Reliability update (13 October 2026)
+
+- Home, market/store details, chat, checkout, orders and notifications distinguish failed loads from empty results; failed refreshes keep previously loaded data and offer retry.
+- Focus-owned Realtime refreshes catch up after subscription/reconnection and app resume, collapse overlapping event bursts, and poll every 15 seconds while a focused connection is unavailable (foreground only).
+- Chat initially reads the latest 40 messages. Scrolling up loads older keyset pages; reconnects fetch only newer messages using the original `(created_at,message_id)` cursor. Existing header/inbox RPC contracts remain compatible with older APKs.
+- New checkout uses `create_cod_order_once` with an account-scoped request UUID, retaining that UUID for retry of the same checkout while the screen remains mounted. The request and existing COD stock reservation commit atomically. This is not an offline purchase queue or a guarantee across restarting the app; check order history after an uncertain purchase before starting a new checkout.
+- Native active sessions now use chunked SecureStore as well as the saved-account token vault. Existing AsyncStorage sessions migrate only after secure writes succeed; web storage behavior is unchanged. Migration, reinstall/keychain behavior and account switching still need physical-device regression testing.
+- `npm test` includes secure-storage migration/failure, realtime refresh serialization, chat cursor authorization, COD replay/payload mismatch and transaction rollback tests. In-memory database tests do not replace concurrent multi-connection production or native-device testing.
 
 - Run migrations and regenerate TypeScript types
 - ตรวจว่าการบันทึกและติดตามแสดงเฉพาะตลาด/ร้านที่อนุมัติแล้ว (ระบบแชร์พักไว้ก่อน)

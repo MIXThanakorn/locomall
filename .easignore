@@ -22,7 +22,7 @@ tests/
 supabase/
 .env
 .env.*
-!.env.example
+# Templates are not native build inputs either; keep user-local edits off EAS.
 **/*firebase-adminsdk*.json
 **/*service-account*.json
 **/*service_account*.json

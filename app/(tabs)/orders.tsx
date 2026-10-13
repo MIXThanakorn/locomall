@@ -1,4 +1,5 @@
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import { LoadNotice } from "../../src/components/LoadNotice";
 import React from "react";
 import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -39,9 +40,9 @@ export default function OrdersTab() {
     </View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([buyer.refresh(), seller.refresh()]); }} tintColor={Colors.greenPrimary} />}>
       {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
-      {error ? <Text style={styles.error}>โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</Text> : null}
+      {error ? <LoadNotice onRetry={() => void (active === "buying" ? buyer.refresh() : seller.refresh())} /> : null}
       {active === "buying" ? <>
-        {!buyer.loading && !buyer.orders.length ? <Text style={styles.empty}>ยังไม่มีรายการที่คุณสั่งซื้อ</Text> : null}
+        {!buyer.loading && !buyer.error && !buyer.orders.length ? <Text style={styles.empty}>ยังไม่มีรายการที่คุณสั่งซื้อ</Text> : null}
         {buyer.orders.map((order) => <TouchableOpacity key={order.order_id} style={styles.card} onPress={() => router.push(`/order/${order.order_id}` as never)}>
           <View style={styles.row}><Text style={styles.number}>{order.order_number}</Text><Text style={styles.status}>{buyerOrderStatusLabel(order.status)}</Text></View>
           <Text style={styles.market}>{order.markets?.name ?? "ตลาดชุมชน"} · {order.fulfillment_method === "pickup" ? "นัดรับที่จุดรวม" : "จัดส่งถึงที่อยู่"}</Text>
@@ -50,7 +51,7 @@ export default function OrdersTab() {
           <View style={[styles.row, styles.footer]}><Text style={styles.detailLink}>ดูรายละเอียดคำสั่งซื้อ</Text><Text style={styles.total}>฿{Number(order.total_amount).toLocaleString()}</Text></View>
         </TouchableOpacity>)}
       </> : <>
-        {!seller.loading && !seller.allocations.length ? <Text style={styles.empty}>ยังไม่มีรายการสินค้าที่ต้องเตรียม</Text> : null}
+        {!seller.loading && !seller.error && !seller.allocations.length ? <Text style={styles.empty}>ยังไม่มีรายการสินค้าที่ต้องเตรียม</Text> : null}
         {seller.allocations.map((allocation) => {
           const item = allocation.order_items; const order = item?.orders; const subtotal = allocation.quantity * Number(item?.unit_price ?? 0);
           return <TouchableOpacity key={allocation.allocation_id} style={styles.card} onPress={() => router.push(`/seller/allocations/${allocation.allocation_id}` as never)}>

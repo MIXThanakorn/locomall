@@ -60,7 +60,8 @@ test("shared keyboard handling enables both native platforms and accounts for cu
   assert.match(read("src/components/ListingAssistant.tsx"), /KeyboardAwareScrollView/);
   const chat = read("app/chat/[id].tsx");
   assert.match(chat, /<KeyboardAwareView>/);
-  assert.match(chat, /onContentSizeChange=\{scrollToLatest\}/);
+  assert.match(chat, /onContentSizeChange=\{\(_, height\)/);
+  assert.match(chat, /anchor.offset \+ height - anchor.height/);
   assert.match(chat, /if \(nearBottom.current\)/);
   assert.match(chat, /maxHeight: 120/);
   assert.match(chat, /insets.bottom/);

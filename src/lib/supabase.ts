@@ -1,5 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import * as Crypto from "expo-crypto";
+import { createSecureSessionStorage } from "./secureSessionStorage";
 import type { Database } from "../types/database";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -9,7 +13,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY");
 }
 
-const serverSafeStorage = typeof window === "undefined"
+const serverSafeStorage = Platform.OS !== "web" ? createSecureSessionStorage({
+  getItem: (key) => SecureStore.getItemAsync(key),
+  setItem: (key, value) => SecureStore.setItemAsync(key, value, { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY }),
+  removeItem: (key) => SecureStore.deleteItemAsync(key),
+}, AsyncStorage, Crypto.randomUUID) : typeof window === "undefined"
   ? { getItem: async () => null, setItem: async () => undefined, removeItem: async () => undefined }
   : AsyncStorage;
 

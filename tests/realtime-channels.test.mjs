@@ -30,10 +30,13 @@ test("reopening the same room has an independent channel even before old cleanup
 });
 
 test("all realtime consumers allocate unique effect-owned names, and chat subscriptions follow screen focus", () => {
-  for (const path of ["src/hooks/useRealtimeRefresh.ts", "src/hooks/useCommerce.ts", "src/context/BadgeContext.tsx", "app/(tabs)/chat.tsx"]) {
+  for (const path of ["src/hooks/useRealtimeRefresh.ts", "src/context/BadgeContext.tsx"]) {
     assert.match(read(path), /supabase.channel\(realtimeChannelName\(/, path);
     assert.match(read(path), /removeChannel\(channel\)/, path);
   }
+  assert.match(read("app/(tabs)/chat.tsx"), /useRealtimeRefresh\(`chat-inbox-/);
+  assert.doesNotMatch(read("app/(tabs)/chat.tsx"), /supabase.channel\(/);
+  assert.match(read("src/hooks/useCommerce.ts"), /useRealtimeRefresh\(`my-notifications-/);
   const chat = read("app/chat/[id].tsx");
   assert.doesNotMatch(chat, /supabase.channel\(/);
   assert.match(chat, /useRealtimeRefresh\(`chat-messages-\$\{contextKey\}`/);

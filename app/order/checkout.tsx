@@ -1,4 +1,5 @@
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { LoadNotice } from "../../src/components/LoadNotice";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -25,6 +26,10 @@ export default function Checkout() {
   const [payment, setPayment] = useState<Payment>("cod");
   const [demoBalance, setDemoBalance] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const submitting = useRef(false);
+  const generation = useRef(0);
   const retry = useRef<{ fingerprint: string; requestId: string } | null>(null);
 
   useFocusEffect(useCallback(() => {
@@ -34,10 +39,14 @@ export default function Checkout() {
   }, [userId]));
 
   const loadCheckout = useCallback(async () => {
+    const request = ++generation.current;
+    try {
     const [addressResult, cartResult] = await Promise.all([
       supabase.from("user_addresses").select("*,thai_subdistricts(name_th,thai_districts(name_th,thai_provinces(name_th)))").order("is_default", { ascending: false }),
       supabase.from("carts").select("*,cart_items(store_id,quantity,stores(name,product_name,unit_price))").maybeSingle(),
     ]);
+    if (request !== generation.current) return;
+    if (addressResult.error || cartResult.error) throw addressResult.error || cartResult.error;
     const nextAddresses = addressResult.data ?? [];
     setAddresses(nextAddresses);
     setAddressId((current) => nextAddresses.some((address) => address.address_id === current) ? current : nextAddresses[0]?.address_id);
@@ -46,8 +55,11 @@ export default function Checkout() {
       const { data } = await supabase.rpc("get_pickup_eligibility", { p_market_id: cartResult.data.market_id, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude }).single();
       setPickup(data);
     } else setPickup(null);
-  }, [deviceLocation?.latitude, deviceLocation?.longitude]);
-  useEffect(() => { void loadCheckout(); }, [loadCheckout]);
+    setLoadError(false);
+    } catch { if (request === generation.current) setLoadError(true); }
+    finally { if (request === generation.current) setInitialLoading(false); }
+  }, [deviceLocation]);
+  useEffect(() => { const counter = generation; void loadCheckout(); return () => { counter.current++; }; }, [loadCheckout]);
   const refreshCheckout = async () => {
     setRefreshing(true);
     try {
@@ -60,6 +72,7 @@ export default function Checkout() {
   };
 
   const submit = async () => {
+    if (submitting.current || initialLoading || loadError) return;
     if (!cart) return Alert.alert("ไม่พบสินค้าในตะกร้า");
     if (fulfillment === "delivery" && !addressId) return Alert.alert("กรุณาเลือกที่อยู่จัดส่ง");
     if (fulfillment === "pickup" && !pickup?.eligible) return Alert.alert("ไม่สามารถเลือกนัดรับได้", "นัดรับได้เมื่อคุณอยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร");
@@ -69,20 +82,23 @@ export default function Checkout() {
       { text: "ไปหน้า Wallet", onPress: () => router.push("/profile/wallet" as never) },
     ]);
     setLoading(true);
+    submitting.current = true;
+    try {
     const items = cart.cart_items.map((item: any) => ({ store_id: item.store_id, quantity: item.quantity }));
     const args = {
-      p_market_id: cart.market_id, p_address_id: fulfillment === "delivery" ? addressId : null, p_items: items,
+      p_market_id: cart.market_id, p_address_id: fulfillment === "delivery" ? addressId! : null, p_items: items,
       p_fulfillment_method: fulfillment, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude,
     };
-    const fingerprint = JSON.stringify({ marketId: cart.market_id, addressId: args.p_address_id, items, fulfillment });
+    const fingerprint = JSON.stringify({ userId, marketId: cart.market_id, addressId: args.p_address_id, items, fulfillment, payment });
     if (!retry.current || retry.current.fingerprint !== fingerprint) retry.current = { fingerprint, requestId: Crypto.randomUUID() };
     const { data, error } = payment === "demo_wallet"
       ? await (supabase as any).rpc("create_demo_wallet_order", { ...args, p_request_id: retry.current.requestId })
-      : await supabase.rpc("create_cod_order", args as any);
-    setLoading(false);
+      : await supabase.rpc("create_cod_order_once", { ...args, p_request_id: retry.current.requestId });
     if (error) return Alert.alert("สั่งซื้อไม่สำเร็จ", translateDatabaseError(error));
     retry.current = null;
     router.replace(`/order/${data}` as never);
+    } catch { Alert.alert("สั่งซื้อไม่สำเร็จ", "การเชื่อมต่อขัดข้อง กรุณาลองใหม่โดยไม่เปลี่ยนรายการสินค้า"); }
+    finally { submitting.current = false; setLoading(false); }
   };
 
   const addressOptions = addresses.map((address) => {
@@ -94,6 +110,9 @@ export default function Checkout() {
   return <View style={styles.root}>
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshCheckout()} tintColor={Colors.greenPrimary} />}>
     <ScreenHeader title={"วิธีรับสินค้า"} titleStyle={styles.title} />
+      {initialLoading ? <Text style={styles.detail}>กำลังโหลดตะกร้าและที่อยู่...</Text> : null}
+      {loadError ? <LoadNotice onRetry={() => void refreshCheckout()} /> : null}
+      {!initialLoading && !loadError && !cart?.cart_items?.length ? <Text style={styles.detail}>ไม่มีสินค้าในตะกร้า</Text> : null}
       <ContextHelp title="เลือกวิธีรับสินค้าแบบไหนดี?" steps={["เลือกจัดส่งถึงที่อยู่ หากต้องการให้ส่งสินค้าถึงบ้าน", "เลือกนัดรับ เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร", "เลือกชำระเมื่อรับสินค้า หรือใช้ยอดจำลองสำหรับการสาธิต"]} />
       <TouchableOpacity style={[styles.method, fulfillment === "delivery" && styles.selected]} onPress={() => setFulfillment("delivery")}><Ionicons name="car-outline" size={24} color={Colors.greenPrimary} /><View style={{ flex: 1 }}><Text style={styles.name}>จัดส่งถึงที่อยู่</Text><Text style={styles.detail}>รวมสินค้าจากทุกผู้ขายเป็นพัสดุเดียว</Text></View></TouchableOpacity>
       <TouchableOpacity style={[styles.method, fulfillment === "pickup" && styles.selected, !pickup?.eligible && styles.disabled]} disabled={!pickup?.eligible} onPress={() => setFulfillment("pickup")}><Ionicons name="storefront-outline" size={24} color={pickup?.eligible ? Colors.greenPrimary : Colors.textMuted} /><View style={{ flex: 1 }}><Text style={styles.name}>นัดรับที่จุดรวมสินค้า</Text><Text style={styles.detail}>{pickup?.eligible ? `ห่างประมาณ ${pickup.distance_km} กม. · ${pickup.hub_address}` : "ใช้ได้เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กม."}</Text></View></TouchableOpacity>
@@ -108,7 +127,7 @@ export default function Checkout() {
       {payment === "demo_wallet" ? <TouchableOpacity onPress={() => router.push("/profile/wallet" as never)}><Text style={styles.manage}>ดู Wallet / ขอยอดสาธิต</Text></TouchableOpacity> : null}
       <Text style={styles.title}>รายการสินค้า</Text>{cart?.cart_items?.map((item: any) => <View key={item.store_id} style={styles.line}><Text style={styles.detail}>{item.stores.product_name} × {formatSaleQuantity(item.quantity, item.stores.unit)}</Text><Text style={styles.name}>฿{(Number(item.stores.unit_price) * item.quantity).toLocaleString()}</Text></View>)}
     </ScrollView>
-    <View style={styles.bottom}><Button title={payment === "demo_wallet" ? "ยืนยันและหักยอดจำลอง" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={fulfillment === "delivery" ? !addressId : !pickup?.eligible} style={styles.button} /></View>
+    <View style={styles.bottom}><Button title={payment === "demo_wallet" ? "ยืนยันและหักยอดจำลอง" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={initialLoading || loadError || !cart?.cart_items?.length || (fulfillment === "delivery" ? !addressId : !pickup?.eligible)} style={styles.button} /></View>
   </View>;
 }
 

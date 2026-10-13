@@ -1,7 +1,8 @@
-import { realtimeChannelName } from "../../src/lib/realtimeChannelName";
+import { useRealtimeRefresh, type RealtimeWatch } from "../../src/hooks/useRealtimeRefresh";
+import { ContextImage } from "../../src/components/ContextImage";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -13,6 +14,11 @@ import type { Database } from "../../src/types/database";
 type ChatInboxRow = Database["public"]["Functions"]["get_my_chat_inbox"]["Returns"][number];
 
 export default function ChatList() {
+  const { session } = useAuth();
+  return <ChatListContent key={session?.user.id ?? "guest"} />;
+}
+
+function ChatListContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session, loading: authLoading } = useAuth();
@@ -20,24 +26,26 @@ export default function ChatList() {
   const [rooms, setRooms] = useState<ChatInboxRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [visuals, setVisuals] = useState<Record<number, string | null>>({});
+  const generation = useRef(0);
 
   const load = useCallback(async () => {
     if (!userId) { setRooms([]); setLoading(false); return; }
-    setLoading(true);
-    const result = await supabase.rpc("get_my_chat_inbox");
-    setRooms(result.data ?? []);
+    const request = ++generation.current;
+    try {
+    const [result, images] = await Promise.all([supabase.rpc("get_my_chat_inbox"), supabase.rpc("get_my_chat_visuals")]);
+    if (request !== generation.current) return;
+    if (!result.error) setRooms(result.data ?? []);
+    if (!images.error) setVisuals(Object.fromEntries((images.data ?? []).map((row) => [row.room_id, row.partner_image_url])));
     setError(Boolean(result.error));
-    setLoading(false);
+    } catch { if (request === generation.current) setError(true); }
+    finally { if (request === generation.current) setLoading(false); }
   }, [userId]);
 
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
-  useEffect(() => {
-    if (!userId) return;
-    const channel = supabase.channel(realtimeChannelName(`chat-inbox-${userId}`))
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, () => void load())
-      .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [userId, load]);
+  useFocusEffect(useCallback(() => { void load(); return () => { generation.current++; }; }, [load]));
+  const watches = useMemo<RealtimeWatch[]>(() => [{ table: "chat_messages", event: "INSERT" }, { table: "chat_rooms", event: "INSERT" }], []);
+  useRealtimeRefresh(`chat-inbox-${userId}`, load, watches, !!userId);
 
   if (authLoading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!session) return <Redirect href="/(auth)/sign-in" />;
@@ -47,11 +55,12 @@ export default function ChatList() {
       <Text style={styles.title}>แชต</Text>
       <Text style={styles.subtitle}>ดูข้อความและประวัติการคุยกับร้านค้า</Text>
     </View>
-    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}>
+    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} />}>
+      {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
       {error ? <TouchableOpacity onPress={() => void load()}><Text style={styles.error}>โหลดแชตไม่สำเร็จ แตะเพื่อลองใหม่</Text></TouchableOpacity> : null}
       {!loading && !error && rooms.length === 0 ? <View style={styles.empty}><Ionicons name="chatbubbles-outline" size={40} color={Colors.greenPrimary} /><Text style={styles.emptyTitle}>ยังไม่มีบทสนทนา</Text><Text style={styles.emptyText}>เปิดหน้าร้านค้าที่สนใจแล้วกดแชตเพื่อเริ่มคุย</Text></View> : null}
       {rooms.map((room) => <TouchableOpacity key={room.room_id} style={styles.room} activeOpacity={0.8} onPress={() => router.push(`/chat/${room.room_id}` as never)}>
-        <View style={styles.avatar}><Ionicons name="chatbubble-ellipses-outline" size={24} color={Colors.greenPrimary} /></View>
+        <ContextImage uri={visuals[room.room_id]} name={room.partner_name} person size={48} />
         <View style={styles.roomCopy}>
           <View style={styles.row}><Text style={styles.name} numberOfLines={1}>{room.partner_name}</Text>{room.last_message_at ? <Text style={styles.date}>{formatThaiDateTime(room.last_message_at)}</Text> : null}</View>
           <Text style={styles.store} numberOfLines={1}>{room.partner_role} · ร้าน {room.store_name}</Text>

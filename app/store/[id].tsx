@@ -1,8 +1,11 @@
 import { BackButton } from "../../src/components/BackButton";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { LoadNotice } from "../../src/components/LoadNotice";
+import { useRealtimeRefresh, type RealtimeWatch } from "../../src/hooks/useRealtimeRefresh";
+import { ContextImage } from "../../src/components/ContextImage";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
@@ -16,6 +19,11 @@ import { supabase } from "../../src/lib/supabase";
 import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 export default function StoreDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { session } = useAuth();
+  return <StoreDetailContent key={`${session?.user.id}:${id}`} />;
+}
+function StoreDetailContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
@@ -33,22 +41,40 @@ export default function StoreDetail() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [loadError, setLoadError] = useState(false);
+  const generation = useRef(0);
 
   const load = useCallback(async () => {
+    const request = ++generation.current;
+    try {
     const storeResult = await supabase.rpc("get_store_catalog", { p_store_id: Number(id) });
+    if (request !== generation.current) return;
+    if (storeResult.error) throw storeResult.error;
     const currentStore = storeResult.data as any;
-    setStore(currentStore);
-    setStock(Number(currentStore?.available_stock ?? 0));
     if (session?.user.id && currentStore) {
       const [applicationResult] = await Promise.all([
         supabase.from("store_seller_applications").select("application_id,status,review_note,note,product_image_url").eq("store_id", Number(id)).eq("applicant_id", session.user.id).maybeSingle(),
       ]);
+      if (request !== generation.current) return;
+      if (applicationResult.error) throw applicationResult.error;
       setSameArea(Boolean(currentStore.same_area));
       setApplication(applicationResult.data); setSeller(Boolean(currentStore.is_seller));
     }
-    setLoading(false);
+    setStore(currentStore);
+    setStock(Number(currentStore?.available_stock ?? 0));
+    setLoadError(false);
+    setRefreshVersion((value) => value + 1);
+    } catch { if (request === generation.current) setLoadError(true); }
+    finally { if (request === generation.current) setLoading(false); }
   }, [id, session]);
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  useFocusEffect(useCallback(() => { void load(); return () => { generation.current++; }; }, [load]));
+  const watches = useMemo<RealtimeWatch[]>(() => [
+    { table: "stores", event: "UPDATE", filter: `store_id=eq.${id}` },
+    { table: "seller_listings", event: "INSERT", filter: `store_id=eq.${id}` },
+    { table: "seller_listings", event: "UPDATE", filter: `store_id=eq.${id}` },
+    { table: "store_seller_applications", event: "UPDATE", filter: `store_id=eq.${id}` },
+  ], [id]);
+  useRealtimeRefresh(`store-detail-${id}`, load, watches);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 1800);
@@ -101,15 +127,16 @@ export default function StoreDetail() {
   };
 
   if (loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
-  if (!store) return <View style={styles.center}><BackButton floating /><Text>ไม่พบร้านค้า</Text></View>;
+  if (!store) return <View style={styles.center}><BackButton floating />{loadError ? <LoadNotice onRetry={() => void load()} /> : <Text>ไม่พบร้านค้า</Text>}</View>;
   const isManager = Boolean(store.is_manager);
   const cannotBuyOwn = Boolean(session && (isManager || isSeller));
   const sellerImagePicker = <TouchableOpacity style={styles.applicationImagePicker} onPress={chooseSellerImage}>{sellerImage?<Image source={{uri:sellerImage.uri}} style={styles.applicationImage}/>:<View style={styles.applicationImageEmpty}><Ionicons name="camera-outline" size={28} color={Colors.greenPrimary}/><Text style={styles.applicationImageText}>แนบรูปสินค้าของคุณ (จำเป็น)</Text></View>}</TouchableOpacity>;
 
   return <View style={styles.root}>
     <KeyboardAwareScrollView contentContainerStyle={{ paddingBottom: 150 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().then(() => setRefreshVersion((value) => value + 1)).finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
+      {loadError ? <LoadNotice onRetry={() => void load()} /> : null}
       <ScreenHeader contentInset={0} title={store.name} titleStyle={styles.title} />
-      {store.image_url ? <Image source={{ uri: store.image_url }} style={styles.image} /> : <View style={[styles.image, styles.placeholder]}><Ionicons name="basket" size={54} color={Colors.greenPrimary} /></View>}
+      <ContextImage uri={store.image_url} name={store.product_name || store.name} size={280} style={styles.image} />
       <View style={styles.body}>
         <Text style={styles.market}>{store.markets?.name}</Text><Text style={styles.product}>{store.product_name}</Text><Text style={styles.desc}>{store.description}</Text>
         <View style={styles.info}><Text style={styles.price}>฿{Number(store.unit_price).toLocaleString()} / {store.unit}</Text><Text style={styles.stock}>พร้อมขาย {formatSaleQuantity(stock, store.unit)}</Text></View>

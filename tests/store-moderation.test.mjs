@@ -63,6 +63,11 @@ test("moderation is admin-only, atomic, idempotent and preserves checkout/fulfil
     const version = async (id = 1) => (await db.query("select updated_at::text as v from public.stores where store_id=$1", [id])).rows[0].v;
     const moderate = async (suspend, v, reason = "ทดสอบเหตุผล", id = 1) => db.query("select public.set_store_suspension($1,$2,$3,$4::timestamptz) as changed", [id,suspend,reason,v]);
     const initial = await version();
+    await db.exec(`create table auth.users(id uuid primary key);
+      insert into auth.users select user_id from public.profiles;
+      create table public.chat_rooms(room_id bigint primary key,buyer_id uuid,store_id bigint);
+      create table public.chat_messages(message_id bigint primary key,room_id bigint,sender_id uuid,message text,created_at timestamptz);`);
+    await db.exec(read("supabase/migrations/20261013080347_reliability_order_chat.sql"));
     await db.exec("set role anon");
     await assert.rejects(moderate(true,initial), /permission denied/);
     await db.exec("reset role; set role authenticated");
@@ -73,9 +78,13 @@ test("moderation is admin-only, atomic, idempotent and preserves checkout/fulfil
       await assert.rejects(db.query("update public.stores set approval_status='suspended' where store_id=1"), /permission denied/);
     }
     await uid(db,buyer);
-    const order = (await db.query("select public.create_cod_order(1,1,'[{\"store_id\":1,\"quantity\":2}]'::jsonb) as id")).rows[0].id;
+    const checkout = () => db.query("select public.create_cod_order_once('20000000-0000-4000-8000-000000000099',1,1,'[{\"store_id\":1,\"quantity\":2}]'::jsonb) as id");
+    const order = (await checkout()).rows[0].id;
+    assert.equal((await checkout()).rows[0].id,order);
     await db.exec("reset role");
     const before = (await db.query("select * from public.seller_listings order by listing_id")).rows;
+    assert.equal(before[0].reserved_quantity,2);
+    assert.equal((await db.query("select count(*)::int n from public.orders")).rows[0].n,1);
     const allocation = (await db.query("select a.allocation_id from public.order_allocations a join public.order_items i on i.order_item_id=a.order_item_id where i.order_id=$1",[order])).rows[0].allocation_id;
     await db.exec("set role authenticated");
     await uid(db,admin);

@@ -6,6 +6,7 @@ import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text,
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CommerceCard } from "../../src/components/CommerceCard";
+import { LoadNotice } from "../../src/components/LoadNotice";
 import { KeyboardAwareView } from "../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useNearby } from "../../src/hooks/useCommerce";
@@ -122,7 +123,7 @@ export default function HomeScreen() {
 
           {sameArea ? <TouchableOpacity style={styles.areaFilter} accessibilityLabel="เปลี่ยนตัวกรองพื้นที่" onPress={() => router.push("/settings/catalog" as never)}><Ionicons name="filter" size={18} color={Colors.greenPrimary} /><Text style={styles.areaFilterText}>ตำบลเดียวกับพื้นที่หลัก · เปลี่ยนตัวกรอง</Text></TouchableOpacity> : null}
           {loading && !items.length ? <ActivityIndicator color={Colors.greenPrimary} style={styles.loader} /> : null}
-          {error ? <Text style={styles.error}>ค้นหาข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</Text> : null}
+          {error ? <LoadNotice onRetry={() => void refresh()} /> : null}
 
           {isSearching ? (
             <>

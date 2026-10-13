@@ -1251,6 +1251,14 @@ export type Database = {
         }
         Returns: number
       }
+      create_cod_order_once: {
+        Args: { p_request_id: string; p_market_id: number; p_address_id: number | null; p_items: Json; p_fulfillment_method?: string; p_lat?: number; p_lng?: number }
+        Returns: number
+      }
+      get_chat_messages_page: {
+        Args: { p_room_id: number; p_limit?: number; p_cursor_at?: string; p_cursor_id?: number; p_newer?: boolean }
+        Returns: { message_id: number; sender_id: string; message: string; created_at: string }[]
+      }
       delete_cancelled_order: {
         Args: { p_order_id: number; p_reason: string }
         Returns: undefined
@@ -1331,6 +1339,10 @@ export type Database = {
           store_id: number
           store_name: string
         }[]
+      }
+      get_my_chat_visuals: {
+        Args: { p_room_ids?: number[] }
+        Returns: { room_id: number; partner_image_url: string | null; product_image_url: string | null }[]
       }
       get_chat_order_context: {
         Args: { p_room_id: number }

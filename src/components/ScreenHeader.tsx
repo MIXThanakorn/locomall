@@ -16,6 +16,7 @@ type Props = PropsWithChildren<{
   onBackPress?: () => void;
   fallback?: Href;
   rightAction?: ReactNode;
+  leading?: ReactNode;
   /** Horizontal padding already supplied by the parent. Cancel it, then use the shared gutter. */
   contentInset?: number;
   style?: StyleProp<ViewStyle>;
@@ -23,11 +24,12 @@ type Props = PropsWithChildren<{
 
 /** Destination header: same safe-area origin, hit area and title baseline on both platforms. */
 export function ScreenHeader({ title, titleStyle, color = Colors.greenPrimary, showBack = true,
-  onBackPress, fallback, rightAction, contentInset = SCREEN_HEADER_GUTTER, style, children }: Props) {
+  onBackPress, fallback, rightAction, leading, contentInset = SCREEN_HEADER_GUTTER, style, children }: Props) {
   const insets = useSafeAreaInsets();
   return <View style={[style, styles.header, { marginHorizontal: -contentInset, paddingTop: insets.top + SCREEN_HEADER_TOP }]}>
     <View style={styles.row}>
       {showBack ? <BackButton color={color} onPress={onBackPress} fallback={fallback} /> : null}
+      {leading}
       <View style={styles.titleBox}>{title ? <Text accessibilityRole="header" numberOfLines={1} ellipsizeMode="tail" style={[styles.title, { color }, titleStyle, styles.titleSpacing]}>{title}</Text> : null}</View>
       {rightAction}
     </View>
