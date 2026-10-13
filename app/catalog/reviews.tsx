@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,22 +12,19 @@ import { parseReviewRoute, ReviewTarget } from "../../src/lib/catalogReviews";
 export default function CatalogReviewsScreen() {
   const params = useLocalSearchParams<{ targetType: string; targetId: string }>();
   const target = parseReviewRoute(params.targetType, params.targetId);
-  const router = useRouter();
-  if (!target) return <View style={styles.invalid}><Text style={styles.heading}>ไม่พบรายการรีวิว</Text>
-    <TouchableOpacity style={styles.button} onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)" as never)}><Text style={styles.buttonText}>กลับหน้าก่อนหน้า</Text></TouchableOpacity></View>;
+  if (!target) return <View style={styles.root}><ScreenHeader contentInset={0} title="ไม่พบรายการรีวิว" titleStyle={styles.heading} /></View>;
   return <ReviewList key={`${target.targetType}:${target.targetId}`} {...target} />;
 }
 
 function ReviewList({ targetType, targetId }: { targetType: ReviewTarget; targetId: number }) {
-  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [stars, setStars] = useState<number | null>(null);
   const { page, summary, error, loading, loadingMore, refresh, loadMore } = useCatalogReviews(targetType, targetId, stars);
-  return <View style={[styles.root, { paddingTop: insets.top }]}>
-    <View style={styles.header}><TouchableOpacity accessibilityLabel="กลับ" accessibilityRole="button" style={styles.back}
-      onPress={() => router.canGoBack() ? router.back() : router.replace(`/${targetType}/${targetId}` as never)}><Ionicons name="arrow-back" size={26} color={Colors.greenPrimary} /></TouchableOpacity>
-      <View style={styles.title}><Text style={styles.heading}>รีวิว{targetType === "store" ? "ร้านค้า" : "ตลาด"}</Text>
-        <Text style={styles.name} numberOfLines={2}>{summary?.target_name ?? "ความคิดเห็นจากผู้ซื้อ"}</Text></View></View>
+  return <View style={styles.root}>
+    <ScreenHeader contentInset={0} title={`รีวิว${targetType === "store" ? "ร้านค้า" : "ตลาด"}`} titleStyle={styles.heading}
+      fallback={`/${targetType}/${targetId}` as never} style={{ backgroundColor: Colors.cardBackground, borderBottomWidth: 1, borderBottomColor: Colors.divider }}>
+      <Text style={styles.name} numberOfLines={2}>{summary?.target_name ?? "ความคิดเห็นจากผู้ซื้อ"}</Text>
+    </ScreenHeader>
     <FlatList data={page?.items ?? []} keyExtractor={(item) => String(item.review_id)}
       renderItem={({ item }) => <CatalogReviewCard review={item} targetType={targetType} />}
       contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 16) + 20 }]}

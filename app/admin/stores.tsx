@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { Alert, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AdminGate } from "../../src/components/AdminGate";
@@ -22,7 +22,6 @@ const PAGE_SIZE = 20;
 const WATCHES: RealtimeWatch[] = [{ table: "stores", event: "UPDATE" }, { table: "markets", event: "UPDATE" }];
 
 export default function AdminStores() {
-  const router = useRouter();
   const { isAdmin } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
@@ -92,8 +91,7 @@ export default function AdminStores() {
 
   return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content}
     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
-    <TouchableOpacity onPress={() => router.back()} accessibilityLabel="กลับ"><Ionicons name="arrow-back" size={24} color={Colors.greenPrimary} /></TouchableOpacity>
-    <Text style={styles.title}>ดูแลร้านค้า</Text>
+    <ScreenHeader title={"ดูแลร้านค้า"} titleStyle={styles.title} color={Colors.greenPrimary} />
     <Text style={styles.sub}>ระงับหรือคืนสิทธิ์การรับคำสั่งซื้อใหม่ ไม่ลบออเดอร์ สต็อก หรือยอดเงิน และไม่ใช่การแบนบัญชีผู้ใช้</Text>
     <View style={styles.search}><AppTextInput style={styles.searchInput} placeholder="ค้นหาชื่อร้านค้า" value={search} onChangeText={setSearch} maxLength={100} returnKeyType="search"
       onSubmitEditing={() => { setPage(0); setQuery(search.trim()); }} />
@@ -121,7 +119,7 @@ export default function AdminStores() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 54, paddingBottom: 110 },
+  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 110 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginTop: 12 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, lineHeight: 21, fontSize: 13 },
   search: { flexDirection: "row", gap: 10, marginVertical: 16 }, searchInput: { flex: 1, padding: 12, borderRadius: BorderRadius.md, backgroundColor: Colors.inputBackground },
   filters: { flexDirection: "row", gap: 8, marginBottom: 16 }, filter: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.cardBackground, borderRadius: BorderRadius.round },

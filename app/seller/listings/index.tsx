@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/preserve-manual-memoization */
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
@@ -56,7 +57,7 @@ export default function Stock() {
 
   return <PermissionGate allow={permissions.isSeller || permissions.isStoreManager} loading={permissions.loading}>
     <KeyboardAwareScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
-      <Text style={styles.title}>จัดการสต็อกสินค้า</Text>
+    <ScreenHeader title={"จัดการสต็อกสินค้า"} titleStyle={styles.title} />
       <Text style={styles.sub}>กรอกจำนวนหน่วยสั่งซื้อที่มีอยู่จริงทั้งหมด รวมหน่วยที่ลูกค้าสั่งแล้ว เช่น สินค้าแบบ 500 กรัมต่อชุด ให้กรอกจำนวนชุด ระบบจะกันสินค้าไว้ทันทีเมื่อมีคำสั่งซื้อ และหักจากยอดคงเหลือเมื่อผู้ซื้อยืนยันรับสินค้า</Text>
       {!list.length ? <View style={styles.empty}><Text style={styles.emptyText}>ยังไม่มีรายการขายที่ผ่านการอนุมัติ</Text></View> : null}
       {list.map((listing, index) => <View style={styles.card} key={listing.listing_id}>
@@ -78,7 +79,7 @@ export default function Stock() {
 }
 
 const styles = StyleSheet.create({
-  root: { padding: Spacing.lg, paddingTop: 60, backgroundColor: Colors.background, flexGrow: 1 },
+  root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 25, color: Colors.greenPrimary },
   sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginTop: 2 },
   card: { padding: 16, backgroundColor: "white", borderRadius: 16, marginTop: 12 },

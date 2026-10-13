@@ -1,4 +1,6 @@
+import { ScreenHeader } from "../../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/set-state-in-effect */
+import { BackButton } from "../../../src/components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -33,9 +35,9 @@ export default function MarketManagementHome() {
   useEffect(() => { void load(); }, [load]);
   useRealtimeRefresh(`market-management-${userId}`, load, MARKET_WATCHES, Boolean(userId));
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
+  if (loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
   return <ScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
-    <Text style={styles.title}>จัดการตลาดชุมชน</Text>
+    <ScreenHeader title={"จัดการตลาดชุมชน"} titleStyle={styles.title} />
     <Text style={styles.sub}>แก้ไขข้อมูล ตรวจคำขอ ดูร้านค้า และดูแลจุดรวมสินค้า</Text>
     <ContextHelp title="งานหลักของเจ้าของตลาด" steps={["ตรวจรายละเอียดคำขอเปิดร้านและผู้สมัครร่วมขาย", "รับสินค้าที่ผู้ขายเตรียมเสร็จ แล้วนำไปยังจุดรวม", "เมื่อสินค้าครบทุกชิ้น จึงรวมและส่งให้ลูกค้า"]} />
     <View style={styles.quickRow}>
@@ -70,7 +72,7 @@ export default function MarketManagementHome() {
 }
 
 const styles = StyleSheet.create({
-  root: { padding: Spacing.lg, paddingTop: 58, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
+  root: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },
   quickRow: { flexDirection: "row", gap: 10, marginTop: 16 }, quick: { flex: 1, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, alignItems: "center", gap: 5 }, quickText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary },
   card: { backgroundColor: "white", padding: 16, borderRadius: BorderRadius.lg, marginTop: 14, borderWidth: 1, borderColor: Colors.inputBorder }, cardHead: { flexDirection: "row", alignItems: "center" },

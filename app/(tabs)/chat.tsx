@@ -1,3 +1,4 @@
+import { realtimeChannelName } from "../../src/lib/realtimeChannelName";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -32,7 +33,7 @@ export default function ChatList() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   useEffect(() => {
     if (!userId) return;
-    const channel = supabase.channel(`chat-inbox-${userId}`)
+    const channel = supabase.channel(realtimeChannelName(`chat-inbox-${userId}`))
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, () => void load())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };

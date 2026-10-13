@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -52,8 +53,8 @@ export default function LocationOnboarding() {
   };
 
   return <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <ScreenHeader title={"เลือกชุมชนหลักของคุณ"} titleStyle={styles.title} />
     <View style={styles.pin}><Ionicons name="location" size={32} color={Colors.greenPrimary} /></View>
-    <Text style={styles.title}>เลือกชุมชนหลักของคุณ</Text>
     <Text style={styles.desc}>ใช้ตรวจสอบสิทธิ์ผู้ขายและเป็นตำแหน่งสำรอง ระบบจะใช้ตำแหน่งจริงเพื่อค้นหาตลาดใกล้ตัวเมื่อคุณเข้าแอป</Text>
     <SearchableDropdown label="จังหวัด" placeholder="เลือกจังหวัด" options={provinces.map((item) => ({ value: item.code, label: item.name_th }))} value={province?.code} onChange={(code) => setProvince(provinces.find((item) => item.code === code))} />
     <SearchableDropdown label="อำเภอ / เขต" placeholder="เลือกอำเภอ / เขต" options={districts.map((item) => ({ value: item.code, label: item.name_th }))} value={district?.code} disabled={!province} onChange={(code) => setDistrict(districts.find((item) => item.code === code))} />
@@ -65,7 +66,7 @@ export default function LocationOnboarding() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.lg, paddingTop: 70, paddingBottom: 50 },
+  content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 50 },
   pin: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#EAF1E9" },
   title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary, marginTop: 18 },
   desc: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, lineHeight: 21, marginBottom: 24 },

@@ -1,6 +1,7 @@
-import { useFocusEffect, useRouter } from "expo-router";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Alert, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { AdminGate } from "../../src/components/AdminGate";
@@ -11,7 +12,6 @@ import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
 
 export default function AdminReviews() {
-  const router = useRouter();
   const [reviews, setReviews] = useState<any[]>([]);
   const [reasons, setReasons] = useState<Record<number,string>>({});
   const [busy, setBusy] = useState<number|null>(null);
@@ -31,8 +31,7 @@ export default function AdminReviews() {
     if (error) Alert.alert("จัดการรีวิวไม่สำเร็จ", translateDatabaseError(error)); else await load();
   };
   return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
-    <TouchableOpacity onPress={() => router.back()}><Text style={styles.back}>← กลับศูนย์ควบคุม</Text></TouchableOpacity>
-    <Text style={styles.title}>ดูแลรีวิว</Text><Text style={styles.note}>รีวิวที่ซ่อนจะไม่ถูกรวมในคะแนนเฉลี่ยและไม่แสดงต่อสาธารณะ</Text>
+    <ScreenHeader title={"ดูแลรีวิว"} titleStyle={styles.title} /><Text style={styles.note}>รีวิวที่ซ่อนจะไม่ถูกรวมในคะแนนเฉลี่ยและไม่แสดงต่อสาธารณะ</Text>
     {reviews.map((review) => <View key={review.review_id} style={styles.card}>
       <Text style={styles.bold}>{review.store_id ? `ร้าน #${review.store_id}` : `ตลาด #${review.market_id}`} · {review.stars} ★</Text>
       <Text style={styles.note}>ออเดอร์ #{review.order_id} · {formatThaiDateTime(review.created_at)}</Text>
@@ -43,4 +42,4 @@ export default function AdminReviews() {
     {!reviews.length ? <Text style={styles.note}>ยังไม่มีรีวิว</Text> : null}
   </KeyboardAwareScrollView></AdminGate>;
 }
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 90 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 12 }, note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, card: { padding: 14, backgroundColor: "white", borderRadius: BorderRadius.lg, marginTop: 12 }, bold: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, body: { fontFamily: "Kanit_400Regular", color: Colors.textDark, marginVertical: 10 }, hidden: { fontFamily: "Kanit_500Medium", color: Colors.danger }, input: { borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 10, marginVertical: 8, color: Colors.textDark } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 90 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 12 }, note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, card: { padding: 14, backgroundColor: "white", borderRadius: BorderRadius.lg, marginTop: 12 }, bold: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, body: { fontFamily: "Kanit_400Regular", color: Colors.textDark, marginVertical: 10 }, hidden: { fontFamily: "Kanit_500Medium", color: Colors.danger }, input: { borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 10, marginVertical: 8, color: Colors.textDark } });

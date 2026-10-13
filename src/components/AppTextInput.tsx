@@ -6,7 +6,7 @@ import { useFocusScroller } from "./KeyboardAware";
 type Props = TextInputProps & { scrollIntoViewOnFocus?: boolean };
 
 export const AppTextInput = forwardRef<TextInput, Props>(function AppTextInput(
-  { style, onFocus, scrollIntoViewOnFocus = true, placeholderTextColor = Colors.textMuted, selectionColor = Colors.greenPrimary, ...props },
+  { style, onFocus, onBlur, scrollIntoViewOnFocus = true, placeholderTextColor = Colors.textMuted, selectionColor = Colors.greenPrimary, ...props },
   ref,
 ) {
   const scrollToFocus = useFocusScroller();
@@ -14,6 +14,7 @@ export const AppTextInput = forwardRef<TextInput, Props>(function AppTextInput(
     ref={ref}
     {...props}
     onFocus={(event) => { if (scrollIntoViewOnFocus) scrollToFocus?.(event.nativeEvent.target); onFocus?.(event); }}
+    onBlur={(event) => { if (scrollIntoViewOnFocus) scrollToFocus?.(event.nativeEvent.target, false); onBlur?.(event); }}
     style={[style, styles.text]}
     placeholderTextColor={placeholderTextColor}
     selectionColor={selectionColor}

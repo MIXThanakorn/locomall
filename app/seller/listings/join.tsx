@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { AppTextInput } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
@@ -60,7 +61,7 @@ export default function CreateStore() {
   ];
 
   return <KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content}>
-    <Text style={styles.title}>ขอเปิดร้าน</Text>
+    <ScreenHeader title={"ขอเปิดร้าน"} titleStyle={styles.title} />
     <Text style={styles.note}>หนึ่งร้านขายสินค้าเพียงชนิดเดียว และใช้ราคากลางเดียวกันสำหรับผู้ขายทุกราย</Text>
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปสินค้า/ร้าน</Text>}
@@ -74,7 +75,7 @@ export default function CreateStore() {
 }
 
 const styles = StyleSheet.create({
-  root: { backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 58 },
+  root: { backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary },
   note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 16 },
   imagePicker: { height: 170, borderRadius: BorderRadius.lg, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 14 },

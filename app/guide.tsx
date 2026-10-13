@@ -1,8 +1,8 @@
+import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../src/constants/theme";
 
 type SectionKey = "buyer" | "seller" | "owner";
@@ -40,18 +40,15 @@ const guides: Record<SectionKey, GuideSection> = {
 };
 
 export default function GuideScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ section?: string }>();
   const initial = params.section && params.section in guides ? params.section as SectionKey : "buyer";
   const [selected, setSelected] = useState<SectionKey>(initial);
   const guide = guides[selected];
 
   return <View style={styles.root}>
-    <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-      <TouchableOpacity style={styles.back} onPress={() => router.back()} accessibilityLabel="กลับหน้าก่อนหน้า"><Ionicons name="arrow-back" size={23} color={Colors.greenPrimary} /></TouchableOpacity>
-      <View style={{ flex: 1 }}><Text style={styles.heading}>คู่มือการใช้งาน</Text><Text style={styles.headerSub}>เลือกเรื่องที่ต้องการดูได้เลย</Text></View>
-    </View>
+    <ScreenHeader contentInset={0} title="คู่มือการใช้งาน" titleStyle={styles.heading} style={{ backgroundColor: Colors.goldPrimary, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }}>
+      <Text style={styles.headerSub}>เลือกเรื่องที่ต้องการดูได้เลย</Text>
+    </ScreenHeader>
     <ScrollView contentContainerStyle={styles.content}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
         {(Object.keys(guides) as SectionKey[]).map((key) => <TouchableOpacity key={key} style={[styles.tab, selected === key && styles.activeTab]} onPress={() => setSelected(key)}>

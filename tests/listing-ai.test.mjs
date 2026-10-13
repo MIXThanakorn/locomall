@@ -7,6 +7,19 @@ const input = { marketId: 1, productName: "เสื้อฟุตบอล", d
 const ok = () => new Response(JSON.stringify({ candidates: [{ finishReason: "STOP", content: { parts: [{ text: JSON.stringify(suggestion) }] } }] }));
 const config = { apiKey: "test-secret", model: "models/gemini-3.8-flash", fallbackModel: "gemini-3.5-flash-lite" };
 
+test("listing copy keeps generic review notices outside product descriptions without removing specific warnings", async () => {
+  await generateSuggestion(input, config, { fetch: async (_url, options) => {
+    const instruction = JSON.parse(options.body).systemInstruction.parts[0].text;
+    assert.match(instruction, /ไม่ใส่คำเตือนทั่วไป/);
+    assert.match(instruction, /missing_information/);
+    assert.match(instruction, /จากภาพเพียงอย่างเดียว/);
+    assert.match(instruction, /คำเตือนเฉพาะสินค้าหรือข้อจำกัดการใช้งาน/);
+    return ok();
+  } });
+  const warning = { ...suggestion, description: "ประกอบด้วยถั่วลิสง ผู้แพ้ถั่วไม่ควรรับประทาน" };
+  assert.equal(validateSuggestion(warning).description, warning.description);
+});
+
 test("AI input is bounded and only one store/market context may be submitted", () => {
   assert.deepEqual(validateInput(input), input);
   for (const value of [null, [], { ...input, storeId: 2 }, { ...input, marketId: -1 }, { ...input, marketId: "1" }, { productName: "a" }, { ...input, productName: "a".repeat(121) }, { ...input, description: "a".repeat(1501) }]) assert.throws(() => validateInput(value), AiError);

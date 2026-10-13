@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -51,10 +52,10 @@ export default function AdminDashboard() {
   ];
 
   return <AdminGate><ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
-    <View style={styles.header}>
-      <View><Text style={styles.eyebrow}>สำหรับผู้ดูแลระบบ</Text><Text style={styles.title}>ศูนย์ควบคุมระบบ</Text><Text style={styles.role}>ตรวจคำขอและติดตามการทำงานของระบบ</Text></View>
-      <TouchableOpacity style={styles.logout} onPress={logout}><Ionicons name="log-out-outline" size={22} color={Colors.danger} /></TouchableOpacity>
-    </View>
+    <ScreenHeader title="ศูนย์ควบคุมระบบ" titleStyle={styles.title}
+      rightAction={<TouchableOpacity accessibilityLabel="ออกจากระบบ" style={styles.logout} onPress={logout}><Ionicons name="log-out-outline" size={22} color={Colors.danger} /></TouchableOpacity>}>
+      <Text style={styles.eyebrow}>สำหรับผู้ดูแลระบบ</Text><Text style={styles.role}>ตรวจคำขอและติดตามการทำงานของระบบ</Text>
+    </ScreenHeader>
     <View style={styles.grid}>{cards.map((card) => <View key={card.label} style={styles.statCard}><View style={[styles.statIcon, { backgroundColor: `${card.color}18` }]}><Ionicons name={card.icon as any} size={22} color={card.color} /></View><Text style={styles.statValue}>{card.value}</Text><Text style={styles.statLabel}>{card.label}</Text></View>)}</View>
     <Text style={styles.section}>งานที่ใช้บ่อย</Text>
     <TouchableOpacity style={styles.action} onPress={() => router.push("/admin/stores" as never)}><Ionicons name="storefront-outline" size={24} color={Colors.danger} /><View style={styles.actionBody}><Text style={styles.actionTitle}>ดูแลร้านค้า</Text><Text style={styles.actionDesc}>ระงับและคืนสิทธิ์เปิดขาย พร้อมเหตุผลและประวัติ</Text></View><Ionicons name="chevron-forward" size={20} color={Colors.textMuted} /></TouchableOpacity>
@@ -68,7 +69,7 @@ export default function AdminDashboard() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 100 },
+  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 100 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }, eyebrow: { fontFamily: "Kanit_500Medium", color: Colors.goldDark, fontSize: 12, letterSpacing: 1 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, role: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },
   logout: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "#FDECEC" },

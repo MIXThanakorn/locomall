@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -86,7 +87,8 @@ export default function AdminApprovals() {
   </View>;
 
   return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
-    <Text style={styles.eyebrow}>ตรวจสอบคำขอ</Text><Text style={styles.title}>คำขอที่รอตรวจสอบ</Text><Text style={styles.sub}>ตรวจทุกคำขอจากจุดเดียว ทุกการอนุมัติและปฏิเสธจะถูกบันทึกไว้เพื่อตรวจสอบย้อนหลัง</Text>
+    <ScreenHeader title={"คำขอที่รอตรวจสอบ"} titleStyle={styles.title} />
+    <Text style={styles.eyebrow}>ตรวจสอบคำขอ</Text><Text style={styles.sub}>ตรวจทุกคำขอจากจุดเดียว ทุกการอนุมัติและปฏิเสธจะถูกบันทึกไว้เพื่อตรวจสอบย้อนหลัง</Text>
     {section("คำขอเปิดตลาดชุมชน", "ตรวจข้อมูลชุมชนและที่อยู่จุดรวมสินค้า", markets, "market")}
     {section("คำขอเปิดร้านค้า", "ตรวจชื่อร้าน สินค้า ราคา และข้อมูลผู้สมัคร", stores, "store")}
     {section("ผู้ขายร่วมร้าน", "ตรวจสิทธิ์และพื้นที่ของผู้สมัคร", sellers, "seller")}
@@ -94,7 +96,7 @@ export default function AdminApprovals() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 54, paddingBottom: 110 },
+  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 110 },
   eyebrow: { fontFamily: "Kanit_500Medium", color: Colors.goldDark, fontSize: 12, letterSpacing: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, lineHeight: 20 },
   sectionBlock: { marginTop: 24 }, section: { fontFamily: "Kanit_700Bold", fontSize: 19, color: Colors.textDark }, count: { color: Colors.goldDark }, sectionSub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 },
   card: { backgroundColor: Colors.cardBackground, padding: 16, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.inputBorder, marginTop: 10 }, cardHeader: { flexDirection: "row", gap: 10, alignItems: "center" }, typeIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: "#E8F2EC", alignItems: "center", justifyContent: "center" }, cardTitleWrap: { flex: 1 }, productImage: { width: "100%", height: 170, borderRadius: 12, backgroundColor: "#EAF1E9", marginTop: 12 },

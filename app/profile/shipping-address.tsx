@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
@@ -120,7 +121,7 @@ export default function ShippingAddress() {
   };
 
   return <KeyboardAwareScrollView ref={scrollRef} style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void loadAddresses().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
-    <Text style={styles.title}>ที่อยู่จัดส่ง</Text>
+    <ScreenHeader title={"ที่อยู่จัดส่ง"} titleStyle={styles.title} />
     {list.map((address) => {
       const sub = address.thai_subdistricts;
       return <View key={address.address_id} style={styles.card}>
@@ -142,7 +143,7 @@ export default function ShippingAddress() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 64, paddingBottom: 70 },
+  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginBottom: 20 },
   section: { fontFamily: "Kanit_700Bold", fontSize: 21, color: Colors.textDark, marginTop: 18, marginBottom: 2 },
   hint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 12 },

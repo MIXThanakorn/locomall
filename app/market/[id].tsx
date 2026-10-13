@@ -1,8 +1,9 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { BackButton } from "../../src/components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { CatalogActions } from "../../src/components/CatalogActions";
 import { useAuth } from "../../src/context/AuthContext";
@@ -12,7 +13,6 @@ import { formatSaleQuantity } from "../../src/lib/productUnit";
 export default function MarketDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [market, setMarket] = useState<any>();
   const [stores, setStores] = useState<any[]>([]);
@@ -33,14 +33,13 @@ export default function MarketDetail() {
   }, [id, session]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
-  if (!market) return <View style={styles.center}><Text>ไม่พบตลาดชุมชนนี้</Text></View>;
+  if (loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
+  if (!market) return <View style={styles.center}><BackButton floating /><Text>ไม่พบตลาดชุมชนนี้</Text></View>;
   const isOwner = Boolean(market.is_owner);
 
   return <View style={styles.root}>
-    <View style={[styles.hero, { paddingTop: insets.top + 16 }]}>
-      <TouchableOpacity onPress={() => router.back()}><Ionicons name="arrow-back" size={24} color="white" /></TouchableOpacity>
-      <Text style={styles.heroTitle}>{market.name}</Text><Text style={styles.heroDesc}>{market.description}</Text>
+    <View style={[styles.hero, { paddingTop: 0 }]}>
+      <ScreenHeader title={market.name} titleStyle={styles.heroTitle} color="white" /><Text style={styles.heroDesc}>{market.description}</Text>
       <View style={styles.location}><Ionicons name="location-outline" size={16} color={Colors.goldPrimary} /><Text style={styles.locationText}>{market.hub_address}</Text></View>
     </View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().then(() => setRefreshVersion((value) => value + 1)).finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
@@ -68,7 +67,7 @@ export default function MarketDetail() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  hero: { backgroundColor: Colors.greenPrimary, padding: Spacing.lg, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
+  hero: { backgroundColor: Colors.greenPrimary, padding: Spacing.lg, paddingTop: 0, paddingBottom: 28, borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
   heroTitle: { fontFamily: "Kanit_700Bold", fontSize: 27, color: "white", marginTop: 20 }, heroDesc: { fontFamily: "Kanit_400Regular", color: "#DDEBE2", marginTop: 4 },
   location: { flexDirection: "row", gap: 6, marginTop: 12 }, locationText: { fontFamily: "Kanit_400Regular", color: "white", flex: 1 }, content: { padding: Spacing.lg },
   manage: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginBottom: 14 },

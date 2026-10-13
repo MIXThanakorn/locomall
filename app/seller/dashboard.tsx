@@ -1,3 +1,5 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { BackButton } from "../../src/components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -8,7 +10,7 @@ import { useCapabilities } from "../../src/hooks/useCapabilities";
 export default function SellerDashboard() {
   const router = useRouter();
   const permissions = useCapabilities();
-  if (permissions.loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
+  if (permissions.loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
 
   const actions = [
     { show: permissions.isStoreManager, title: "จัดการร้านของฉัน", desc: "แก้ไขชื่อสินค้า ราคา และรายละเอียดร้าน", icon: "create-outline", route: "/seller/stores" },
@@ -19,7 +21,7 @@ export default function SellerDashboard() {
   ].filter((item) => item.show);
 
   return <ScrollView contentContainerStyle={styles.root}>
-    <Text style={styles.title}>งานขายสินค้าของฉัน</Text>
+    <ScreenHeader title={"งานขายสินค้าของฉัน"} titleStyle={styles.title} />
     <Text style={styles.sub}>ดูแลร้าน จำนวนสินค้า และงานที่ต้องเตรียมได้จากหน้านี้</Text>
     <ContextHelp title="เริ่มขายสินค้าต้องทำอย่างไร?" steps={["เลือกตลาดชุมชนที่อยู่ตำบลเดียวกับพื้นที่หลักของคุณ", "เปิดร้านใหม่ หรือขอร่วมขายในร้านที่มีสินค้าชนิดเดียวกัน", "รอเจ้าของตลาดตรวจสอบ แล้วใส่จำนวนสินค้าที่พร้อมขาย"]} />
     {!actions.length ? <View style={styles.empty}><Text style={styles.emptyTitle}>ยังไม่มีสิทธิ์จัดการร้าน</Text><Text style={styles.desc}>สมัครเปิดร้านหรือเข้าร่วมขายในร้านที่อยู่ตำบลเดียวกับคุณก่อน</Text></View> : null}
@@ -33,7 +35,7 @@ export default function SellerDashboard() {
 }
 
 const styles = StyleSheet.create({
-  root: { padding: Spacing.lg, paddingTop: 60, backgroundColor: Colors.background, flexGrow: 1 },
+  root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
   title: { fontFamily: "Kanit_700Bold", fontSize: 25, color: Colors.greenPrimary },
   sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 12 },

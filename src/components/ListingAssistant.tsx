@@ -1,3 +1,4 @@
+import { ScreenHeader } from "./ScreenHeader";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Modal, StyleSheet, Text, View } from "react-native";
 import { Colors, BorderRadius, Spacing } from "../constants/theme";
@@ -55,7 +56,7 @@ function ListingAssistantForm({ marketId, storeId, productName, description, ima
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
       <KeyboardAwareScrollView style={styles.modal} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>คำแนะนำจากการวิเคราะห์ของระบบ</Text>
+        <ScreenHeader title={"คำแนะนำจากการวิเคราะห์ของระบบ"} titleStyle={styles.title} onBackPress={() => setVisible(false)} />
         <Text style={styles.note}>คำแนะนำอาจคลาดเคลื่อน กรุณาตรวจชื่อ รูป สภาพ และคำกล่าวอ้างให้ถูกต้องก่อนนำไปใช้ คุณยังต้องกดบันทึกร้านด้วยตนเอง</Text>
         {result?.usedFallback ? <Text style={styles.note}>บริการหลักไม่พร้อม ระบบใช้บริการสำรองในการวิเคราะห์ครั้งนี้</Text> : null}
         <Text style={styles.label}>ชื่อสินค้า</Text>
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: "Kanit_700Bold", fontSize: 19, color: Colors.greenPrimary, marginBottom: 8 },
   note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 10 },
   error: { fontFamily: "Kanit_400Regular", color: Colors.danger, marginTop: 10 },
-  modal: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 60, paddingBottom: 55 },
+  modal: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 55 },
   label: { fontFamily: "Kanit_500Medium", color: Colors.textDark, marginBottom: 8 },
   input: { padding: 14, backgroundColor: Colors.cardBackground, borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, marginBottom: 16, fontFamily: "Kanit_400Regular" },
   multiline: { minHeight: 120, textAlignVertical: "top" }, button: { marginTop: 16, marginBottom: 10 },

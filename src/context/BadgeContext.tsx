@@ -1,3 +1,4 @@
+import { realtimeChannelName } from "../lib/realtimeChannelName";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { usePathname } from "expo-router";
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -47,7 +48,7 @@ export function BadgeProvider({ children }: React.PropsWithChildren) {
   useEffect(() => { void refreshBadges(); }, [refreshBadges, pathname]);
   useEffect(() => {
     if (!userId) return;
-    const channel = supabase.channel(`badge-counts-${userId}`)
+    const channel = supabase.channel(realtimeChannelName(`badge-counts-${userId}`))
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },
         () => void refreshBadges())
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },

@@ -1,3 +1,5 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { BackButton } from "../../src/components/BackButton";
 import { Redirect, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
@@ -16,7 +18,7 @@ export default function PhoneOnboarding() {
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (loading || (session && hasPhone === null)) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
+  if (loading || (session && hasPhone === null)) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!session) return <Redirect href="/(auth)/sign-in" />;
   if (hasPhone) return <Redirect href="/" />;
 
@@ -41,7 +43,7 @@ export default function PhoneOnboarding() {
   };
 
   return <KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content}>
-    <Text style={styles.title}>ยืนยันข้อมูลติดต่อ</Text>
+    <ScreenHeader title={"ยืนยันข้อมูลติดต่อ"} titleStyle={styles.title} />
     <Text style={styles.description}>กรุณาเพิ่มเบอร์มือถือก่อนใช้งาน Locomall เพื่อให้ติดต่อเกี่ยวกับคำสั่งซื้อและการรับสินค้าได้ บัญชีที่เคยสมัครผ่าน Google หรือมีเบอร์ไม่ครบสามารถกรอกที่นี่ได้</Text>
     <Text style={styles.label}>เบอร์มือถือ *</Text>
     <AppTextInput value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="phone-pad" autoComplete="tel" maxLength={10} placeholder="เช่น 0812345678" style={styles.input} />
@@ -55,7 +57,7 @@ export default function PhoneOnboarding() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
-  content: { flexGrow: 1, padding: Spacing.lg, paddingTop: 80, paddingBottom: 80 },
+  content: { flexGrow: 1, padding: Spacing.lg, paddingTop: 0, paddingBottom: 80 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginBottom: 12 },
   description: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, marginBottom: 24 },
   label: { fontFamily: "Kanit_500Medium", color: Colors.textDark, marginBottom: 8 },

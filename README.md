@@ -180,8 +180,20 @@ Business IDs ใช้ `bigint identity`; user IDs ใช้ UUID จาก `aut
 - Pickup: `get_pickup_eligibility`
 - Logistics: `accept_allocation`, `mark_allocation_ready`, `record_allocation_collected`, `record_allocation_at_hub`, `consolidate_order`, `ship_order`
 - Notifications: `mark_notification_read`, `mark_all_notifications_read`, `register_my_push_device`, `disable_my_push_devices`
+- Chat: `get_chat_room_header`, `get_my_chat_inbox`, `get_chat_order_context`, `mark_my_chat_room_read`
 
 Helper functions อยู่ใน private schema และไม่เปิดผ่าน Data API.
+
+### Chat context and mobile navigation
+
+- หัวแชทแสดงคู่สนทนา/สินค้า พร้อมปุ่มเปิดหน้าสินค้า และปุ่มดูออเดอร์ที่เกี่ยวข้อง
+- การ์ดแสดงไม่เกิน 3 รายการล่าสุดของผู้ซื้อและร้านในห้องนั้น: เลขออเดอร์ย่อ สินค้า จำนวน ยอดเฉพาะสินค้าร้านนี้ และสถานะปัจจุบัน ไม่ใช่ข้อความยืนยันการชำระเงิน
+- ผู้ซื้อเปิดรายละเอียดออเดอร์ของตนได้ ผู้ดูแลร้านเปิดงานขายได้เฉพาะ allocation ของตนเอง มิฉะนั้นเห็นเพียงสรุป ไม่มีที่อยู่ เบอร์โทร หรือสินค้าร้านอื่นใน DTO
+- สถานะการ์ดโหลดใหม่จาก RPC หลัง Realtime event, กลับเข้าแอป หรือ pull-to-refresh; ไม่มีการเปลี่ยนสิทธิ์อ่านตารางเดิม
+- หน้าปลายทางใช้ `ScreenHeader` ร่วมกันทั้ง Android/iOS: ปุ่มย้อนและชื่อหน้าอยู่แถวเดียวกัน ระยะด้านข้าง 24 และด้านบน safe area + 8 พร้อมทางกลับสำรองสำหรับ deep link; หน้าหลักทั้ง 5 แท็บและหน้าต้อนรับไม่แสดงปุ่มย้อน
+- แต่ละ Realtime subscription มีชื่อ channel เฉพาะ ป้องกันการชนเมื่อเปิดห้องเดิมซ้อนจากหน้าสินค้าหรือ cleanup เก่ายังทำงานอยู่; ห้องแชทสมัครรับข้อมูลเฉพาะเมื่อมี focus และโหลดข้อความใหม่เมื่อกลับเข้าหน้า
+- ฟอร์มและ modal ใช้ `KeyboardAware` ร่วมกัน คำนวณตำแหน่ง header จริงและเลื่อนช่องที่มี focus ให้พ้นคีย์บอร์ด; ช่องแชทพิมพ์หลายบรรทัดได้และมี safe-area ด้านล่าง
+- คำเตือนตรวจสอบผลวิเคราะห์อยู่ที่หน้ารับคำแนะนำ ไม่สั่งให้โมเดลใส่คำเตือนทั่วไปซ้ำในรายละเอียดสินค้า แต่ยังคงคำเตือนเฉพาะสินค้าที่ผู้ขายระบุ
 
 ## Order state model
 
@@ -282,7 +294,7 @@ leaked-password protection ต้องใส่ provider/เปิดใน Sup
 locomall/
 ├─ app/                         Expo Router screens
 │  ├─ (auth)/                  sign in/up, recovery, location onboarding
-│  ├─ (tabs)/                  Home, Chat, Orders, Notifications, Profile
+│  ├─ (tabs)/                  Home, Chat, Orders, Notifications, Setting
 │  ├─ admin/                   Admin dashboard, approvals, orders, demo finance, reviews, audit
 │  ├─ guide.tsx                คู่มือผู้ซื้อ ผู้ขาย และเจ้าของตลาด
 │  ├─ market/                  catalog, application, edit, owner approval/logistics

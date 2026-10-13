@@ -1,8 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useFocusEffect } from "expo-router";
 import * as Crypto from "expo-crypto";
 import React, { useCallback, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { Button } from "../../src/components/Button";
@@ -20,7 +20,6 @@ const labels: Record<string, string> = {
 };
 
 export default function DemoWallet() {
-  const router = useRouter();
   const { session } = useAuth();
   const userId = session?.user.id;
   const [account, setAccount] = useState<any>();
@@ -84,8 +83,7 @@ export default function DemoWallet() {
   const latestPending = requests.find((item) => item.status === "pending");
 
   return <View style={styles.root}><KeyboardAwareScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}>
-    <TouchableOpacity onPress={() => router.back()} style={styles.back}><Ionicons name="arrow-back" size={24} color={Colors.greenPrimary} /><Text style={styles.backText}>กลับ</Text></TouchableOpacity>
-    <Text style={styles.title}>Wallet เงินจำลอง</Text>
+    <ScreenHeader title={"Wallet เงินจำลอง"} titleStyle={styles.title} color={Colors.greenPrimary} />
     <Text style={styles.warning}>สำหรับสาธิตเท่านั้น · ไม่ใช่เงินบาทจริง · ห้ามใช้ QR นี้โอนผ่านแอปธนาคาร</Text>
     {loadError ? <Text style={styles.warning}>อัปเดตข้อมูลไม่สำเร็จ ดึงลงเพื่อลองใหม่</Text> : null}
     {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : <>
@@ -104,4 +102,4 @@ export default function DemoWallet() {
   </KeyboardAwareScrollView></View>;
 }
 
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 70 }, back: { flexDirection: "row", alignItems: "center", gap: 6 }, backText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginVertical: 12 }, warning: { fontFamily: "Kanit_500Medium", color: Colors.danger, textAlign: "center", marginVertical: 8 }, summary: { backgroundColor: Colors.greenPrimary, padding: 20, borderRadius: BorderRadius.lg, marginTop: 14 }, held: { backgroundColor: "white", padding: 16, borderRadius: BorderRadius.md, marginTop: 10 }, heldValue: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 24 }, label: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13 }, balance: { fontFamily: "Kanit_700Bold", color: "white", fontSize: 32 }, row: { flexDirection: "row", gap: 8, marginTop: 8 }, mini: { flex: 1, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md }, value: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, heading: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 20, marginTop: 22, marginBottom: 8 }, input: { backgroundColor: "white", color: Colors.textDark, padding: 14, borderRadius: BorderRadius.md, marginBottom: 10, borderWidth: 1, borderColor: Colors.inputBorder }, qrCard: { backgroundColor: "white", borderRadius: BorderRadius.lg, padding: 18, marginTop: 16, alignItems: "center" }, reference: { fontFamily: "Kanit_400Regular", color: Colors.textDark, marginTop: 12, fontSize: 11 }, entry: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md, marginBottom: 8 } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70 }, back: { flexDirection: "row", alignItems: "center", gap: 6 }, backText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginVertical: 12 }, warning: { fontFamily: "Kanit_500Medium", color: Colors.danger, textAlign: "center", marginVertical: 8 }, summary: { backgroundColor: Colors.greenPrimary, padding: 20, borderRadius: BorderRadius.lg, marginTop: 14 }, held: { backgroundColor: "white", padding: 16, borderRadius: BorderRadius.md, marginTop: 10 }, heldValue: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 24 }, label: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13 }, balance: { fontFamily: "Kanit_700Bold", color: "white", fontSize: 32 }, row: { flexDirection: "row", gap: 8, marginTop: 8 }, mini: { flex: 1, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md }, value: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, heading: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 20, marginTop: 22, marginBottom: 8 }, input: { backgroundColor: "white", color: Colors.textDark, padding: 14, borderRadius: BorderRadius.md, marginBottom: 10, borderWidth: 1, borderColor: Colors.inputBorder }, qrCard: { backgroundColor: "white", borderRadius: BorderRadius.lg, padding: 18, marginTop: 16, alignItems: "center" }, reference: { fontFamily: "Kanit_400Regular", color: Colors.textDark, marginTop: 12, fontSize: 11 }, entry: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md, marginBottom: 8 } });

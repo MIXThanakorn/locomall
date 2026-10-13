@@ -1,3 +1,4 @@
+import { realtimeChannelName } from "../lib/realtimeChannelName";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -147,7 +148,7 @@ export function useNotifications() {
   useEffect(() => {
     if (!userId) return;
     void refresh();
-    const channel = supabase.channel(`my-notifications-${userId}`)
+    const channel = supabase.channel(realtimeChannelName(`my-notifications-${userId}`))
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh())
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` }, () => void refresh())
       .subscribe();

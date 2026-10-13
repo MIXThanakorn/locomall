@@ -1,14 +1,13 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 
 export default function SwitchAccount() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { session, savedAccounts, refreshSavedAccounts, switchAccount } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -28,9 +27,8 @@ export default function SwitchAccount() {
     }
   };
 
-  return <View style={[styles.root, { paddingTop: insets.top + 18 }]}>
-    <TouchableOpacity style={styles.back} onPress={() => router.back()} accessibilityLabel="กลับ"><Ionicons name="arrow-back" size={24} color={Colors.greenPrimary} /></TouchableOpacity>
-    <Text style={styles.title}>สลับบัญชี</Text>
+  return <View style={[styles.root, { paddingTop: 0 }]}>
+    <ScreenHeader title={"สลับบัญชี"} titleStyle={styles.title} color={Colors.greenPrimary} />
     <Text style={styles.subtitle}>เลือกบัญชีที่เคยเข้าสู่ระบบบนเครื่องนี้</Text>
     <ScrollView contentContainerStyle={styles.content}>
       {Platform.OS === "web" ? <Text style={styles.note}>การสลับบัญชีแบบแตะครั้งเดียวใช้ได้ในแอป Android และ iOS เท่านั้น</Text> : null}

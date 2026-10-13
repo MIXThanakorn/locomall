@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
@@ -26,8 +27,7 @@ export default function SavedCatalog() {
   }, [session]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   return <ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
-    <TouchableOpacity onPress={() => router.back()}><Text style={styles.back}>← กลับ</Text></TouchableOpacity>
-    <Text style={styles.title}>บันทึกและติดตาม</Text>
+    <ScreenHeader title={"บันทึกและติดตาม"} titleStyle={styles.title} />
     <Text style={styles.hint}>บันทึกไว้ดูภายหลังจะไม่แจ้งเตือน ส่วนติดตามจะแจ้งเมื่อมีร้านใหม่ที่อนุมัติหรือสินค้ากลับมาพร้อมขาย</Text>
     {items.map((item, index) => <TouchableOpacity key={`${item.kind}-${item.target_type}-${item.target_id}-${index}`} style={styles.card}
       onPress={() => router.push(`/${item.target_type}/${item.target_id}` as never)}>
@@ -38,4 +38,4 @@ export default function SavedCatalog() {
     {!items.length ? <Text style={styles.empty}>ยังไม่มีตลาดหรือร้านที่บันทึกไว้</Text> : null}
   </ScrollView>;
 }
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 80 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 14 }, hint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginTop: 10 }, body: { flex: 1 }, name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, textAlign: "center", marginTop: 30 } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 80 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 14 }, hint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginTop: 10 }, body: { flex: 1 }, name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, textAlign: "center", marginTop: 30 } });

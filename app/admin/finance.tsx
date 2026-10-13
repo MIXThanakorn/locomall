@@ -1,7 +1,8 @@
-import { useFocusEffect, useRouter } from "expo-router";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { useFocusEffect } from "expo-router";
 import * as Crypto from "expo-crypto";
 import React, { useCallback, useRef, useState } from "react";
-import { Alert, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { AdminGate } from "../../src/components/AdminGate";
@@ -19,7 +20,6 @@ const FINANCE_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function AdminDemoFinance() {
-  const router = useRouter();
   const [requests, setRequests] = useState<any[]>([]);
   const [sellers, setSellers] = useState<any[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -51,8 +51,7 @@ export default function AdminDemoFinance() {
     if (error) Alert.alert("บันทึกไม่สำเร็จ", translateDatabaseError(error)); else { delete settlementRequests.current[sellerId]; await load(); }
   };
   return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
-    <TouchableOpacity onPress={() => router.back()}><Text style={styles.link}>← กลับศูนย์ควบคุม</Text></TouchableOpacity>
-    <Text style={styles.title}>จัดการเงินจำลอง</Text>
+    <ScreenHeader title={"จัดการเงินจำลอง"} titleStyle={styles.title} />
     <Text style={styles.notice}>ระบบสาธิตเท่านั้น ไม่มีการรับหรือโอนเงินจริง QR ในแอปไม่ใช่ PromptPay</Text>
     <Text style={styles.heading}>คำขอเติมยอดที่รออนุมัติ ({requests.length})</Text>
     {requests.map((item) => <View key={item.request_id} style={styles.card}>
@@ -72,4 +71,4 @@ export default function AdminDemoFinance() {
   </KeyboardAwareScrollView></AdminGate>;
 }
 
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 56, paddingBottom: 90 }, link: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 12 }, notice: { fontFamily: "Kanit_500Medium", color: Colors.danger, backgroundColor: "white", padding: 12, borderRadius: BorderRadius.md, marginVertical: 12 }, heading: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 19, marginTop: 18, marginBottom: 9 }, card: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginBottom: 10 }, bold: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 18 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, input: { borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: BorderRadius.md, marginVertical: 9, padding: 10, color: Colors.textDark }, row: { flexDirection: "row", gap: 8 }, button: { flex: 1 } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 90 }, link: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 12 }, notice: { fontFamily: "Kanit_500Medium", color: Colors.danger, backgroundColor: "white", padding: 12, borderRadius: BorderRadius.md, marginVertical: 12 }, heading: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 19, marginTop: 18, marginBottom: 9 }, card: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginBottom: 10 }, bold: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 18 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, input: { borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: BorderRadius.md, marginVertical: 9, padding: 10, color: Colors.textDark }, row: { flexDirection: "row", gap: 8 }, button: { flex: 1 } });

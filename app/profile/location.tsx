@@ -1,3 +1,5 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
+import { BackButton } from "../../src/components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -66,9 +68,9 @@ export default function PrimaryLocation() {
     Alert.alert("บันทึกพื้นที่หลักแล้ว", "สิทธิ์เปิดร้านและร่วมขายครั้งถัดไปจะตรวจจากพื้นที่ใหม่นี้");
   };
 
-  if (loading) return <View style={styles.center}><Text style={styles.muted}>กำลังโหลดพื้นที่...</Text></View>;
+  if (loading) return <View style={styles.center}><BackButton floating /><Text style={styles.muted}>กำลังโหลดพื้นที่...</Text></View>;
   return <ScrollView style={styles.root} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-    <Text style={styles.title}>พื้นที่หลัก</Text>
+    <ScreenHeader title={"พื้นที่หลัก"} titleStyle={styles.title} />
     <View style={styles.notice}><Ionicons name="information-circle-outline" size={22} color={Colors.greenPrimary} /><Text style={styles.noticeText}>ระบบใช้พื้นที่นี้ค้นหาตลาดชุมชนใกล้คุณ และตรวจสอบพื้นที่ก่อนเปิดร้านหรือร่วมขาย การเปลี่ยนพื้นที่หลักจะไม่เปลี่ยนที่อยู่จัดส่งเดิม</Text></View>
     <SearchableDropdown label="จังหวัด" placeholder="เลือกจังหวัด" options={provinces.map((item) => ({ value: item.code, label: item.name_th }))} value={province?.code} onChange={chooseProvince} />
     <SearchableDropdown label="อำเภอ / เขต" placeholder="เลือกอำเภอ / เขต" options={districts.map((item) => ({ value: item.code, label: item.name_th }))} value={district?.code} disabled={!province} onChange={chooseDistrict} />
@@ -78,7 +80,7 @@ export default function PrimaryLocation() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 60, paddingBottom: 70 },
+  root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginBottom: 14 },
   notice: { flexDirection: "row", gap: 10, padding: 14, backgroundColor: "#EAF1E9", borderRadius: BorderRadius.lg, marginBottom: 18 },

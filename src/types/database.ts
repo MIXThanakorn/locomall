@@ -1332,6 +1332,22 @@ export type Database = {
           store_name: string
         }[]
       }
+      get_chat_order_context: {
+        Args: { p_room_id: number }
+        Returns: {
+          order_id: number
+          order_item_id: number
+          order_number: string
+          product_name: string
+          quantity: number
+          unit: string
+          item_amount: number
+          order_status: string
+          created_at: string
+          viewer_is_buyer: boolean
+          allocation_id: number | null
+        }[]
+      }
       get_my_chat_inbox: {
         Args: never
         Returns: {

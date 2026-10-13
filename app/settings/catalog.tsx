@@ -1,3 +1,5 @@
+import { BackButton } from "../../src/components/BackButton";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -36,10 +38,10 @@ export default function CatalogSettings() {
     }
     if (!(await setSameArea(value))) Alert.alert("บันทึกตัวกรองไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
   };
-  if (authLoading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
+  if (authLoading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!session) return <Redirect href="/(auth)/sign-in" />;
-  return <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: insets.top + 18, paddingBottom: insets.bottom + 30 }]} refreshControl={<RefreshControl refreshing={Boolean(area && area.userId === userId && area.loading)} onRefresh={() => void load()} tintColor={Colors.greenPrimary} />}>
-    <View style={styles.header}><TouchableOpacity accessibilityLabel="กลับหน้าตั้งค่า" onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/setting" as never)}><Ionicons name="arrow-back" color={Colors.greenPrimary} size={26} /></TouchableOpacity><Text style={styles.title}>กรองตลาดชุมชน</Text></View>
+  return <ScrollView style={styles.root} contentContainerStyle={[styles.content, { paddingTop: 0, paddingBottom: insets.bottom + 30 }]} refreshControl={<RefreshControl refreshing={Boolean(area && area.userId === userId && area.loading)} onRefresh={() => void load()} tintColor={Colors.greenPrimary} />}>
+    <ScreenHeader contentInset={20} title="กรองตลาดชุมชน" titleStyle={styles.title} />
     <Text style={styles.body}>ตัวเลือกนี้ใช้กับตลาด ร้านค้า และผลค้นหาในหน้าแรก บันทึกแยกตามบัญชีบนเครื่องนี้</Text>
     <View style={styles.card}><Text style={styles.heading}>พื้นที่หลักของคุณ</Text>{!area || area.userId !== userId || area.loading ? <ActivityIndicator color={Colors.greenPrimary} /> : area.error ? <TouchableOpacity onPress={() => void load()}><Text style={styles.error}>โหลดพื้นที่ไม่สำเร็จ · แตะเพื่อลองใหม่</Text></TouchableOpacity> : <Text style={styles.body}>{area.label ?? "ยังไม่ได้ตั้งพื้นที่หลัก"}</Text>}<TouchableOpacity onPress={() => router.push("/profile/location" as never)}><Text style={styles.link}>เปลี่ยนพื้นที่หลัก</Text></TouchableOpacity></View>
     {preferenceError ? <Text style={styles.error}>อ่านหรือบันทึกตัวกรองบนเครื่องไม่สำเร็จ กรุณาเลือกใหม่อีกครั้ง</Text> : null}

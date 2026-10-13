@@ -2,6 +2,7 @@ import { useFocusEffect } from "expo-router";
 import { useCallback } from "react";
 import { AppState } from "react-native";
 import { supabase } from "../lib/supabase";
+import { realtimeChannelName } from "../lib/realtimeChannelName";
 
 export type RealtimeWatch = {
   table: string;
@@ -21,11 +22,13 @@ export function useRealtimeRefresh(
     if (!enabled || watches.length === 0) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let subscribedOnce = false;
+    let active = true;
     const schedule = () => {
+      if (!active) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => { void Promise.resolve().then(refresh).catch((error) => console.warn("Realtime refresh failed", error)); }, 180);
     };
-    const channel = supabase.channel(channelName);
+    const channel = supabase.channel(realtimeChannelName(channelName));
     for (const watch of watches) {
       channel.on("postgres_changes", { schema: "public", ...watch }, schedule);
     }
@@ -37,6 +40,7 @@ export function useRealtimeRefresh(
       if (state === "active") schedule();
     });
     return () => {
+      active = false;
       if (timer) clearTimeout(timer);
       appState.remove();
       void supabase.removeChannel(channel);

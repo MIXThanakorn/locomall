@@ -1,9 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { formatThaiDateTime } from "../../src/lib/date";
@@ -15,7 +15,6 @@ import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 export default function Cart() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { refreshBadges } = useBadgeCounts();
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -70,10 +69,7 @@ export default function Cart() {
   const total = items.reduce((sum: number, item: any) => sum + item.quantity * Number(item.stores.unit_price), 0);
 
   return <View style={styles.root}>
-    <View style={[styles.head, { paddingTop: insets.top + 10 }]}>
-      <TouchableOpacity onPress={() => router.back()} accessibilityLabel="ย้อนกลับ"><Ionicons name="arrow-back" size={24} /></TouchableOpacity>
-      <Text style={styles.title}>ตะกร้าสินค้า</Text><View style={{ width: 24 }} />
-    </View>
+    <ScreenHeader contentInset={0} title="ตะกร้าสินค้า" titleStyle={styles.title} style={{ backgroundColor: Colors.goldPrimary }} />
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={Colors.greenPrimary} />}>
       {items.length ? <View style={styles.summary}>
         <Text style={styles.summaryTitle}>{cart.markets?.name ?? "ตลาดชุมชน"}</Text>

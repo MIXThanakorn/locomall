@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -39,11 +40,10 @@ export default function PurchaseReview() {
     else { Alert.alert("บันทึกรีวิวแล้ว"); router.back(); }
   };
   return <KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content}>
-    <TouchableOpacity onPress={() => router.back()}><Text style={styles.back}>← กลับ</Text></TouchableOpacity>
-    <Text style={styles.title}>{title}</Text><Text style={styles.hint}>รีวิวได้หลังรับสินค้าแล้วเท่านั้น · แก้ไขรีวิวของตนเองได้</Text>
+    <ScreenHeader title={title} titleStyle={styles.title} /><Text style={styles.hint}>รีวิวได้หลังรับสินค้าแล้วเท่านั้น · แก้ไขรีวิวของตนเองได้</Text>
     <View style={styles.stars}>{[1,2,3,4,5].map((star) => <TouchableOpacity key={star} onPress={() => setStars(star)} accessibilityLabel={`${star} ดาว`}><Text style={[styles.star, star<=stars && styles.active]}>★</Text></TouchableOpacity>)}</View>
     <AppTextInput multiline value={body} onChangeText={setBody} maxLength={1000} placeholder="เล่าประสบการณ์ (ไม่บังคับ)" style={styles.input} />
     <Button title="บันทึกรีวิว" loading={busy} onPress={save} />
   </KeyboardAwareScrollView>;
 }
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 58, paddingBottom: 80 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 25, marginTop: 18 }, hint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, stars: { flexDirection: "row", justifyContent: "space-around", marginVertical: 22 }, star: { fontSize: 39, color: Colors.inputBorder }, active: { color: Colors.goldPrimary }, input: { minHeight: 130, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.inputBorder, backgroundColor: "white", color: Colors.textDark, padding: 14, textAlignVertical: "top", marginBottom: 16 } });
+const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 80 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 25, marginTop: 18 }, hint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, stars: { flexDirection: "row", justifyContent: "space-around", marginVertical: 22 }, star: { fontSize: 39, color: Colors.inputBorder }, active: { color: Colors.goldPrimary }, input: { minHeight: 130, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.inputBorder, backgroundColor: "white", color: Colors.textDark, padding: 14, textAlignVertical: "top", marginBottom: 16 } });

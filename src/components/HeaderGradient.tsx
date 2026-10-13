@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { View, Text, StyleSheet, ViewStyle } from "react-native";
+import { ScreenHeader } from "./ScreenHeader";
+import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "../constants/theme";
 
 interface HeaderGradientProps {
@@ -19,13 +19,13 @@ export const HeaderGradient: React.FC<HeaderGradientProps> = ({
   title,
   subtitle,
   variant = "gold",
-  showBack = false,
+  showBack = true,
   onBackPress,
   rightAction,
   children,
   style,
 }) => {
-  const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const getBackgroundColor = () => {
     switch (variant) {
@@ -51,47 +51,20 @@ export const HeaderGradient: React.FC<HeaderGradientProps> = ({
         styles.container,
         {
           backgroundColor: getBackgroundColor(),
-          paddingTop: Math.max(insets.top + 8, 20),
           borderBottomLeftRadius: isWhite ? 0 : BorderRadius.headerBottom,
           borderBottomRightRadius: isWhite ? 0 : BorderRadius.headerBottom,
           borderBottomWidth: isWhite ? 1 : 0,
           borderBottomColor: Colors.inputBorder,
         },
         style,
+        { paddingTop: 0, paddingHorizontal: 0 },
       ]}
     >
-      <View style={styles.topRow}>
-        {showBack && (
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBackPress}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="arrow-back" size={24} color={getTextColor()} />
-          </TouchableOpacity>
-        )}
-        {title ? (
-          <View style={styles.titleContainer}>
-            <Text style={[styles.title, { color: getTextColor() }]} numberOfLines={1}>
-              {title}
-            </Text>
-            {subtitle ? (
-              <Text
-                style={[
-                  styles.subtitle,
-                  { color: isWhite ? Colors.textMuted : "rgba(255,255,255,0.9)" },
-                ]}
-              >
-                {subtitle}
-              </Text>
-            ) : null}
-          </View>
-        ) : (
-          <View style={styles.titleContainer} />
-        )}
-        {rightAction ? <View style={styles.rightAction}>{rightAction}</View> : null}
-      </View>
+      <ScreenHeader contentInset={0} title={title} titleStyle={[styles.title, { color: getTextColor() }]}
+        showBack={showBack} color={variant === "green" ? Colors.textWhite : Colors.greenPrimary}
+        onBackPress={onBackPress && router.canGoBack() ? onBackPress : undefined} rightAction={rightAction}>
+        {subtitle ? <Text style={[styles.subtitle, { color: isWhite ? Colors.textMuted : "rgba(255,255,255,0.9)" }]}>{subtitle}</Text> : null}
+      </ScreenHeader>
       {children}
     </View>
   );
@@ -99,7 +72,6 @@ export const HeaderGradient: React.FC<HeaderGradientProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
   },
   topRow: {

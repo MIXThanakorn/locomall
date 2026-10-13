@@ -1,10 +1,11 @@
+import { BackButton } from "../../src/components/BackButton";
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "../../src/components/Button";
 import { CatalogActions } from "../../src/components/CatalogActions";
 import { BorderRadius, Colors, Shadows, Spacing } from "../../src/constants/theme";
@@ -17,7 +18,6 @@ import { formatSaleQuantity } from "../../src/lib/productUnit";
 export default function StoreDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [store, setStore] = useState<any>();
   const [stock, setStock] = useState(0);
@@ -100,18 +100,18 @@ export default function StoreDetail() {
     finally { setSending(false); }
   };
 
-  if (loading) return <View style={styles.center}><ActivityIndicator color={Colors.greenPrimary} /></View>;
-  if (!store) return <View style={styles.center}><Text>ไม่พบร้านค้า</Text></View>;
+  if (loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
+  if (!store) return <View style={styles.center}><BackButton floating /><Text>ไม่พบร้านค้า</Text></View>;
   const isManager = Boolean(store.is_manager);
   const cannotBuyOwn = Boolean(session && (isManager || isSeller));
   const sellerImagePicker = <TouchableOpacity style={styles.applicationImagePicker} onPress={chooseSellerImage}>{sellerImage?<Image source={{uri:sellerImage.uri}} style={styles.applicationImage}/>:<View style={styles.applicationImageEmpty}><Ionicons name="camera-outline" size={28} color={Colors.greenPrimary}/><Text style={styles.applicationImageText}>แนบรูปสินค้าของคุณ (จำเป็น)</Text></View>}</TouchableOpacity>;
 
   return <View style={styles.root}>
     <KeyboardAwareScrollView contentContainerStyle={{ paddingBottom: 150 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().then(() => setRefreshVersion((value) => value + 1)).finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
+      <ScreenHeader contentInset={0} title={store.name} titleStyle={styles.title} />
       {store.image_url ? <Image source={{ uri: store.image_url }} style={styles.image} /> : <View style={[styles.image, styles.placeholder]}><Ionicons name="basket" size={54} color={Colors.greenPrimary} /></View>}
-      <TouchableOpacity style={[styles.back, { top: insets.top + 10 }]} onPress={() => router.back()}><Ionicons name="arrow-back" size={22} /></TouchableOpacity>
       <View style={styles.body}>
-        <Text style={styles.market}>{store.markets?.name}</Text><Text style={styles.title}>{store.name}</Text><Text style={styles.product}>{store.product_name}</Text><Text style={styles.desc}>{store.description}</Text>
+        <Text style={styles.market}>{store.markets?.name}</Text><Text style={styles.product}>{store.product_name}</Text><Text style={styles.desc}>{store.description}</Text>
         <View style={styles.info}><Text style={styles.price}>฿{Number(store.unit_price).toLocaleString()} / {store.unit}</Text><Text style={styles.stock}>พร้อมขาย {formatSaleQuantity(stock, store.unit)}</Text></View>
         <CatalogActions targetType="store" targetId={Number(id)} refreshVersion={refreshVersion} />
         {cannotBuyOwn ? <View style={styles.ownStoreNotice}><Ionicons name="information-circle-outline" size={22} color={Colors.greenPrimary} /><Text style={styles.ownStoreText}>นี่คือร้านที่คุณดูแลหรือร่วมขาย จึงไม่สามารถสั่งซื้อจากร้านนี้ด้วยบัญชีเดียวกันได้</Text></View> : null}

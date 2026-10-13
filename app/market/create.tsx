@@ -1,3 +1,4 @@
+import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
@@ -59,7 +60,7 @@ export default function CreateMarket() {
   };
 
   return <KeyboardAwareScrollView contentContainerStyle={styles.root}>
-    <Text style={styles.title}>ขอเปิดตลาดชุมชน</Text>
+    <ScreenHeader title={"ขอเปิดตลาดชุมชน"} titleStyle={styles.title} />
     <Text style={styles.area}>พื้นที่หลัก: {area || "กำลังโหลด..."}</Text>
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปตลาดชุมชน</Text>}
@@ -72,7 +73,7 @@ export default function CreateMarket() {
 }
 
 const styles = StyleSheet.create({
-  root: { padding: Spacing.lg, paddingTop: 58, backgroundColor: Colors.background, flexGrow: 1 },
+  root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary },
   area: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 16 },
   imagePicker: { height: 170, borderRadius: BorderRadius.lg, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, alignItems: "center", justifyContent: "center", overflow: "hidden", marginBottom: 14 },
