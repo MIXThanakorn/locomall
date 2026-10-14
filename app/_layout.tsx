@@ -39,7 +39,7 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: Colors.background },
           }}
         >
-          <Stack.Screen name="(auth)/switch-account" options={{ animation: "none" }} />
+          <Stack.Screen name="(auth)" options={{ animation: "none" }} />
           <Stack.Screen name="index" options={{ animation: "none" }} />
         </Stack>
         <PhoneCompletionGuard />

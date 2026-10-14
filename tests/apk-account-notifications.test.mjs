@@ -32,7 +32,8 @@ test("switch handoff has a single auth-state owner and defers native navigation 
   assert.match(screen, /session\?\.user\.id !== selectedId/);
   assert.match(screen, /requestAnimationFrame/);
   assert.match(screen, /selecting\.current/);
-  assert.match(read("app/_layout.tsx"), /switch-account" options=\{\{ animation: "none"/);
+  assert.match(read("app/(auth)/_layout.tsx"), /switch-account" options=\{\{ animation: "none"/);
+  assert.match(read("app/_layout.tsx"), /name="\(auth\)" options=\{\{ animation: "none"/);
 });
 
 test("checkout reloads owner-scoped addresses on focus, preserving selection and cancelling stale loads", () => {
