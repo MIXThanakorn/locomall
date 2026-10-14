@@ -18,6 +18,7 @@ test-results/
 .claude/
 .vscode/
 docs/
+puml/
 tests/
 supabase/
 .env

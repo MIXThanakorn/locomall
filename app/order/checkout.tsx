@@ -1,10 +1,9 @@
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { LoadNotice } from "../../src/components/LoadNotice";
-/* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Crypto from "expo-crypto";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Button } from "../../src/components/Button";
 import { ContextHelp } from "../../src/components/ContextHelp";
@@ -19,6 +18,11 @@ type Fulfillment = "delivery" | "pickup";
 type Payment = "cod" | "demo_wallet";
 
 export default function Checkout() {
+  const { session } = useAuth();
+  return <CheckoutContent key={session?.user.id ?? "guest"} />;
+}
+
+function CheckoutContent() {
   const router = useRouter(); const { deviceLocation, session } = useAuth();
   const userId = session?.user.id;
   const [addresses, setAddresses] = useState<any[]>([]); const [addressId, setAddressId] = useState<number>(); const [cart, setCart] = useState<any>();
@@ -42,8 +46,8 @@ export default function Checkout() {
     const request = ++generation.current;
     try {
     const [addressResult, cartResult] = await Promise.all([
-      supabase.from("user_addresses").select("*,thai_subdistricts(name_th,thai_districts(name_th,thai_provinces(name_th)))").order("is_default", { ascending: false }),
-      supabase.from("carts").select("*,cart_items(store_id,quantity,stores(name,product_name,unit_price))").maybeSingle(),
+      supabase.from("user_addresses").select("*,thai_subdistricts(name_th,thai_districts(name_th,thai_provinces(name_th)))").eq("user_id", userId!).order("is_default", { ascending: false }),
+      supabase.from("carts").select("*,cart_items(store_id,quantity,stores(name,product_name,unit_price))").eq("buyer_id", userId!).maybeSingle(),
     ]);
     if (request !== generation.current) return;
     if (addressResult.error || cartResult.error) throw addressResult.error || cartResult.error;
@@ -53,13 +57,18 @@ export default function Checkout() {
     setCart(cartResult.data);
     if (cartResult.data?.market_id) {
       const { data } = await supabase.rpc("get_pickup_eligibility", { p_market_id: cartResult.data.market_id, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude }).single();
+      if (request !== generation.current) return;
       setPickup(data);
     } else setPickup(null);
     setLoadError(false);
     } catch { if (request === generation.current) setLoadError(true); }
     finally { if (request === generation.current) setInitialLoading(false); }
-  }, [deviceLocation]);
-  useEffect(() => { const counter = generation; void loadCheckout(); return () => { counter.current++; }; }, [loadCheckout]);
+  }, [deviceLocation, userId]);
+  useFocusEffect(useCallback(() => {
+    if (userId) void loadCheckout();
+    const counter = generation;
+    return () => { counter.current++; };
+  }, [loadCheckout, userId]));
   const refreshCheckout = async () => {
     setRefreshing(true);
     try {

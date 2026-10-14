@@ -386,6 +386,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          dismissed_at: string | null
           body: string
           category: string
           created_at: string
@@ -398,6 +399,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          dismissed_at?: string | null
           body: string
           category?: string
           created_at?: string
@@ -410,6 +412,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          dismissed_at?: string | null
           body?: string
           category?: string
           created_at?: string
@@ -1429,6 +1432,10 @@ export type Database = {
       }
       mark_my_chat_room_read: { Args: { p_room_id: number }; Returns: undefined }
       mark_my_non_chat_notifications_read: { Args: never; Returns: undefined }
+      dismiss_my_read_notifications: { Args: never; Returns: number }
+      get_market_seller_contacts: { Args: { p_order_id?: number }; Returns: { allocation_id: number; order_id: number; seller_name: string; seller_username: string | null; seller_phone: string | null }[] }
+      get_market_application_contacts: { Args: never; Returns: { application_id: number; applicant_name: string; applicant_username: string | null; applicant_phone: string | null }[] }
+      get_my_notification_target: { Args: { p_notification_id: number }; Returns: { entity_type: string | null; entity_id: number | null }[] }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       disable_my_push_devices: { Args: never; Returns: undefined }
       disable_my_push_device: {

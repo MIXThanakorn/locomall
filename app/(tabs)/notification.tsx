@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { useNotifications } from "../../src/hooks/useCommerce";
-import { notificationPath } from "../../src/lib/pushNotifications";
+import { resolveNotificationPath } from "../../src/lib/notificationNavigation";
 import { supabase } from "../../src/lib/supabase";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
 
@@ -40,6 +40,7 @@ export default function NotificationScreen() {
   const { refreshBadges } = useBadgeCounts();
   const [category, setCategory] = useState<Category>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const visibleItems = useMemo(() => items.filter((item) => item.category !== "chat" && item.entity_type !== "chat" && !item.type.includes("chat")), [items]);
   const filtered = useMemo(() => visibleItems.filter((item) => {
@@ -54,9 +55,23 @@ export default function NotificationScreen() {
     await refreshBadges();
   };
   const openItem = async (item: (typeof items)[number]) => {
-    if (!item.read_at) await read(item.notification_id);
-    router.push(notificationPath({ entity_type: item.entity_type ?? undefined, entity_id: item.entity_id ?? undefined }));
+    try {
+      const path = await resolveNotificationPath(item);
+      if (!item.read_at) await read(item.notification_id);
+      router.push(path);
+    } catch { Alert.alert("เปิดการแจ้งเตือนไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง"); }
   };
+  const clearRead = () => Alert.alert("ล้างรายการที่อ่านแล้ว?", "ซ่อนเฉพาะแจ้งเตือนที่อ่านแล้วของคุณ ประวัติออเดอร์และคำขอจะยังอยู่", [
+    { text: "ยกเลิก", style: "cancel" },
+    { text: "ล้างรายการ", style: "destructive", onPress: () => {
+      setClearing(true);
+      void (async () => {
+        const result = await supabase.rpc("dismiss_my_read_notifications");
+        if (result.error) throw result.error;
+        await Promise.all([refresh(), refreshBadges()]);
+      })().catch(() => Alert.alert("ล้างรายการไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง")).finally(() => setClearing(false));
+    } },
+  ]);
   const markAllRead = async () => {
     const { error } = await supabase.rpc("mark_my_non_chat_notifications_read");
     if (error) return Alert.alert("ทำรายการไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
@@ -74,6 +89,7 @@ export default function NotificationScreen() {
       </View>
     </View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([refresh(), refreshBadges()]); }} tintColor={Colors.greenPrimary} />}>
+      {visibleItems.some((item) => item.read_at) ? <TouchableOpacity disabled={clearing} onPress={clearRead} style={{ alignSelf: "flex-end", paddingVertical: 10 }}><Text style={styles.readAll}>{clearing ? "กำลังล้างรายการ…" : "ล้างรายการที่อ่านแล้ว"}</Text></TouchableOpacity> : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
         {FILTERS.map((filter) => <TouchableOpacity key={filter.key} onPress={() => setCategory(filter.key)} style={[styles.filter, category === filter.key && styles.filterActive]}>
           <Ionicons name={filter.icon} size={17} color={category === filter.key ? Colors.textWhite : Colors.textMedium} />

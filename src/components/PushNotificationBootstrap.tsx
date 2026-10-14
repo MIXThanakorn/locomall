@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
-import { canUseNativePushNotifications, configureNotificationHandler, notificationPath, registerForPushNotifications } from "../lib/pushNotifications";
+import { canUseNativePushNotifications, configureNotificationHandler, registerForPushNotifications } from "../lib/pushNotifications";
+import { resolveNotificationPath } from "../lib/notificationNavigation";
 
 type NotificationResponseLike = {
   notification: { request: { content: { data?: Record<string, unknown> } } };
@@ -32,7 +33,9 @@ export function PushNotificationBootstrap() {
     let subscription: { remove: () => void } | undefined;
     const open = (response: NotificationResponseLike) => {
       const data = response.notification.request.content.data;
-      router.push(notificationPath(data));
+      void resolveNotificationPath(data).then((path) => { if (!cancelled) router.push(path); }).catch(() => {
+        if (!cancelled) router.push("/(tabs)/notification");
+      });
     };
     void (async () => {
       const configured = await configureNotificationHandler();

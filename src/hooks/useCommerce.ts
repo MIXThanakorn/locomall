@@ -160,7 +160,7 @@ export function useNotifications() {
     if (!userId) { setResult({ userId, items: [], loading: false, error: false }); return; }
     setResult((current) => ({ userId, items: current.userId === userId ? current.items : [], loading: true, error: false }));
     try {
-      const r = await supabase.from("notifications").select("*").eq("user_id", userId).neq("category", "chat").order("created_at", { ascending: false });
+      const r = await supabase.from("notifications").select("*").eq("user_id", userId).neq("category", "chat").is("dismissed_at", null).order("created_at", { ascending: false });
       if (r.error) throw r.error;
       if (request === generation.current) setResult({ userId, items: r.data ?? [], loading: false, error: false });
     } catch {

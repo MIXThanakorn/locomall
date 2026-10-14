@@ -38,7 +38,10 @@ export default function RootLayout() {
             headerShown: false,
             contentStyle: { backgroundColor: Colors.background },
           }}
-        />
+        >
+          <Stack.Screen name="(auth)/switch-account" options={{ animation: "none" }} />
+          <Stack.Screen name="index" options={{ animation: "none" }} />
+        </Stack>
         <PhoneCompletionGuard />
       </BadgeProvider></LanguageProvider></CatalogPreferencesProvider></AuthProvider></AppAlertProvider>
     </SafeAreaProvider>

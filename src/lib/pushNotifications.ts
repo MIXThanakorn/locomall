@@ -3,6 +3,7 @@ import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { supabase } from "./supabase";
+export { notificationPath } from "./notificationRoute";
 
 export type PushPermissionState = "granted" | "denied" | "undetermined" | "unavailable" | "not_configured";
 const PUSH_TOKEN_KEY = "locomall.expoPushToken";
@@ -86,14 +87,4 @@ export async function disableCurrentPushDevice() {
   const { error } = await supabase.rpc("disable_my_push_device", { p_expo_push_token: token });
   if (error) throw error;
   await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
-}
-
-export function notificationPath(data: Record<string, unknown> | undefined) {
-  const entityType = typeof data?.entity_type === "string" ? data.entity_type : null;
-  const entityId = typeof data?.entity_id === "number" || typeof data?.entity_id === "string" ? String(data.entity_id) : null;
-  if (entityType === "order" && entityId) return `/order/${entityId}` as const;
-  if (entityType === "market" && entityId) return `/market/${entityId}` as const;
-  if (entityType === "store" && entityId) return `/store/${entityId}` as const;
-  if (entityType === "chat" && entityId) return `/chat/${entityId}` as const;
-  return "/(tabs)/notification" as const;
 }

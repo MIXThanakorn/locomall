@@ -1,7 +1,7 @@
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
@@ -10,20 +10,32 @@ export default function SwitchAccount() {
   const router = useRouter();
   const { session, savedAccounts, refreshSavedAccounts, switchAccount } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const selecting = useRef(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedId || session?.user.id !== selectedId || busyId) return;
+    // Navigate only after React has committed the new auth context. Disable
+    // screen animation to avoid overlapping native stack transitions.
+    const frame = requestAnimationFrame(() => router.replace("/" as never));
+    return () => cancelAnimationFrame(frame);
+  }, [selectedId, session?.user.id, busyId, router]);
 
   useFocusEffect(useCallback(() => { void refreshSavedAccounts().catch(() => undefined); }, [refreshSavedAccounts]));
 
   const select = async (id: string) => {
-    if (busyId) return;
+    if (selecting.current) return;
     if (session?.user.id === id) { router.replace("/" as never); return; }
     setBusyId(id);
+    selecting.current = true;
     try {
       await switchAccount(id);
-      router.replace("/" as never);
+      setSelectedId(id);
     } catch (error) {
       Alert.alert("สลับบัญชีไม่สำเร็จ", error instanceof Error ? error.message : "กรุณาลองใหม่หรือเข้าสู่ระบบอีกครั้ง");
     } finally {
       setBusyId(null);
+      selecting.current = false;
     }
   };
 

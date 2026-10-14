@@ -1,8 +1,9 @@
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { LoadNotice } from "../../../src/components/LoadNotice";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
@@ -22,21 +23,32 @@ const APPROVAL_WATCHES: RealtimeWatch[] = [
 
 export default function ApprovalQueue() {
   const permissions = useCapabilities(); const router = useRouter();
+  const { applicationId } = useLocalSearchParams<{ applicationId?: string }>();
+  const [loadError, setLoadError] = useState(false);
+  const generation = useRef(0);
   const [stores, setStores] = useState<any[]>([]); const [sellers, setSellers] = useState<any[]>([]); const [notes, setNotes] = useState<Record<number, string>>({});
   const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => {
     if (!permissions.isMarketOwner && !permissions.isAdmin) return;
-    const [storeResult, sellerResult] = await Promise.all([
+    const request = ++generation.current;
+    try {
+    const [storeResult, sellerResult, people] = await Promise.all([
       supabase.from("stores").select("store_id,name,product_name,image_url,unit,unit_price,created_at,markets(name)").eq("approval_status", "pending").order("created_at"),
       supabase.from("store_seller_applications").select("application_id,note,product_image_url,created_at,stores(name,product_name,image_url)").eq("status", "pending").order("created_at"),
+      supabase.rpc("get_market_application_contacts"),
     ]);
+    if (storeResult.error || sellerResult.error || people.error) throw storeResult.error || sellerResult.error || people.error;
+    const contacts = new Map((people.data ?? []).map((person) => [person.application_id, person]));
     const sellerRows = await Promise.all((sellerResult.data ?? []).map(async (item: any) => ({
       ...item,
+      contact: contacts.get(item.application_id),
       evidence_url: item.product_image_url ? await signedPrivateImageUrl("seller-evidence", item.product_image_url).catch(() => null) : null,
     })));
-    setStores(storeResult.data ?? []); setSellers(sellerRows);
+    if (request !== generation.current) return;
+    setStores(storeResult.data ?? []); setSellers(sellerRows); setLoadError(false);
+    } catch { if (request === generation.current) setLoadError(true); }
   }, [permissions.isAdmin, permissions.isMarketOwner]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); const counter = generation; return () => { counter.current++; }; }, [load]);
   useRealtimeRefresh("market-approval-queue", load, APPROVAL_WATCHES, permissions.isMarketOwner || permissions.isAdmin);
   const reviewSeller = async (id: number, approve: boolean) => {
     const note = notes[id]?.trim(); if (!approve && !note) return Alert.alert("กรุณาระบุเหตุผลที่ปฏิเสธ");
@@ -46,6 +58,9 @@ export default function ApprovalQueue() {
   return <PermissionGate allow={permissions.isMarketOwner || permissions.isAdmin} loading={permissions.loading}>
     <KeyboardAwareScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <ScreenHeader title={"คิวอนุมัติ"} titleStyle={styles.title} /><Text style={styles.sub}>แตะคำขอร้านค้าเพื่อดูผู้สมัคร สินค้า ราคา และรายละเอียดทั้งหมด</Text>
+      {loadError ? <LoadNotice onRetry={() => void load()} /> : null}
+      {applicationId ? <Button title="ดูคำขอทั้งหมด" variant="outline" onPress={() => router.replace("/market/manage" as never)} /> : null}
+      {!loadError && applicationId && !sellers.some((item) => String(item.application_id) === applicationId) ? <Text style={styles.detail}>คำขอนี้ไม่อยู่ในรายการรออนุมัติแล้ว หรือคุณไม่มีสิทธิ์ดูคำขอนี้</Text> : null}
       <Text style={styles.section}>ร้านใหม่</Text>
       {!stores.length ? <Text style={styles.empty}>ไม่มีร้านรอตรวจสอบ</Text> : null}
       {stores.map((item) => <TouchableOpacity style={styles.card} key={item.store_id} onPress={() => router.push(`/market/manage/request/${item.store_id}` as never)}>
@@ -53,9 +68,11 @@ export default function ApprovalQueue() {
       </TouchableOpacity>)}
       <Text style={styles.section}>ผู้ขายร่วมร้าน</Text>
       {!sellers.length ? <Text style={styles.empty}>ไม่มีผู้ขายร่วมรอตรวจสอบ</Text> : null}
-      {sellers.map((item) => <View style={styles.cardColumn} key={item.application_id}>
+      {sellers.filter((item) => !applicationId || String(item.application_id) === applicationId).map((item) => <View style={styles.cardColumn} key={item.application_id}>
         {item.evidence_url||item.stores?.image_url?<Image source={{uri:item.evidence_url||item.stores?.image_url}} style={styles.applicationImage}/>:<View style={styles.missingImage}><Ionicons name="image-outline" size={28} color={Colors.textMuted}/><Text style={styles.detail}>ผู้สมัครเดิมไม่ได้แนบรูปสินค้า</Text></View>}
         <Text style={styles.name}>{item.stores?.name} · {item.stores?.product_name}</Text>{item.note ? <Text style={styles.detail}>ข้อความจากผู้สมัคร: {item.note}</Text> : null}
+        <Text style={styles.detail}>ผู้สมัคร: {item.contact?.applicant_name ?? "ไม่ระบุชื่อ"}{item.contact?.applicant_username ? ` (@${item.contact.applicant_username})` : ""}</Text>
+        <Text style={styles.detail}>เบอร์ติดต่อ: {item.contact?.applicant_phone || "ไม่ระบุ"}</Text>
         <AppTextInput style={styles.note} placeholder="ความคิดเห็น/เหตุผลกรณีปฏิเสธ" value={notes[item.application_id] ?? ""} onChangeText={(value) => setNotes((current) => ({ ...current, [item.application_id]: value }))} multiline />
         <View style={styles.actions}><Button title="อนุมัติ" size="sm" onPress={() => reviewSeller(item.application_id, true)} /><Button title="ปฏิเสธ" size="sm" variant="outline" onPress={() => reviewSeller(item.application_id, false)} /></View>
       </View>)}

@@ -55,12 +55,12 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     setSavedAccounts(await listSavedAccounts());
   }, []);
 
-  const refreshLocation = async () => {
+  const refreshLocation = useCallback(async () => {
     const userId = session?.user.id;
     if (!userId) return setHasLocation(null);
     const { data } = await supabase.from("user_locations").select("user_id").eq("user_id", userId).maybeSingle();
     if (activeUserId.current === userId) setHasLocation(Boolean(data));
-  };
+  }, [session?.user.id]);
 
   const refreshPhone = useCallback(async () => {
     const userId = session?.user.id;
@@ -71,12 +71,12 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     return valid;
   }, [session?.user.id]);
 
-  const refreshAdminRole = async () => {
+  const refreshAdminRole = useCallback(async () => {
     const userId = session?.user.id;
     if (!userId) return setIsAdmin(null);
     const { data } = await supabase.from("platform_roles").select("role").eq("user_id", userId).maybeSingle();
     if (activeUserId.current === userId) setIsAdmin(data?.role === "platform_admin");
-  };
+  }, [session?.user.id]);
 
   const refreshDeviceLocation = useCallback(async () => {
     const requestId = ++locationRequestId.current;
@@ -159,14 +159,9 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
         }
         throw new Error("สลับบัญชีไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
       }
-      setSession(result.data.session);
-      activeUserId.current = id;
-      setHasLocation(null);
-      setHasPhone(null);
-      setIsAdmin(null);
-      setDeviceLocation(null);
-      locationRequestId.current += 1;
-      setDeviceLocationReady(false);
+      // SIGNED_IN already publishes the session and resets account-scoped state.
+      // Resetting it again here can erase completed onboarding queries without
+      // rerunning their user-id effects, leaving the landing route stuck forever.
       await refreshSavedAccounts();
     } finally {
       switchingAccount.current = false;
@@ -201,9 +196,9 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     });
     return () => data.subscription.unsubscribe();
   }, [refreshSavedAccounts]);
-  useEffect(() => { void refreshLocation(); }, [session?.user.id]);
-  useEffect(() => { void refreshPhone(); }, [refreshPhone]);
-  useEffect(() => { void refreshAdminRole(); }, [session?.user.id]);
+  useEffect(() => { void refreshLocation().catch(() => console.warn("Location profile load failed")); }, [refreshLocation]);
+  useEffect(() => { void refreshPhone().catch(() => console.warn("Phone profile load failed")); }, [refreshPhone]);
+  useEffect(() => { void refreshAdminRole().catch(() => console.warn("Role load failed")); }, [refreshAdminRole]);
   useEffect(() => {
     if (!hasLocation || isAdmin) return;
     void refreshDeviceLocation();
@@ -213,7 +208,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
     return () => subscription.remove();
   }, [hasLocation, isAdmin, refreshDeviceLocation]);
 
-  const value = useMemo(() => ({ session, loading, hasLocation, hasPhone, isAdmin, deviceLocation, deviceLocationReady, refreshLocation, refreshPhone, refreshDeviceLocation, signOut, savedAccounts, refreshSavedAccounts, switchAccount }), [session, loading, hasLocation, hasPhone, isAdmin, deviceLocation, deviceLocationReady, refreshPhone, refreshDeviceLocation, signOut, savedAccounts, refreshSavedAccounts, switchAccount]);
+  const value = useMemo(() => ({ session, loading, hasLocation, hasPhone, isAdmin, deviceLocation, deviceLocationReady, refreshLocation, refreshPhone, refreshDeviceLocation, signOut, savedAccounts, refreshSavedAccounts, switchAccount }), [session, loading, hasLocation, hasPhone, isAdmin, deviceLocation, deviceLocationReady, refreshLocation, refreshPhone, refreshDeviceLocation, signOut, savedAccounts, refreshSavedAccounts, switchAccount]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
