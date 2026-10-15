@@ -347,7 +347,7 @@ test("Home shows a two-column near-first catalog without cutting off distant sto
   assert.match(home, /items\.map/);
   assert.doesNotMatch(home, /marketItems\.slice|storeItems\.slice/);
   assert.match(card, /compactCard:\s*\{width:"48\.5%"\}/);
-  assert.match(home, /useNearby\(normalizedQuery, "all", \{ sameArea, enabled: preferencesReady \}\)/);
+  assert.match(home, /useNearby\(normalizedQuery, kind, \{ sameArea, nearbyOnly, inStockOnly, sort, enabled: preferencesReady \}\)/);
   assert.match(home, /placeholder="ค้นหาตลาด ร้านค้า หรือสินค้า"/);
   assert.match(home, /ผลการค้นหา/);
   assert.match(home, /ล้างคำค้นหา/);

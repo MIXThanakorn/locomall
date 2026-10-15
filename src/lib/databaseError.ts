@@ -2,6 +2,9 @@ type ErrorLike = { code?: string; message?: string } | null | undefined;
 
 export function translateDatabaseError(error: ErrorLike) {
   const message = error?.message?.toLowerCase() ?? "";
+  if (message.includes("order cancellation closed after seller handoff")) return "ยกเลิกไม่ได้ เนื่องจากเจ้าของตลาดรับสินค้าจากผู้ขายแล้วอย่างน้อยหนึ่งราย";
+  if (message.includes("stock reservation mismatch")) return "ข้อมูลสต็อกไม่ตรงกับยอดจอง ระบบยังไม่เปลี่ยนรายการ กรุณาติดต่อผู้ดูแล";
+  if (message.includes("cancellation reason required")) return "กรุณาระบุเหตุผลการยกเลิกสำหรับผู้ดูแล";
   if (message.includes("row-level security") || error?.code === "42501") return "ระบบไม่อนุญาตให้ทำรายการนี้ กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่ หากยังพบปัญหาให้ติดต่อผู้ดูแล";
   if (message.includes("same subdistrict") || message.includes("primary subdistrict")) return "พื้นที่หลักของคุณต้องอยู่ตำบลเดียวกับตลาดชุมชนนี้";
   if (message.includes("already pending") || message.includes("is not pending")) return "คำขอนี้ถูกดำเนินการไปแล้ว กรุณารีเฟรชข้อมูล";

@@ -436,6 +436,7 @@ export type Database = {
       }
       order_allocations: {
         Row: {
+          stock_deducted_at: string | null
           allocation_id: number
           created_at: string
           listing_id: number
@@ -446,6 +447,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          stock_deducted_at?: string | null
           allocation_id?: never
           created_at?: string
           listing_id: number
@@ -456,6 +458,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          stock_deducted_at?: string | null
           allocation_id?: never
           created_at?: string
           listing_id?: number
@@ -1312,6 +1315,30 @@ export type Database = {
           radius_km: number
         }[]
       }
+      discover_nearby_catalog_page: {
+        Args: {
+          p_same_area?: boolean
+          p_after_distance_km?: number | null
+          p_after_entity_id?: number | null
+          p_after_entity_type?: string | null
+          p_kind?: string
+          p_lat?: number | null
+          p_limit?: number
+          p_lng?: number | null
+          p_query?: string | null
+        }
+        Returns: {
+          available_stock: number
+          description: string
+          distance_km: number | null
+          entity_id: number
+          entity_type: string
+          image_url: string | null
+          market_id: number
+          name: string
+          radius_km: number
+        }[]
+      }
       discover_nearby: {
         Args: {
           p_kind?: string
@@ -1330,6 +1357,40 @@ export type Database = {
           market_id: number
           name: string
           radius_km: number
+        }[]
+      }
+      discover_filtered_catalog_page: {
+        Args: {
+          p_kind?: string
+          p_lat?: number | null
+          p_limit?: number
+          p_lng?: number | null
+          p_query?: string | null
+          p_same_area?: boolean
+          p_nearby_only?: boolean
+          p_in_stock_only?: boolean
+          p_sort?: string
+          p_after_missing?: boolean | null
+          p_after_value?: number | null
+          p_after_distance_km?: number | null
+          p_after_entity_type?: string | null
+          p_after_entity_id?: number | null
+        }
+        Returns: {
+          available_stock: number
+          description: string
+          distance_km: number | null
+          entity_id: number
+          entity_type: string
+          image_url: string | null
+          market_id: number
+          name: string
+          radius_km: number
+          unit_price: number | null
+          rating_average: number
+          rating_count: number
+          cursor_missing: boolean
+          cursor_value: number
         }[]
       }
       get_chat_room_header: {

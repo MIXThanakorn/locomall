@@ -12,6 +12,7 @@ import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
 import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
 import { formatSaleQuantity } from "../../src/lib/productUnit";
+import { canBuyerCancel } from "../../src/lib/cartMarkets";
 
 const deliverySteps = ["awaiting_preparation", "preparing", "at_hub", "consolidated", "shipped", "delivered"];
 const pickupSteps = ["awaiting_preparation", "preparing", "at_hub", "delivered"];
@@ -22,9 +23,9 @@ const buyerPickupLabels: Record<string, string> = { awaiting_preparation: "ร�
 
 export default function OrderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>(); const router = useRouter(); const { session } = useAuth(); const [order, setOrder] = useState<any>(); const [loading, setLoading] = useState(false); const [refreshing, setRefreshing] = useState(false);
-  const load = useCallback(async () => { const { data } = await supabase.from("orders").select("*,markets(name,hub_address),order_items(*,stores(name,image_url))").eq("order_id", Number(id)).single(); setOrder(data); }, [id]);
+  const load = useCallback(async () => { const { data } = await supabase.from("orders").select("*,markets(name,hub_address),order_items(*,stores(name,image_url),order_allocations(status,stock_deducted_at))").eq("order_id", Number(id)).single(); setOrder(data); }, [id]);
   useEffect(() => { void load(); }, [load]);
-  const watches = useMemo<RealtimeWatch[]>(() => [{ table: "orders", event: "UPDATE", filter: `order_id=eq.${Number(id)}` }], [id]);
+  const watches = useMemo<RealtimeWatch[]>(() => [{ table: "orders", event: "UPDATE", filter: `order_id=eq.${Number(id)}` }, { table: "order_allocations", event: "UPDATE" }], [id]);
   useRealtimeRefresh(`order-detail-${id}`, load, watches, Number.isSafeInteger(Number(id)) && Number(id) > 0);
   const cancel = async () => { setLoading(true); const { error } = await supabase.rpc("cancel_order", { p_order_id: Number(id), p_reason: "ยกเลิกโดยผู้ซื้อ" }); setLoading(false); if (error) Alert.alert("ยกเลิกไม่สำเร็จ", translateDatabaseError(error)); else await load(); };
   const confirm = () => Alert.alert("ยืนยันการรับสินค้า", order?.fulfillment_method === "pickup" ? "ยืนยันว่าคุณได้รับสินค้าจากจุดรวมเรียบร้อยแล้ว" : "ยืนยันว่าคุณได้รับพัสดุเรียบร้อยแล้ว", [{ text: "ยกเลิก", style: "cancel" }, { text: "ยืนยัน", onPress: async () => { setLoading(true); const { error } = await supabase.rpc("confirm_delivery", { p_order_id: Number(id) }); setLoading(false); if (error) Alert.alert("ยืนยันไม่สำเร็จ", translateDatabaseError(error)); else { Alert.alert("ยืนยันรับสินค้าแล้ว"); await load(); } } }]);
@@ -41,7 +42,8 @@ export default function OrderDetail() {
     {canConfirm ? <Button title={pickup ? "ยืนยันว่าได้รับสินค้าที่จุดรวมแล้ว" : "ยืนยันว่าได้รับสินค้าแล้ว"} onPress={confirm} loading={loading} /> : null}
     {isBuyer && order.status === "delivered" ? <View style={styles.reviewBox}><Text style={styles.item}>รีวิวหลังได้รับสินค้า</Text><Button title="รีวิวตลาดชุมชน" variant="outline" onPress={() => router.push({ pathname: "/order/review", params: { orderId: id } } as never)} />{order.order_items.map((item: any) => <Button key={item.order_item_id} title={`รีวิวร้าน ${item.stores?.name ?? item.product_name}`} variant="outline" onPress={() => router.push({ pathname: "/order/review", params: { orderId: id, itemId: String(item.order_item_id) } } as never)} style={{ marginTop: 8 }} />)}</View> : null}
     {!isBuyer && ((pickup && order.status === "at_hub") || (!pickup && order.status === "shipped")) ? <Text style={styles.onlyBuyer}>รอผู้ซื้อยืนยันการรับสินค้า</Text> : null}
-    {isBuyer && ["awaiting_preparation", "preparing", "at_hub", "consolidated"].includes(order.status) ? <Button title="ยกเลิกคำสั่งซื้อ" variant="outline" onPress={cancel} loading={loading} style={{ marginTop: 10 }} /> : null}
+    {isBuyer && canBuyerCancel(order) ? <Button title="ยกเลิกคำสั่งซื้อ" variant="outline" onPress={cancel} loading={loading} style={{ marginTop: 10 }} /> : null}
+    {isBuyer && !canBuyerCancel(order) && !["cancelled", "delivered"].includes(order.status) ? <Text style={styles.onlyBuyer}>ไม่สามารถยกเลิกได้หลังเจ้าของตลาดรับสินค้าจากผู้ขายรายแรกแล้ว</Text> : null}
   </ScrollView>;
 }
 

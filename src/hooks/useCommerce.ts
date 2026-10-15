@@ -3,21 +3,27 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 import type { Tables } from "../types/database";
+import type { CatalogSort } from "../lib/catalogSort";
 import { RealtimeWatch, useRealtimeRefresh } from "./useRealtimeRefresh";
 
-export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number; unit_price?: number | null; rating_average?: number; rating_count?: number; sold_quantity?: number };
+export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number; unit_price?: number | null; rating_average?: number; rating_count?: number; sold_quantity?: number; cursor_missing?: boolean; cursor_value?: number };
 const DISCOVERY_PAGE_SIZE = 24;
 const CATALOG_WATCHES: RealtimeWatch[] = [
   { table: "markets", event: "INSERT" }, { table: "markets", event: "UPDATE" },
   { table: "stores", event: "INSERT" }, { table: "stores", event: "UPDATE" },
+  { table: "seller_listings", event: "INSERT" }, { table: "seller_listings", event: "UPDATE" },
 ];
 
-export function useNearby(query = "", kind = "all", options: { sameArea?: boolean; enabled?: boolean } = {}) {
+export function useNearby(query = "", kind = "all", options: { sameArea?: boolean; nearbyOnly?: boolean; inStockOnly?: boolean; sort?: CatalogSort; enabled?: boolean } = {}) {
   const { deviceLocation, deviceLocationReady, session } = useAuth();
   const sameArea = options.sameArea ?? false;
+  const nearbyOnly = options.nearbyOnly ?? false;
+  const inStockOnly = options.inStockOnly ?? false;
+  const sort = options.sort ?? "distance";
+  const enhanced = inStockOnly || sort !== "distance";
   const enabled = options.enabled ?? true;
   const userId = session?.user.id;
-  const scope = JSON.stringify([userId, query, kind, sameArea, deviceLocation]);
+  const scope = JSON.stringify([userId, query, kind, sameArea, nearbyOnly, inStockOnly, sort, deviceLocation]);
   const [pageResult, setPageResult] = useState<{ scope: string; items: NearbyResult[] } | null>(null);
   const items = useMemo(() => pageResult?.scope === scope ? pageResult.items : [], [pageResult, scope]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +33,10 @@ export function useNearby(query = "", kind = "all", options: { sameArea?: boolea
   const requestId = useRef(0);
   const requestingMore = useRef(false);
   const fetchPage = useCallback(async (after?: NearbyResult) => {
-    const result = await supabase.rpc(sameArea ? "discover_same_area_catalog_page" : "discover_catalog_page", {
+    const result = await supabase.rpc(enhanced ? "discover_filtered_catalog_page" : nearbyOnly ? "discover_nearby_catalog_page" : sameArea ? "discover_same_area_catalog_page" : "discover_catalog_page", {
+      ...(nearbyOnly || enhanced ? { p_same_area: sameArea } : {}),
+      ...(enhanced ? { p_nearby_only: nearbyOnly, p_in_stock_only: inStockOnly, p_sort: sort,
+        p_after_missing: after?.cursor_missing, p_after_value: after?.cursor_value } : {}),
       p_query: query || undefined,
       p_kind: kind,
       p_limit: DISCOVERY_PAGE_SIZE + 1,
@@ -45,9 +54,9 @@ export function useNearby(query = "", kind = "all", options: { sameArea?: boolea
     const byEntity = new Map<string, Record<string, unknown>>((metrics ?? []).map((metric: any) => [`${metric.entity_type}-${metric.entity_id}`, metric]));
     return { ...result, data: result.data.map((item) => {
       const metric = byEntity.get(`${item.entity_type}-${item.entity_id}`);
-      return { ...item, ...metric, unit_price: metric?.min_price ?? null };
+      return { ...metric, ...item, unit_price: "unit_price" in item ? item.unit_price : metric?.min_price ?? null };
     }) };
-  }, [query, kind, deviceLocation, sameArea]);
+  }, [query, kind, deviceLocation, sameArea, nearbyOnly, inStockOnly, sort, enhanced]);
   const refresh = useCallback(async () => {
     if (!deviceLocationReady || !enabled) return;
     const currentRequest = ++requestId.current;

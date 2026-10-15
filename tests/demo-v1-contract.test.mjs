@@ -63,6 +63,6 @@ test("market and store cards show price, distance, rating and sales without desc
   assert.match(card, /item\.rating_average/);
   assert.match(card, /item\.sold_quantity/);
   assert.doesNotMatch(card, /item\.description/);
-  assert.match(hook, /unit_price: metric\?\.min_price/);
+  assert.match(hook, /unit_price: "unit_price" in item \? item\.unit_price : metric\?\.min_price/);
   assert.match(sql, /get_catalog_card_metrics/);
 });

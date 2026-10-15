@@ -58,7 +58,7 @@ export default function Stock() {
   return <PermissionGate allow={permissions.isSeller || permissions.isStoreManager} loading={permissions.loading}>
     <KeyboardAwareScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <ScreenHeader title={"จัดการสต็อกสินค้า"} titleStyle={styles.title} />
-      <Text style={styles.sub}>กรอกจำนวนหน่วยสั่งซื้อที่มีอยู่จริงทั้งหมด รวมหน่วยที่ลูกค้าสั่งแล้ว เช่น สินค้าแบบ 500 กรัมต่อชุด ให้กรอกจำนวนชุด ระบบจะกันสินค้าไว้ทันทีเมื่อมีคำสั่งซื้อ และหักจากยอดคงเหลือเมื่อผู้ซื้อยืนยันรับสินค้า</Text>
+      <Text style={styles.sub}>กรอกจำนวนหน่วยสั่งซื้อที่ยังอยู่กับคุณ รวมหน่วยที่จองแล้วแต่ยังไม่ถึงจุดรวม เช่น สินค้าแบบ 500 กรัมต่อชุด ให้กรอกจำนวนชุด ระบบจองสินค้าเมื่อสั่งซื้อ และหักยอดคงเหลือเมื่อเจ้าของตลาดบันทึกว่าสินค้าถึงจุดรวมแล้ว ไม่หักซ้ำตอนผู้ซื้อยืนยันรับสินค้า</Text>
       {!list.length ? <View style={styles.empty}><Text style={styles.emptyText}>ยังไม่มีรายการขายที่ผ่านการอนุมัติ</Text></View> : null}
       {list.map((listing, index) => <View style={styles.card} key={listing.listing_id}>
         <Text style={styles.name}>{listing.stores?.product_name} · {listing.stores?.name}</Text>

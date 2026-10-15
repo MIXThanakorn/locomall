@@ -1,8 +1,9 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { LoadNotice } from "../../src/components/LoadNotice";
+import { groupCartByMarket } from "../../src/lib/cartMarkets";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -14,6 +15,11 @@ import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRe
 import { formatSaleQuantity } from "../../src/lib/productUnit";
 
 export default function Cart() {
+  const { session } = useAuth();
+  return <CartContent key={session?.user.id ?? "guest"} />;
+}
+
+function CartContent() {
   const router = useRouter();
   const { refreshBadges } = useBadgeCounts();
   const { session } = useAuth();
@@ -21,11 +27,20 @@ export default function Cart() {
   const [cart, setCart] = useState<any>();
   const [busyStoreId, setBusyStoreId] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const generation = useRef(0);
   const load = useCallback(async () => {
-    const result = await supabase.from("carts").select("*,markets(name),cart_items(*,stores(name,product_name,unit,unit_price))").maybeSingle();
-    setCart(result.data);
-  }, []);
-  useEffect(() => { void load(); }, [load]);
+    if (!userId) { setLoading(false); return; }
+    const request = ++generation.current;
+    try {
+      const result = await supabase.from("carts").select("*,cart_items(*,stores(name,product_name,unit,unit_price,market_id,markets(name)))").eq("buyer_id", userId).maybeSingle();
+      if (result.error) throw result.error;
+      if (request === generation.current) { setCart(result.data); setLoadError(false); }
+    } catch { if (request === generation.current) setLoadError(true); }
+    finally { if (request === generation.current) setLoading(false); }
+  }, [userId]);
+  useFocusEffect(useCallback(() => { void load(); const counter = generation; return () => { counter.current++; }; }, [load]));
   const watches = useMemo<RealtimeWatch[]>(() => userId ? [
     { table: "carts", event: "INSERT", filter: `buyer_id=eq.${userId}` },
     { table: "carts", event: "UPDATE", filter: `buyer_id=eq.${userId}` },
@@ -64,22 +79,31 @@ export default function Cart() {
     ]);
   };
 
-  const items = cart?.cart_items ?? [];
+  const groups = groupCartByMarket<any>(cart?.cart_items ?? [], cart?.market_id);
+  const items = groups.flatMap((group) => group.items);
+  const checkoutMarket = (marketId: number) => router.push({ pathname: "/order/checkout", params: { marketId: String(marketId) } } as never);
   const totalQuantity = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
-  const total = items.reduce((sum: number, item: any) => sum + item.quantity * Number(item.stores.unit_price), 0);
+  const total = items.reduce((sum: number, item: any) => sum + item.quantity * Number(item.stores?.unit_price ?? 0), 0);
 
   return <View style={styles.root}>
     <ScreenHeader contentInset={0} title="ตะกร้าสินค้า" titleStyle={styles.title} style={{ backgroundColor: Colors.goldPrimary }} />
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={Colors.greenPrimary} />}>
+      {loading ? <Text style={styles.summaryText}>กำลังโหลดตะกร้า…</Text> : null}
+      {loadError ? <LoadNotice onRetry={() => void load()} /> : null}
       {items.length ? <View style={styles.summary}>
-        <Text style={styles.summaryTitle}>{cart.markets?.name ?? "ตลาดชุมชน"}</Text>
+        <Text style={styles.summaryTitle}>สินค้าในตะกร้า · {groups.filter((group) => group.marketId > 0).length} ตลาด</Text>
         <Text style={styles.summaryText}>{items.length} รายการ · รวม {totalQuantity} หน่วยสั่งซื้อ</Text>
         <Text style={styles.updated}>แก้ไขล่าสุด {formatThaiDateTime(cart.updated_at)}</Text>
-        <Text style={styles.summaryHint}>สินค้าทั้งหมดมาจากตลาดชุมชนเดียวกัน เพื่อรวมส่งหรือรับที่จุดรวมครั้งเดียว</Text>
-      </View> : <Text style={styles.empty}>ยังไม่มีสินค้าในตะกร้า</Text>}
+        <Text style={styles.summaryHint}>เก็บสินค้าจากหลายตลาดได้ โดยแยกสั่งซื้อและรับสินค้าตามจุดรวมของแต่ละตลาด</Text>
+        {groups.some((group) => group.marketId === 0) ? <Text style={styles.removeText}>ยอดรวมยังไม่รวมรายการที่ไม่พร้อมขาย กรุณาลบรายการนั้นออก</Text> : null}
+      </View> : !loading && !loadError ? <Text style={styles.empty}>ยังไม่มีสินค้าในตะกร้า</Text> : null}
       {items.map((item: any) => {
+        if (!item.stores) return <View key={item.cart_item_id} style={styles.card}><Text style={styles.name}>ร้านค้านี้ไม่พร้อมขาย</Text><Text style={styles.store}>คุณยังลบรายการนี้ออกจากตะกร้าได้</Text><TouchableOpacity disabled={busyStoreId !== null} onPress={() => confirmRemove(item.store_id, "รายการที่ไม่พร้อมขาย")}><Text style={styles.removeText}>ลบจากตะกร้า</Text></TouchableOpacity></View>;
         const subtotal = item.quantity * Number(item.stores.unit_price);
-        return <View key={item.cart_item_id} style={styles.card}>
+        const group = groups.find((entry) => entry.items[0] === item);
+        return <React.Fragment key={item.cart_item_id}>
+          {group ? <View style={styles.summary}><TouchableOpacity onPress={() => router.push(`/market/${group.marketId}` as never)}><Text style={styles.summaryTitle}>{group.marketName} ›</Text></TouchableOpacity><Text style={styles.summaryText}>{group.items.length} รายการ · ฿{group.total.toLocaleString()}</Text><Button title="สั่งซื้อจากตลาดนี้" size="sm" disabled={loadError || busyStoreId !== null} onPress={() => checkoutMarket(group.marketId)} /></View> : null}
+          <View style={styles.card}>
           <View style={styles.itemTop}>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{item.stores.product_name}</Text>
@@ -97,12 +121,12 @@ export default function Cart() {
             </View>
           </View>
           <TouchableOpacity disabled={busyStoreId !== null} style={styles.removeButton} onPress={() => confirmRemove(item.store_id, item.stores.product_name)} accessibilityLabel={`ลบ ${item.stores.product_name} ออกจากตะกร้า`}><Ionicons name="trash-outline" size={17} color={Colors.danger} /><Text style={styles.removeText}>ลบจากตะกร้า</Text></TouchableOpacity>
-        </View>;
+        </View></React.Fragment>;
       })}
     </ScrollView>
     {items.length ? <View style={styles.bottom}>
       <View style={styles.totalRow}><Text style={styles.totalLabel}>ยอดรวม {totalQuantity} หน่วยสั่งซื้อ</Text><Text style={styles.total}>฿{total.toLocaleString()}</Text></View>
-      <Button title="เลือกวิธีรับสินค้าและสั่งซื้อ" onPress={() => router.push("/order/checkout" as never)} style={{ backgroundColor: Colors.goldPrimary }} />
+      {groups.length === 1 && groups[0].marketId > 0 ? <Button title="เลือกวิธีรับสินค้าและสั่งซื้อ" disabled={loadError || busyStoreId !== null} onPress={() => checkoutMarket(groups[0].marketId)} style={{ backgroundColor: Colors.goldPrimary }} /> : <Text style={styles.summaryHint}>กด “สั่งซื้อจากตลาดนี้” ของตลาดที่ต้องการด้านบน และลบรายการที่ไม่พร้อมขายออกได้</Text>}
     </View> : null}
   </View>;
 }

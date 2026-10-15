@@ -1,7 +1,8 @@
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { groupCartByMarket } from "../../src/lib/cartMarkets";
 import * as Crypto from "expo-crypto";
 import React, { useCallback, useRef, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -19,11 +20,13 @@ type Payment = "cod" | "demo_wallet";
 
 export default function Checkout() {
   const { session } = useAuth();
-  return <CheckoutContent key={session?.user.id ?? "guest"} />;
+  const { marketId } = useLocalSearchParams<{ marketId?: string }>();
+  return <CheckoutContent key={`${session?.user.id ?? "guest"}:${marketId ?? ""}`} />;
 }
 
 function CheckoutContent() {
   const router = useRouter(); const { deviceLocation, session } = useAuth();
+  const { marketId } = useLocalSearchParams<{ marketId?: string }>();
   const userId = session?.user.id;
   const [addresses, setAddresses] = useState<any[]>([]); const [addressId, setAddressId] = useState<number>(); const [cart, setCart] = useState<any>();
   const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery"); const [pickup, setPickup] = useState<any>(); const [loading, setLoading] = useState(false);
@@ -47,23 +50,26 @@ function CheckoutContent() {
     try {
     const [addressResult, cartResult] = await Promise.all([
       supabase.from("user_addresses").select("*,thai_subdistricts(name_th,thai_districts(name_th,thai_provinces(name_th)))").eq("user_id", userId!).order("is_default", { ascending: false }),
-      supabase.from("carts").select("*,cart_items(store_id,quantity,stores(name,product_name,unit_price))").eq("buyer_id", userId!).maybeSingle(),
+      supabase.from("carts").select("*,cart_items(store_id,quantity,stores(name,product_name,unit_price,market_id,markets(name)))").eq("buyer_id", userId!).maybeSingle(),
     ]);
     if (request !== generation.current) return;
     if (addressResult.error || cartResult.error) throw addressResult.error || cartResult.error;
     const nextAddresses = addressResult.data ?? [];
     setAddresses(nextAddresses);
     setAddressId((current) => nextAddresses.some((address) => address.address_id === current) ? current : nextAddresses[0]?.address_id);
-    setCart(cartResult.data);
-    if (cartResult.data?.market_id) {
-      const { data } = await supabase.rpc("get_pickup_eligibility", { p_market_id: cartResult.data.market_id, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude }).single();
+    const groups = groupCartByMarket(cartResult.data?.cart_items ?? [], cartResult.data?.market_id).filter((group) => group.marketId > 0);
+    const selected = marketId ? groups.find((group) => group.marketId === Number(marketId)) : groups.length === 1 ? groups[0] : undefined;
+    setCart(selected ? { ...cartResult.data, market_id: selected.marketId, market_name: selected.marketName, cart_items: selected.items } : null);
+    if (selected) {
+      const { data, error } = await supabase.rpc("get_pickup_eligibility", { p_market_id: selected.marketId, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude }).single();
       if (request !== generation.current) return;
+      if (error) throw error;
       setPickup(data);
     } else setPickup(null);
     setLoadError(false);
     } catch { if (request === generation.current) setLoadError(true); }
     finally { if (request === generation.current) setInitialLoading(false); }
-  }, [deviceLocation, userId]);
+  }, [deviceLocation, userId, marketId]);
   useFocusEffect(useCallback(() => {
     if (userId) void loadCheckout();
     const counter = generation;
@@ -121,9 +127,10 @@ function CheckoutContent() {
     <ScreenHeader title={"วิธีรับสินค้า"} titleStyle={styles.title} />
       {initialLoading ? <Text style={styles.detail}>กำลังโหลดตะกร้าและที่อยู่...</Text> : null}
       {loadError ? <LoadNotice onRetry={() => void refreshCheckout()} /> : null}
-      {!initialLoading && !loadError && !cart?.cart_items?.length ? <Text style={styles.detail}>ไม่มีสินค้าในตะกร้า</Text> : null}
+      {!initialLoading && !loadError && !cart?.cart_items?.length ? <Button title="กลับไปเลือกสินค้ารายตลาดในตะกร้า" variant="outline" onPress={() => router.replace("/order/cart" as never)} /> : null}
+      {cart ? <Text style={styles.name}>สั่งซื้อจาก {cart.market_name}</Text> : null}
       <ContextHelp title="เลือกวิธีรับสินค้าแบบไหนดี?" steps={["เลือกจัดส่งถึงที่อยู่ หากต้องการให้ส่งสินค้าถึงบ้าน", "เลือกนัดรับ เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร", "เลือกชำระเมื่อรับสินค้า หรือใช้ยอดจำลองสำหรับการสาธิต"]} />
-      <TouchableOpacity style={[styles.method, fulfillment === "delivery" && styles.selected]} onPress={() => setFulfillment("delivery")}><Ionicons name="car-outline" size={24} color={Colors.greenPrimary} /><View style={{ flex: 1 }}><Text style={styles.name}>จัดส่งถึงที่อยู่</Text><Text style={styles.detail}>รวมสินค้าจากทุกผู้ขายเป็นพัสดุเดียว</Text></View></TouchableOpacity>
+      <TouchableOpacity style={[styles.method, fulfillment === "delivery" && styles.selected]} onPress={() => setFulfillment("delivery")}><Ionicons name="car-outline" size={24} color={Colors.greenPrimary} /><View style={{ flex: 1 }}><Text style={styles.name}>จัดส่งถึงที่อยู่</Text><Text style={styles.detail}>รวมสินค้าจากผู้ขายในตลาดนี้เป็นพัสดุเดียว</Text></View></TouchableOpacity>
       <TouchableOpacity style={[styles.method, fulfillment === "pickup" && styles.selected, !pickup?.eligible && styles.disabled]} disabled={!pickup?.eligible} onPress={() => setFulfillment("pickup")}><Ionicons name="storefront-outline" size={24} color={pickup?.eligible ? Colors.greenPrimary : Colors.textMuted} /><View style={{ flex: 1 }}><Text style={styles.name}>นัดรับที่จุดรวมสินค้า</Text><Text style={styles.detail}>{pickup?.eligible ? `ห่างประมาณ ${pickup.distance_km} กม. · ${pickup.hub_address}` : "ใช้ได้เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กม."}</Text></View></TouchableOpacity>
 
       {fulfillment === "delivery" ? <><Text style={styles.title}>ที่อยู่จัดส่ง</Text>

@@ -138,7 +138,7 @@ function StoreDetailContent() {
       <ScreenHeader contentInset={0} title={store.name} titleStyle={styles.title} />
       <ContextImage uri={store.image_url} name={store.product_name || store.name} size={280} style={styles.image} />
       <View style={styles.body}>
-        <Text style={styles.market}>{store.markets?.name}</Text><Text style={styles.product}>{store.product_name}</Text><Text style={styles.desc}>{store.description}</Text>
+        <TouchableOpacity accessibilityRole="link" accessibilityLabel={`ดูตลาด ${store.markets?.name ?? "ชุมชน"}`} onPress={() => router.push(`/market/${store.market_id}` as never)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8 }}><Ionicons name="storefront-outline" size={18} color={Colors.goldDark} /><Text style={styles.market}>{store.markets?.name} · ดูตลาด</Text><Ionicons name="chevron-forward" size={17} color={Colors.goldDark} /></TouchableOpacity><Text style={styles.product}>{store.product_name}</Text><Text style={styles.desc}>{store.description}</Text>
         <View style={styles.info}><Text style={styles.price}>฿{Number(store.unit_price).toLocaleString()} / {store.unit}</Text><Text style={styles.stock}>พร้อมขาย {formatSaleQuantity(stock, store.unit)}</Text></View>
         <CatalogActions targetType="store" targetId={Number(id)} refreshVersion={refreshVersion} />
         {cannotBuyOwn ? <View style={styles.ownStoreNotice}><Ionicons name="information-circle-outline" size={22} color={Colors.greenPrimary} /><Text style={styles.ownStoreText}>นี่คือร้านที่คุณดูแลหรือร่วมขาย จึงไม่สามารถสั่งซื้อจากร้านนี้ด้วยบัญชีเดียวกันได้</Text></View> : null}

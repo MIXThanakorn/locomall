@@ -12,16 +12,31 @@ import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useNearby } from "../../src/hooks/useCommerce";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
 import { useCatalogPreferences } from "../../src/context/CatalogPreferencesContext";
+import { SearchableDropdown } from "../../src/components/SearchableDropdown";
+import { CATALOG_SORT_OPTIONS, type CatalogSort } from "../../src/lib/catalogSort";
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<"all" | "market" | "store">("all");
+  const [nearbyOnly, setNearbyOnly] = useState(false);
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [sort, setSort] = useState<CatalogSort>("distance");
   const [showWelcomeGuide, setShowWelcomeGuide] = useState(false);
   const normalizedQuery = query.trim();
   const isSearching = normalizedQuery.length > 0;
   const { sameArea, ready: preferencesReady } = useCatalogPreferences();
-  const { items, loading, loadingMore, hasMore, error, refresh, loadMore } = useNearby(normalizedQuery, "all", { sameArea, enabled: preferencesReady });
+  const { items, loading, loadingMore, hasMore, error, refresh, loadMore } = useNearby(normalizedQuery, kind, { sameArea, nearbyOnly, inStockOnly, sort, enabled: preferencesReady });
+  const catalogTitle = kind === "market" ? "ตลาดชุมชน" : kind === "store" ? "ร้านค้า" : "ตลาดและร้านค้า";
+  const hasFilters = kind !== "all" || nearbyOnly || inStockOnly || sort !== "distance";
+  const sortLabel = CATALOG_SORT_OPTIONS.find((option) => option.value === sort)!.label;
+  const filterHint = nearbyOnly
+    ? "ภายใน 10 กม. · ใช้ตำแหน่งปัจจุบัน หรือพื้นที่หลักหากไม่มีตำแหน่ง"
+    : "ไม่จำกัดระยะทาง";
+  const emptyHint = hasFilters
+    ? "ลองล้างตัวกรองหรือเปลี่ยนคำค้น หากเลือกใกล้เคียง ให้เปิดตำแหน่งหรือตั้งพื้นที่หลักในตั้งค่า"
+    : sameArea ? "ตรวจสอบพื้นที่หลัก หรือเปลี่ยนตัวกรองเป็นทุกพื้นที่ในหน้าตั้งค่า" : "เมื่อมีร้านค้าเปิดใช้งาน จะแสดงที่นี่โดยเรียงจากใกล้ไปไกล";
   const { cartCount } = useBadgeCounts();
 
   useEffect(() => {
@@ -122,6 +137,37 @@ export default function HomeScreen() {
           ) : null}
 
           {sameArea ? <TouchableOpacity style={styles.areaFilter} accessibilityLabel="เปลี่ยนตัวกรองพื้นที่" onPress={() => router.push("/settings/catalog" as never)}><Ionicons name="filter" size={18} color={Colors.greenPrimary} /><Text style={styles.areaFilterText}>ตำบลเดียวกับพื้นที่หลัก · เปลี่ยนตัวกรอง</Text></TouchableOpacity> : null}
+          <View style={styles.filterSection}>
+            <View style={styles.filterRow}>
+              {([{ value: "all", label: "ทั้งหมด" }, { value: "market", label: "ตลาด" }, { value: "store", label: "ร้านค้า" }] as const).map((option) => (
+                <TouchableOpacity key={option.value} accessibilityRole="button" accessibilityState={{ selected: kind === option.value }}
+                  onPress={() => setKind(option.value)} style={[styles.filterChip, kind === option.value && styles.filterChipActive]}>
+                  <Text style={[styles.filterLabel, kind === option.value && styles.filterLabelActive]}>{option.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: nearbyOnly }}
+                accessibilityLabel="ใกล้เคียง ภายใน 10 กิโลเมตร" onPress={() => setNearbyOnly((value) => !value)}
+                style={[styles.filterChip, nearbyOnly && styles.filterChipActive]}>
+                <Ionicons name="location-outline" size={16} color={nearbyOnly ? "#FFFFFF" : Colors.greenPrimary} />
+                <Text style={[styles.filterLabel, nearbyOnly && styles.filterLabelActive]}>ใกล้เคียง 10 กม.</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: inStockOnly }}
+                onPress={() => setInStockOnly((value) => !value)}
+                style={[styles.filterChip, inStockOnly && styles.filterChipActive]}>
+                <Ionicons name="cube-outline" size={16} color={inStockOnly ? "#FFFFFF" : Colors.greenPrimary} />
+                <Text style={[styles.filterLabel, inStockOnly && styles.filterLabelActive]}>มีสินค้าพร้อมขาย</Text>
+              </TouchableOpacity>
+            </View>
+            <SearchableDropdown label="เรียงตาม" placeholder="เลือกการเรียงลำดับ"
+              options={[...CATALOG_SORT_OPTIONS]} value={sort} autoFocusSearch={false}
+              onChange={(value) => { if (CATALOG_SORT_OPTIONS.some((option) => option.value === value)) setSort(value as CatalogSort); }} />
+            <Text style={styles.filterHint}>{filterHint}</Text>
+            {sort === "rating" ? <Text style={styles.filterHint}>รายการที่ยังไม่มีคะแนนอยู่ท้ายรายการ</Text> : null}
+            {sort.startsWith("price") ? <Text style={styles.filterHint}>ตลาดใช้ราคาเริ่มต้น · โปรดเทียบหน่วยสินค้าก่อนซื้อ · รายการไม่มีราคาอยู่ท้ายสุด</Text> : null}
+            {hasFilters ? <TouchableOpacity accessibilityRole="button" onPress={() => { setKind("all"); setNearbyOnly(false); setInStockOnly(false); setSort("distance"); }}>
+              <Text style={styles.more}>ล้างตัวกรองหน้าแรก</Text>
+            </TouchableOpacity> : null}
+          </View>
           {loading && !items.length ? <ActivityIndicator color={Colors.greenPrimary} style={styles.loader} /> : null}
           {error ? <LoadNotice onRetry={() => void refresh()} /> : null}
 
@@ -130,13 +176,13 @@ export default function HomeScreen() {
               <View style={styles.searchHeading}>
                 <Text style={styles.eyebrow}>ผลการค้นหา</Text>
                 <Text style={styles.title} numberOfLines={2}>“{normalizedQuery}”</Text>
-                {!loading && !error ? <Text style={styles.resultCount}>พบอย่างน้อย {items.length} รายการ · เรียงใกล้ก่อน</Text> : null}
+                {!loading && !error ? <Text style={styles.resultCount}>พบอย่างน้อย {items.length} รายการ · {sortLabel}</Text> : null}
               </View>
               {!loading && !error && !items.length ? (
                 <View style={styles.empty}>
                   <Ionicons name="search-outline" size={38} color={Colors.greenPrimary} />
                   <Text style={styles.emptyTitle}>ยังไม่พบสิ่งที่ค้นหา</Text>
-                  <Text style={styles.message}>{sameArea ? "ลองเปลี่ยนคำค้น หรือเลือกดูทุกพื้นที่ในหน้าตั้งค่า" : "ลองค้นด้วยชื่อสินค้า ชื่อตลาด หรือชื่อร้านค้าอีกครั้ง"}</Text>
+                  <Text style={styles.message}>{emptyHint}</Text>
                 </View>
               ) : null}
               <View style={styles.grid}>{items.map((item) => (
@@ -152,15 +198,15 @@ export default function HomeScreen() {
             <>
               <View style={styles.heading}>
                 <View>
-                  <Text style={styles.eyebrow}>{sameArea ? "พื้นที่หลักของคุณ · เรียงใกล้ก่อน" : "ใกล้คุณก่อน · ดูได้ทุกพื้นที่"}</Text>
-                  <Text style={styles.title}>ตลาดและร้านค้า</Text>
+                  <Text style={styles.eyebrow}>{sameArea ? "พื้นที่หลักของคุณ" : nearbyOnly ? "ภายใน 10 กม." : "ดูได้ทุกพื้นที่"} · {sortLabel}</Text>
+                  <Text style={styles.title}>{catalogTitle}</Text>
                 </View>
               </View>
               {!loading && !error && !items.length ? (
                 <View style={styles.empty}>
                   <Ionicons name="leaf-outline" size={38} color={Colors.greenPrimary} />
-                  <Text style={styles.emptyTitle}>{sameArea ? "ยังไม่มีตลาดหรือร้านค้าในพื้นที่หลัก" : "ยังไม่มีตลาดหรือร้านค้า"}</Text>
-                  <Text style={styles.message}>{sameArea ? "ตรวจสอบพื้นที่หลัก หรือเปลี่ยนตัวกรองเป็นทุกพื้นที่ในหน้าตั้งค่า" : "เมื่อมีร้านค้าเปิดใช้งาน จะแสดงที่นี่โดยเรียงจากใกล้ไปไกล"}</Text>
+                  <Text style={styles.emptyTitle}>{hasFilters ? "ไม่พบรายการที่ตรงกับตัวกรอง" : sameArea ? "ยังไม่มีตลาดหรือร้านค้าในพื้นที่หลัก" : "ยังไม่มีตลาดหรือร้านค้า"}</Text>
+                  <Text style={styles.message}>{emptyHint}</Text>
                 </View>
               ) : null}
               <View style={styles.grid}>{items.map((item) => (
@@ -227,6 +273,13 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   content: { padding: Spacing.lg, paddingBottom: 80 },
+  filterSection: { marginVertical: Spacing.md, gap: 8 },
+  filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  filterChip: { minHeight: 44, paddingHorizontal: 14, paddingVertical: 9, borderRadius: BorderRadius.round, borderWidth: 1, borderColor: "#CFE2D5", backgroundColor: Colors.cardBackground, flexDirection: "row", alignItems: "center", gap: 4 },
+  filterChipActive: { backgroundColor: Colors.greenPrimary, borderColor: Colors.greenPrimary },
+  filterLabel: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, fontSize: 13 },
+  filterLabelActive: { color: "#FFFFFF" },
+  filterHint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 },
   areaFilter: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 },
   areaFilterText: { flex: 1, fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, fontSize: 13 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
