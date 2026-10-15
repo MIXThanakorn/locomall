@@ -466,8 +466,8 @@ test("Orders separate buyer and seller perspectives and keep seller actions on o
   assert.match(labels, /awaiting_preparation: "รอคุณรับออเดอร์"/);
   assert.match(detail, /accept_allocation/);
   assert.match(detail, /mark_allocation_ready/);
-  assert.match(commerce, /from\("order_allocations"\)[\s\S]*\.eq\("seller_id", userId\)/);
-  assert.match(detail, /\.eq\("seller_id", userId\)/);
+  assert.match(commerce, /rpc\("get_my_seller_allocations"/);
+  assert.match(detail, /rpc\("get_my_seller_allocations", \{ p_allocation_id: Number\(id\) \}/);
   assert.match(detail, /งานของคุณเสร็จแล้ว รอเจ้าของตลาดรับสินค้า/);
   assert.match(read("app/seller/allocations/index.tsx"), /orders\?view=selling/);
 });

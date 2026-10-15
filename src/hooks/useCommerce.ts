@@ -143,9 +143,9 @@ export function useSellerAllocations() {
     if (!userId) { setResult({ userId, allocations: [], loading: false, error: null }); return; }
     setResult((current) => ({ userId, allocations: current.userId === userId ? current.allocations : [], loading: true, error: null }));
     try {
-      const response = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("seller_id", userId).order("created_at", { ascending: false });
+      const response = await supabase.rpc("get_my_seller_allocations");
       if (response.error) throw response.error;
-      if (currentRequest === requestId.current) setResult({ userId, allocations: response.data ?? [], error: null, loading: false });
+      if (currentRequest === requestId.current) setResult({ userId, allocations: (response.data ?? []) as any[], error: null, loading: false });
     } catch {
       if (currentRequest === requestId.current) setResult((current) => ({ userId, allocations: current.userId === userId ? current.allocations : [], error: "โหลดงานขายไม่สำเร็จ", loading: false }));
     }

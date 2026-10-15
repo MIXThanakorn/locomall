@@ -153,5 +153,26 @@ test("multi-market checkout, hub deductions, legacy orders, cancellation/refund 
     await db.exec("reset role; set role anon");
     await assert.rejects(db.query("select public.increment_cart_item(1,1)"), /permission denied/);
     await assert.rejects(db.query("select public.confirm_delivery(1)"), /permission denied/);
+    // Run the latest guards on top of real wallet/stock functions, not only
+    // the isolated policy fixture. No live records are involved.
+    await db.exec(`reset role; create role service_role;
+      alter table profiles add column phone_num text default '0812345678';
+      alter table markets add column hub_address text;
+      alter table orders add column order_number text default 'TEST',add column created_at timestamptz default now(),
+        add column tracking_number text,add column courier_name text,add column shipped_at timestamptz;
+      alter table order_items add column product_image_url text;
+      alter table order_allocations add column created_at timestamptz default now();
+      create table chat_messages(room_id bigint,sender_id uuid,message text,created_at timestamptz default now());
+      create table store_seller_applications(applicant_id uuid);
+      create function private.store_manager(sid bigint) returns boolean language sql stable as $$
+        select exists(select 1 from public.stores where store_id=sid and manager_id=auth.uid()) $$;`);
+    await uid("");
+    await db.exec(read("supabase/migrations/20261015120640_backend_consistency_security_hardening.sql"));
+    await db.exec("set role authenticated"); await uid(buyer);
+    const guardedBalanceBefore = (await db.query("select wallet_balance from demo_accounts where user_id=$1",[buyer])).rows[0].wallet_balance;
+    const guarded = (await db.query("select public.create_demo_wallet_order('10000000-0000-4000-8000-000000000099',1,1,'[{\"store_id\":1,\"quantity\":1}]') id")).rows[0].id;
+    await db.query("select public.cancel_order($1)",[guarded]);
+    await db.query("select public.cancel_order($1)",[guarded]);
+    assert.equal((await db.query("select wallet_balance from demo_accounts where user_id=$1",[buyer])).rows[0].wallet_balance,guardedBalanceBefore,"new guards preserve one-time refund and atomic stock checkout");
   } finally { await db.close(); }
 });

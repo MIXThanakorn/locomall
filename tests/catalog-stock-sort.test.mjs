@@ -129,9 +129,10 @@ test("Home resets stock/sort, sends full cursor and watches stock invalidations"
   assert.deepEqual(CATALOG_SORT_OPTIONS.map((option) => option.value),["distance","rating","price_asc","price_desc"]);
   assert.match(home,/\[inStockOnly, setInStockOnly\] = useState\(false\)/);
   assert.match(home,/useState<CatalogSort>\("distance"\)/);
-  assert.match(home,/setInStockOnly\(false\); setSort\("distance"\)/);
-  assert.match(home,/รายการที่ยังไม่มีคะแนนอยู่ท้ายรายการ/);
-  assert.match(home,/autoFocusSearch=\{false\}/);
+  const filters=read("src/components/HomeCatalogFilters.tsx");
+  assert.match(filters,/setDraft\(\{ \.\.\.DEFAULTS \}\)/);
+  assert.match(filters,/รายการไม่มีราคา\/คะแนนอยู่ท้าย/);
+  assert.match(filters,/<Modal visible=\{open\}/);
   assert.match(hook,/enhanced \? "discover_filtered_catalog_page"/);
   assert.match(hook,/p_after_missing: after\?\.cursor_missing, p_after_value: after\?\.cursor_value/);
   assert.match(hook,/table: "seller_listings", event: "UPDATE"/);

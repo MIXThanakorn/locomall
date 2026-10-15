@@ -285,6 +285,36 @@ audit log. Admin ลบถาวรได้เฉพาะ order ที่ย�
 
 ## Security model
 
+### Business guards (15 Oct 2026)
+
+- ผู้ขายอ่านงานผ่าน `get_my_seller_allocations` ซึ่งส่งเฉพาะ allocation ของบัญชีปัจจุบันและ metadata ที่ใช้ทำงาน;
+  ไม่ส่ง buyer/address/ยอดรวมทั้งออเดอร์ และไม่เปิดอ่าน order/order_items ทั้งชุดเพียงเพราะร่วมขายอยู่
+- รวมพัสดุและบันทึกจัดส่งล็อก parent order ก่อนตรวจสิทธิ์/สถานะ; retry เดิมไม่ทำให้สถานะย้อนกลับ
+- ตารางยอดเงินมี finite-value constraints ปฏิเสธ NaN/Infinity แม้ผู้เรียกข้าม validation ของแอป
+- ต้องมีเบอร์มือถือรูปแบบถูกต้องก่อนสร้างออเดอร์ คำขอเติมยอด คำขอตลาด/ร้าน/ผู้ขาย และส่งแชท
+  บัญชี OAuth ยังสร้างแบบกรอกข้อมูลไม่ครบได้ แต่ต้องกรอก contact ก่อนทำรายการใหม่ (ไม่ใช่ OTP verification)
+- จำกัดออเดอร์ใหม่ 5 ครั้ง/นาที และค้างได้ไม่เกิน 10 รายการต่อผู้ซื้อ;
+  เติมยอด 3 ครั้ง/นาทีและรออนุมัติไม่เกิน 3 รายการ; แชท 30 ข้อความ/นาที;
+  คำขอเปิดตลาด/ร้าน/ร่วมขายประเภทละ 3 ครั้ง/นาที โดยตรวจฝั่งฐานข้อมูล
+- ไม่หมดอายุ/ยกเลิก COD อัตโนมัติ และไม่ยกเลิกออเดอร์เดิมตามข้อตกลง
+- เวลาข้อความใช้ฝั่งเซิร์ฟเวอร์ ป้องกันผู้เรียกกำหนดเวลาอนาคตเอง
+- แอปรุ่นเก่าที่ query งานขายแบบ nested orders ต้องอัปเดตเป็นรุ่นที่ใช้ seller DTO นี้;
+  การ Reload Expo ใช้โค้ดใหม่ได้ ส่วน APK ต้องติดตั้งบิลด์ใหม่
+- Leaked-password protection เป็นการตั้งค่า Supabase Auth แยกจาก migration และต้องใช้ Pro ขึ้นไป;
+  รอบนี้ไม่ได้เปลี่ยนแผนบริการหรือเปิดบริการที่มีค่าใช้จ่าย
+
+### Startup and responsive notification actions
+
+- Root navigation defaults to `index` (the session/onboarding gate); the auth group defaults to `splash`. Saved accounts are preserved, and the account picker remains available through Settings rather than becoming the default screen.
+- Explicit navigation/deep links are not forcibly redirected by this default. Metro cache clearing does not change route configuration or erase saved sessions.
+- Notification bulk actions are below the heading in a wrapping row with flexible text and minimum touch heights. Verify narrow screens and large accessibility fonts on actual devices before release.
+
+### Compact Home filters
+
+หน้า Home แสดงแถวประเภทแบบเลื่อนแนวนอนและปุ่มตัวกรอง พร้อมสรุปหนึ่งบรรทัด
+ตัวเลือก 10 กม./พร้อมขาย/เรียงลำดับอยู่ใน bottom sheet; ต้องกดใช้ตัวกรองจึงเปลี่ยนผลลัพธ์
+ปิดแผงโดยไม่ยืนยันจะไม่เปลี่ยนค่าเดิม และล้างตัวกรองไม่ล้างคำค้นหรือพื้นที่หลักในตั้งค่า
+
 - RLS เปิดบนทุกตารางใน public schema
 - Guest อ่านได้เฉพาะ catalog/reference data ที่ตั้งใจเปิดเผย
 - Exact GPS, phone, shipping address, roles และ audit logs ไม่ออก public query

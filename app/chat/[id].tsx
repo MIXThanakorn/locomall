@@ -16,6 +16,7 @@ import { type RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealt
 import { Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { supabase } from "../../src/lib/supabase";
+import { translateDatabaseError } from "../../src/lib/databaseError";
 import { formatThaiDateTime } from "../../src/lib/date";
 import { formatChatClock, shouldShowChatTimeDivider } from "../../src/lib/chatTime";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
@@ -131,7 +132,7 @@ function ChatRoomContent() {
     setSending(true);
     try {
       const { error } = await supabase.from("chat_messages").insert({ room_id: roomId, sender_id: session.user.id, message: body });
-      if (error) return Alert.alert("ส่งข้อความไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
+      if (error) return Alert.alert("ส่งข้อความไม่สำเร็จ", translateDatabaseError(error));
       setText((current) => current.trim() === body ? "" : current);
       nearBottom.current = true;
       userScrolling.current = false;

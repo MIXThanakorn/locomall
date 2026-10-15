@@ -2,6 +2,14 @@ type ErrorLike = { code?: string; message?: string } | null | undefined;
 
 export function translateDatabaseError(error: ErrorLike) {
   const message = error?.message?.toLowerCase() ?? "";
+  if (message.includes("valid mobile contact required")) return "กรุณาบันทึกเบอร์มือถือ 10 หลักในข้อมูลส่วนตัวก่อนทำรายการ";
+  if (message.includes("too many pending orders")) return "มีคำสั่งซื้อค้างครบ 10 รายการแล้ว กรุณารอรับสินค้าหรือจัดการคำสั่งซื้อเดิมก่อน";
+  if (message.includes("too many pending topups")) return "มีคำขอเติมยอดรออนุมัติครบ 3 รายการแล้ว กรุณารอผู้ดูแลตรวจสอบ";
+  if (message.includes("action rate limit exceeded")) return "ทำรายการถี่เกินไป กรุณารอประมาณ 1 นาทีแล้วลองใหม่";
+  if (message.includes("_finite") || message.includes("invalid monetary amount")) return "ราคาและยอดเงินต้องเป็นตัวเลขที่ถูกต้อง ไม่รองรับค่าที่ไม่ใช่จำนวนจริง";
+  if (message.includes("order shipping details already recorded")) return "บันทึกการจัดส่งแล้ว ไม่สามารถส่งคำขอเดิมด้วยเลขพัสดุใหม่ได้ กรุณารีเฟรชข้อมูล";
+  if (message.includes("invalid order transition")) return "สถานะออเดอร์เปลี่ยนไปแล้ว กรุณารีเฟรชก่อนดำเนินการ";
+  if (message.includes("invalid tracking details")) return "กรุณาระบุเลขพัสดุและชื่อผู้ขนส่งให้ถูกต้อง ความยาวไม่เกิน 120 ตัวอักษร";
   if (message.includes("order cancellation closed after seller handoff")) return "ยกเลิกไม่ได้ เนื่องจากเจ้าของตลาดรับสินค้าจากผู้ขายแล้วอย่างน้อยหนึ่งราย";
   if (message.includes("stock reservation mismatch")) return "ข้อมูลสต็อกไม่ตรงกับยอดจอง ระบบยังไม่เปลี่ยนรายการ กรุณาติดต่อผู้ดูแล";
   if (message.includes("cancellation reason required")) return "กรุณาระบุเหตุผลการยกเลิกสำหรับผู้ดูแล";

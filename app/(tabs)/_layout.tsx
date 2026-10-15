@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../src/constants/theme";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
+import { bottomTabSpacing } from "../../src/lib/bottomTabSpacing";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
@@ -20,9 +20,7 @@ export default function TabsLayout() {
           backgroundColor: Colors.cardBackground,
           borderTopWidth: 1,
           borderTopColor: Colors.inputBorder,
-          height: Platform.OS === "ios" ? 54 + insets.bottom : 64,
-          paddingBottom: Platform.OS === "ios" ? insets.bottom : 8,
-          paddingTop: 8,
+          ...bottomTabSpacing(insets.bottom),
         },
         tabBarLabelStyle: {
           fontSize: 11,

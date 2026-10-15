@@ -94,8 +94,9 @@ test("Home defaults to all and scopes requests by every active filter", () => {
   assert.match(home, /useState<"all" \| "market" \| "store">\("all"\)/);
   assert.match(home, /\[nearbyOnly, setNearbyOnly\] = useState\(false\)/);
   assert.match(home, /useNearby\(normalizedQuery, kind, \{ sameArea, nearbyOnly, inStockOnly, sort, enabled: preferencesReady \}\)/);
-  assert.match(home, /ล้างตัวกรองหน้าแรก/);
-  assert.match(home, /accessibilityState=\{\{ selected: nearbyOnly \}\}/);
+  const filters = read("src/components/HomeCatalogFilters.tsx");
+  assert.match(filters, /ล้างตัวกรองหน้าแรก/);
+  assert.match(filters, /accessibilityState=\{\{ checked: draft.nearbyOnly \}\}/);
   assert.match(hook, /JSON.stringify\(\[userId, query, kind, sameArea, nearbyOnly, inStockOnly, sort, deviceLocation\]\)/);
   assert.match(hook, /nearbyOnly \? "discover_nearby_catalog_page"/);
   assert.match(migration, /st_distance\(c.geography,o.geography\) <= 10000/);

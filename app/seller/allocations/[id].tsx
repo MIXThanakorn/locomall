@@ -30,8 +30,8 @@ export default function SellerAllocationDetail() {
 
   const load = useCallback(async () => {
     if (!userId) { setAllocation(null); setLoading(false); return; }
-    const { data, error } = await supabase.from("order_allocations").select("*,order_items(product_name,product_image_url,unit,unit_price,stores(name,image_url,markets(name,hub_address)),orders(order_id,order_number,created_at,fulfillment_method,status))").eq("allocation_id", Number(id)).eq("seller_id", userId).single();
-    setAllocation(error ? null : data);
+    const { data, error } = await supabase.rpc("get_my_seller_allocations", { p_allocation_id: Number(id) });
+    setAllocation(error ? null : (data as any[])?.[0] ?? null);
     setLoading(false);
   }, [id, userId]);
   useEffect(() => { void load(); }, [load]);

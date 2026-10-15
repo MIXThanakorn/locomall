@@ -41,6 +41,7 @@ export default function NotificationScreen() {
   const [category, setCategory] = useState<Category>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
 
   const visibleItems = useMemo(() => items.filter((item) => item.category !== "chat" && item.entity_type !== "chat" && !item.type.includes("chat")), [items]);
   const filtered = useMemo(() => visibleItems.filter((item) => {
@@ -73,23 +74,32 @@ export default function NotificationScreen() {
     } },
   ]);
   const markAllRead = async () => {
-    const { error } = await supabase.rpc("mark_my_non_chat_notifications_read");
-    if (error) return Alert.alert("ทำรายการไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง");
-    await refresh();
-    await refreshBadges();
+    if (markingRead || clearing) return;
+    setMarkingRead(true);
+    try {
+      const { error } = await supabase.rpc("mark_my_non_chat_notifications_read");
+      if (error) throw error;
+      await Promise.all([refresh(), refreshBadges()]);
+    } catch { Alert.alert("ทำรายการไม่สำเร็จ", "กรุณาลองใหม่อีกครั้ง"); }
+    finally { setMarkingRead(false); }
   };
   if (auth.loading) return <View style={[styles.root, styles.center]}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!auth.session) return <Redirect href="/(auth)/sign-in" />;
 
   return <View style={styles.root}>
     <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
-      <View style={styles.titleRow}>
-        <View><Text style={styles.title}>การแจ้งเตือน</Text><Text style={styles.sub}>คำสั่งซื้อ คำขอ และข่าวสาร · แชตอยู่ในแท็บแชต</Text></View>
-        {unreadCount > 0 ? <TouchableOpacity onPress={markAllRead}><Text style={styles.readAll}>อ่านทั้งหมด</Text></TouchableOpacity> : null}
-      </View>
+      <Text accessibilityRole="header" style={styles.title}>การแจ้งเตือน</Text>
+      <Text style={styles.sub}>คำสั่งซื้อ คำขอ และข่าวสาร · แชตอยู่ในแท็บแชต</Text>
     </View>
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([refresh(), refreshBadges()]); }} tintColor={Colors.greenPrimary} />}>
-      {visibleItems.some((item) => item.read_at) ? <TouchableOpacity disabled={clearing} onPress={clearRead} style={{ alignSelf: "flex-end", paddingVertical: 10 }}><Text style={styles.readAll}>{clearing ? "กำลังล้างรายการ…" : "ล้างรายการที่อ่านแล้ว"}</Text></TouchableOpacity> : null}
+      {unreadCount > 0 || visibleItems.some((item) => item.read_at) ? <View style={styles.actions}>
+        {unreadCount > 0 ? <TouchableOpacity accessibilityRole="button" disabled={markingRead || clearing} onPress={() => void markAllRead()} style={styles.actionButton}>
+          <Text style={styles.readAll}>{markingRead ? "กำลังบันทึก…" : "อ่านทั้งหมด"}</Text>
+        </TouchableOpacity> : null}
+        {visibleItems.some((item) => item.read_at) ? <TouchableOpacity accessibilityRole="button" disabled={clearing || markingRead} onPress={clearRead} style={styles.actionButton}>
+          <Text style={styles.readAll}>{clearing ? "กำลังล้างรายการ…" : "ล้างรายการที่อ่านแล้ว"}</Text>
+        </TouchableOpacity> : null}
+      </View> : null}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
         {FILTERS.map((filter) => <TouchableOpacity key={filter.key} onPress={() => setCategory(filter.key)} style={[styles.filter, category === filter.key && styles.filterActive]}>
           <Ionicons name={filter.icon} size={17} color={category === filter.key ? Colors.textWhite : Colors.textMedium} />
@@ -123,9 +133,12 @@ export default function NotificationScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { alignItems: "center", justifyContent: "center" },
   head: { padding: Spacing.lg, backgroundColor: Colors.goldPrimary, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
-  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.greenDark }, readAll: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textDecorationLine: "underline" },
+  title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary, flexShrink: 1 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.greenDark, flexShrink: 1, marginTop: 4 },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  actionButton: { flexGrow: 1, flexBasis: 140, minWidth: 0, maxWidth: "100%", minHeight: 44, paddingVertical: 10, paddingHorizontal: 12, justifyContent: "center", alignItems: "center", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 12, backgroundColor: "white" },
+  readAll: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "center", flexShrink: 1 },
   content: { padding: Spacing.lg, paddingBottom: 110 },
   filters: { gap: 8, paddingRight: 16, marginBottom: 13 }, filter: { flexDirection: "row", gap: 6, alignItems: "center", paddingHorizontal: 14, paddingVertical: 9, borderRadius: BorderRadius.round, borderWidth: 1, borderColor: Colors.inputBorder, backgroundColor: Colors.cardBackground }, filterActive: { backgroundColor: Colors.greenPrimary, borderColor: Colors.greenPrimary }, filterText: { fontFamily: "Kanit_500Medium", color: Colors.textMedium, fontSize: 13 }, filterTextActive: { color: Colors.textWhite },
-  unreadToggle: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14 }, unreadToggleText: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, flex: 1 }, count: { minWidth: 24, height: 24, paddingHorizontal: 7, borderRadius: 12, backgroundColor: Colors.goldPrimary, alignItems: "center", justifyContent: "center" }, countText: { fontFamily: "Kanit_700Bold", color: Colors.greenDark, fontSize: 11 },
+  unreadToggle: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 14, minHeight: 44 }, unreadToggleText: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, flex: 1, minWidth: 0 }, count: { minWidth: 24, minHeight: 24, paddingVertical: 3, paddingHorizontal: 7, borderRadius: 16, backgroundColor: Colors.goldPrimary, alignItems: "center", justifyContent: "center" }, countText: { fontFamily: "Kanit_700Bold", color: Colors.greenDark, fontSize: 11 },
   card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", padding: Spacing.md, borderRadius: BorderRadius.lg, marginBottom: 10, borderWidth: 1, borderColor: Colors.inputBorder }, unread: { borderLeftWidth: 4, borderLeftColor: Colors.goldPrimary }, icon: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" }, cardCopy: { flex: 1 }, cardTop: { flexDirection: "row", alignItems: "center", gap: 7 }, categoryLabel: { fontFamily: "Kanit_500Medium", fontSize: 11, color: Colors.textMuted }, dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.goldPrimary }, itemTitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, body: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, lineHeight: 21 }, date: { fontFamily: "Kanit_400Regular", fontSize: 11, color: Colors.textMuted, marginTop: 5 }, empty: { alignItems: "center", marginTop: 54 }, emptyTitle: { fontFamily: "Kanit_700Bold", color: Colors.textMedium, marginTop: 9 }, emptyText: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginTop: 2 },
 });

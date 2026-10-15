@@ -1408,6 +1408,10 @@ export type Database = {
         Args: { p_room_ids?: number[] }
         Returns: { room_id: number; partner_image_url: string | null; product_image_url: string | null }[]
       }
+      get_my_seller_allocations: {
+        Args: { p_allocation_id?: number | null }
+        Returns: Json
+      }
       get_chat_order_context: {
         Args: { p_room_id: number }
         Returns: {

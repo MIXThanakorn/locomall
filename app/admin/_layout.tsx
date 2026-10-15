@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
-import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
+import { bottomTabSpacing } from "../../src/lib/bottomTabSpacing";
 
 export default function AdminLayout() {
   const insets = useSafeAreaInsets();
@@ -16,7 +17,7 @@ export default function AdminLayout() {
     headerShown: false,
     tabBarActiveTintColor: Colors.greenPrimary,
     tabBarInactiveTintColor: Colors.textMuted,
-    tabBarStyle: { height: Platform.OS === "ios" ? 56 + insets.bottom : 66, paddingBottom: Platform.OS === "ios" ? insets.bottom : 8, paddingTop: 7, backgroundColor: Colors.cardBackground, borderTopColor: Colors.inputBorder },
+    tabBarStyle: { ...bottomTabSpacing(insets.bottom), backgroundColor: Colors.cardBackground, borderTopColor: Colors.inputBorder },
     tabBarLabelStyle: { fontFamily: "Kanit_500Medium", fontSize: 11 },
   }}>
     <Tabs.Screen name="index" options={{ title: "ภาพรวม", tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} /> }} />
