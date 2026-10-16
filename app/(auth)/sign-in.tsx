@@ -62,9 +62,7 @@ export default function SignInScreen() {
       if (result.type !== "success") throw new Error("Google ไม่ส่งผลการเข้าสู่ระบบกลับมาที่แอป");
 
       const callback = parseGoogleOAuthCallback(result.url, redirectUrl);
-      const sessionResult = callback.kind === "code"
-        ? await supabase.auth.exchangeCodeForSession(callback.code)
-        : await supabase.auth.setSession({ access_token: callback.accessToken, refresh_token: callback.refreshToken });
+      const sessionResult = await supabase.auth.exchangeCodeForSession(callback.code);
       if (sessionResult.error) throw sessionResult.error;
       if (!sessionResult.data.session) throw new Error("ไม่สามารถบันทึกการเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง");
       router.replace("/" as any);

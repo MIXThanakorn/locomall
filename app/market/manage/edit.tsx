@@ -34,9 +34,9 @@ export default function EditMarket() {
     <TouchableOpacity style={styles.imageBox} onPress={async () => { try { setImage(await selectSquareImage()); } catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); } }}>
       {image?.uri || market?.image_url ? <Image source={{ uri: image?.uri ?? market.image_url }} style={styles.image} /> : <Text style={styles.imageText}>+ เปลี่ยนรูปตลาดชุมชน</Text>}
     </TouchableOpacity>
-    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} />
-    <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline />
-    <AppTextInput style={[styles.input, styles.multiline]} placeholder="ที่อยู่จุดรวมสินค้า" value={hubAddress} onChangeText={setHubAddress} multiline />
+    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} maxLength={120} />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline maxLength={1500} />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="ที่อยู่จุดรวมสินค้า" value={hubAddress} onChangeText={setHubAddress} multiline maxLength={500} />
     <Button title="บันทึกการแก้ไข" onPress={save} loading={saving} style={styles.button} />
   </KeyboardAwareScrollView>;
 }

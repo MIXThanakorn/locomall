@@ -49,7 +49,10 @@ async function ensureAndroidChannel(notifications: NotificationsModule) {
   });
 }
 
-export async function registerForPushNotifications(requestPermission = true): Promise<PushPermissionState> {
+export async function registerForPushNotifications(requestPermission = true, expectedUserId?: string): Promise<PushPermissionState> {
+  const { data: start } = await supabase.auth.getSession();
+  const userId = expectedUserId ?? start.session?.user.id;
+  if (!userId || start.session?.user.id !== userId) return "unavailable";
   const notifications = await loadNotifications();
   if (!notifications) return "unavailable";
   await configureNotificationHandler();
@@ -66,6 +69,8 @@ export async function registerForPushNotifications(requestPermission = true): Pr
   const projectId = getProjectId();
   if (!projectId) return "not_configured";
   const token = (await notifications.getExpoPushTokenAsync({ projectId })).data;
+  const { data: current } = await supabase.auth.getSession();
+  if (current.session?.user.id !== userId) return "unavailable";
   const { error } = await supabase.rpc("register_my_push_device", {
     p_expo_push_token: token,
     p_platform: Platform.OS,

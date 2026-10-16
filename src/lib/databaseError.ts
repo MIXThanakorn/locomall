@@ -2,6 +2,10 @@ type ErrorLike = { code?: string; message?: string } | null | undefined;
 
 export function translateDatabaseError(error: ErrorLike) {
   const message = error?.message?.toLowerCase() ?? "";
+  if (message.includes("input too long")) return "ข้อมูลยาวเกินกำหนด: ชื่อไม่เกิน 120 ตัว รายละเอียดสินค้า 1,500 ตัว และที่อยู่ 500 ตัว";
+  if (message.includes("invalid address phone")) return "กรุณากรอกเบอร์มือถือผู้รับ 10 หลัก เริ่มด้วย 0";
+  if (message.includes("too many addresses")) return "บันทึกที่อยู่ได้ไม่เกิน 20 รายการ";
+  if (message.includes("too many chat rooms")) return "มีห้องสนทนาครบจำนวนที่กำหนดแล้ว กรุณาติดต่อผู้ดูแล";
   if (message.includes("valid mobile contact required")) return "กรุณาบันทึกเบอร์มือถือ 10 หลักในข้อมูลส่วนตัวก่อนทำรายการ";
   if (message.includes("too many pending orders")) return "มีคำสั่งซื้อค้างครบ 10 รายการแล้ว กรุณารอรับสินค้าหรือจัดการคำสั่งซื้อเดิมก่อน";
   if (message.includes("too many pending topups")) return "มีคำขอเติมยอดรออนุมัติครบ 3 รายการแล้ว กรุณารอผู้ดูแลตรวจสอบ";

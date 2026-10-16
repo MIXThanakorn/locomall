@@ -12,6 +12,7 @@ export function PushNotificationBootstrap() {
   const { session, loading, hasLocation, isAdmin, deviceLocationReady } = useAuth();
   const router = useRouter();
   const attemptedUser = useRef<string | null>(null);
+  const userId = session?.user.id;
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -20,7 +21,8 @@ export function PushNotificationBootstrap() {
     if (attemptedUser.current === userId) return;
     const timer = setTimeout(() => {
       attemptedUser.current = userId;
-      void registerForPushNotifications(true).catch(() => {
+      void registerForPushNotifications(true, userId).catch(() => {
+        attemptedUser.current = null;
         // Push is an enhancement; failure must never block the signed-in app.
       });
     }, 1200);
@@ -28,7 +30,7 @@ export function PushNotificationBootstrap() {
   }, [loading, session?.user.id, hasLocation, isAdmin, deviceLocationReady]);
 
   useEffect(() => {
-    if (!canUseNativePushNotifications()) return;
+    if (!canUseNativePushNotifications() || loading || !userId) return;
     let cancelled = false;
     let subscription: { remove: () => void } | undefined;
     const open = (response: NotificationResponseLike) => {
@@ -42,9 +44,11 @@ export function PushNotificationBootstrap() {
       if (!configured || cancelled) return;
       const notifications = await import("expo-notifications");
       if (cancelled) return;
-      subscription = notifications.addNotificationResponseReceivedListener(open);
+      subscription = notifications.addNotificationResponseReceivedListener((response) => {
+        open(response); void notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+      });
       const response = await notifications.getLastNotificationResponseAsync();
-      if (response && !cancelled) open(response);
+      if (response && !cancelled) { open(response); await notifications.clearLastNotificationResponseAsync(); }
     })().catch(() => {
       // Push is optional and must never prevent the app from opening.
     });
@@ -52,7 +56,7 @@ export function PushNotificationBootstrap() {
       cancelled = true;
       subscription?.remove();
     };
-  }, [router]);
+  }, [router, loading, userId]);
 
   return null;
 }

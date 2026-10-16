@@ -23,10 +23,12 @@ export function BadgeProvider({ children }: React.PropsWithChildren) {
   const [cartCount, setCartCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [countsOwner, setCountsOwner] = useState<string | undefined>();
 
   const refreshBadges = useCallback(async () => {
     const currentRequest = ++requestId.current;
     if (!userId) {
+      setCountsOwner(undefined);
       setCartCount(0);
       setUnreadCount(0);
       setUnreadChatCount(0);
@@ -40,6 +42,7 @@ export function BadgeProvider({ children }: React.PropsWithChildren) {
         .eq("user_id", userId).eq("category", "chat").is("read_at", null),
     ]);
     if (currentRequest !== requestId.current) return;
+    setCountsOwner(!cartResult.error && !notificationResult.error && !chatResult.error ? userId : undefined);
     if (!cartResult.error) setCartCount(cartResult.data?.cart_items?.length ?? 0);
     if (!notificationResult.error) setUnreadCount(notificationResult.count ?? 0);
     if (!chatResult.error) setUnreadChatCount(chatResult.count ?? 0);
@@ -63,8 +66,9 @@ export function BadgeProvider({ children }: React.PropsWithChildren) {
     return () => { subscription.remove(); void supabase.removeChannel(channel); };
   }, [userId, refreshBadges]);
 
-  const value = useMemo(() => ({ cartCount, unreadCount, unreadChatCount, refreshBadges }),
-    [cartCount, unreadCount, unreadChatCount, refreshBadges]);
+  const value = useMemo(() => ({ cartCount: countsOwner === userId ? cartCount : 0, unreadCount: countsOwner === userId ? unreadCount : 0,
+    unreadChatCount: countsOwner === userId ? unreadChatCount : 0, refreshBadges }),
+    [cartCount, unreadCount, unreadChatCount, refreshBadges, countsOwner, userId]);
   return <BadgeContext.Provider value={value}>{children}</BadgeContext.Provider>;
 }
 

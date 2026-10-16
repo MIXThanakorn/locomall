@@ -14,6 +14,7 @@ import { sellerAllocationStatusLabel } from "../../../src/lib/displayText";
 import { supabase } from "../../../src/lib/supabase";
 import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
 import { formatSaleQuantity } from "../../../src/lib/productUnit";
+import { parseSellerAllocations, type SellerAllocation } from "../../../src/lib/commerceDto";
 
 const steps = ["awaiting_preparation", "preparing", "ready_for_pickup", "collected", "at_hub"];
 const stepLabels: Record<string, string> = { awaiting_preparation: "รับออเดอร์", preparing: "เตรียมสินค้า", ready_for_pickup: "พร้อมส่งมอบ", collected: "เจ้าของตลาดรับสินค้า", at_hub: "สินค้าถึงจุดรวม" };
@@ -22,7 +23,7 @@ export default function SellerAllocationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useAuth();
   const userId = session?.user.id;
-  const [allocation, setAllocation] = useState<any>();
+  const [allocation, setAllocation] = useState<SellerAllocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -31,7 +32,8 @@ export default function SellerAllocationDetail() {
   const load = useCallback(async () => {
     if (!userId) { setAllocation(null); setLoading(false); return; }
     const { data, error } = await supabase.rpc("get_my_seller_allocations", { p_allocation_id: Number(id) });
-    setAllocation(error ? null : (data as any[])?.[0] ?? null);
+    try { setAllocation(error ? null : parseSellerAllocations(data)[0] ?? null); }
+    catch { setAllocation(null); }
     setLoading(false);
   }, [id, userId]);
   useEffect(() => { void load(); }, [load]);

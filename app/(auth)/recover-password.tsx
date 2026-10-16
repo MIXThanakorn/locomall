@@ -3,7 +3,7 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useRouter } from "expo-router";
-import * as Linking from "expo-linking";
+import { makeRedirectUri } from "expo-auth-session";
 import { Button } from "../../src/components/Button";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { BorderRadius, Colors, Spacing, Typography } from "../../src/constants/theme";
@@ -15,7 +15,7 @@ export default function RecoverPasswordScreen() {
   const recover = async () => {
     if (!email.trim()) return Alert.alert("กรุณากรอกอีเมล");
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: Linking.createURL("/(auth)/new-password") });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: makeRedirectUri({ scheme: "locomall", path: "new-password" }) });
     setLoading(false);
     if (error) return Alert.alert("ส่งอีเมลไม่สำเร็จ", translateAuthError(error));
     Alert.alert("ตรวจสอบอีเมล", "เราได้ส่งลิงก์ตั้งรหัสผ่านใหม่แล้ว", [{ text: "ตกลง", onPress: () => router.back() }]);

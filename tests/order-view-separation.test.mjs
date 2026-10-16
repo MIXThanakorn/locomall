@@ -17,9 +17,12 @@ test("buyer-only accounts do not get a seller tab from old allocations", () => {
 test("buyer and seller data are scoped to the currently signed-in account", () => {
   const commerce = read("src/hooks/useCommerce.ts");
   const capabilities = read("src/hooks/useCapabilities.ts");
-  assert.match(commerce, /orders: result\.userId === userId \? result\.orders : \[\]/);
-  assert.match(commerce, /allocations: result\.userId === userId \? result\.allocations : \[\]/);
-  assert.match(commerce, /currentRequest === requestId\.current/g);
+  assert.match(commerce, /useAccountPage\(fetchBuyerOrders/);
+  assert.match(commerce, /useAccountPage\(fetchSellerAllocations/);
+  const paging = read("src/hooks/useAccountPage.ts");
+  assert.match(paging, /state\.userId === userId/);
+  assert.match(paging, /rows: scoped \? state\.rows : \[\]/);
+  assert.match(paging, /version !== generation\.current/);
   assert.match(capabilities, /result\.userId === userId \? result\.capabilities : empty/);
   assert.match(capabilities, /useFocusEffect/);
 });

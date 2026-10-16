@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LoadNotice } from "../../src/components/LoadNotice";
+import { Button } from "../../src/components/Button";
 import { Redirect, useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -36,10 +37,10 @@ export default function NotificationScreen() {
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const router = useRouter();
-  const { items, loading, error, refresh } = useNotifications();
-  const { refreshBadges } = useBadgeCounts();
   const [category, setCategory] = useState<Category>("all");
   const [unreadOnly, setUnreadOnly] = useState(false);
+  const { items, loading, error, refresh, hasMore, loadingMore, loadMore } = useNotifications(category, unreadOnly);
+  const { refreshBadges, unreadCount } = useBadgeCounts();
   const [clearing, setClearing] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
 
@@ -48,7 +49,6 @@ export default function NotificationScreen() {
     if (category !== "all" && categoryOf(item) !== category) return false;
     return !unreadOnly || !item.read_at;
   }), [category, visibleItems, unreadOnly]);
-  const unreadCount = visibleItems.filter((item) => !item.read_at).length;
 
   const read = async (id: number) => {
     await supabase.rpc("mark_notification_read", { p_notification_id: id });
@@ -126,6 +126,7 @@ export default function NotificationScreen() {
           </View><Ionicons name="chevron-forward" size={18} color={Colors.textLight} />
         </TouchableOpacity>;
       })}
+      {hasMore ? <Button title="โหลดการแจ้งเตือนเพิ่มเติม" variant="outline" loading={loadingMore} onPress={() => void loadMore()} /> : null}
     </ScrollView>
   </View>;
 }

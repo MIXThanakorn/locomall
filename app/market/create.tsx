@@ -65,9 +65,9 @@ export default function CreateMarket() {
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปตลาดชุมชน</Text>}
     </TouchableOpacity>
-    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} />
-    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="เรื่องราวและรายละเอียดชุมชน" value={description} onChangeText={setDescription} />
-    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} />
+    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} maxLength={120} />
+    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="เรื่องราวและรายละเอียดชุมชน" value={description} onChangeText={setDescription} maxLength={1500} />
+    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} maxLength={500} />
     <Button title="ส่งคำขอให้ผู้ดูแลระบบตรวจสอบ" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary }} />
   </KeyboardAwareScrollView>;
 }

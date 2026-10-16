@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../constants/theme";
 import { useAuth } from "../context/AuthContext";
@@ -10,7 +10,7 @@ import { useCatalogReviews } from "../hooks/useCatalogReviews";
 import { CatalogReviewCard } from "./CatalogReviewCard";
 
 type Target = "market" | "store";
-export function CatalogActions({ targetType, targetId, refreshVersion = 0 }: { targetType: Target; targetId: number; refreshVersion?: number }) {
+export function CatalogActions({ targetType, targetId, refreshVersion = 0, children }: { targetType: Target; targetId: number; refreshVersion?: number; children?: ReactNode }) {
   const router = useRouter();
   const { session } = useAuth();
   const [favorite, setFavorite] = useState(false);
@@ -49,6 +49,7 @@ export function CatalogActions({ targetType, targetId, refreshVersion = 0 }: { t
       <TouchableOpacity style={styles.action} onPress={() => toggle("follow", follow)}><Ionicons name={follow ? "notifications" : "notifications-outline"} size={20} color={Colors.greenPrimary} /><Text style={styles.label}>{follow ? "ติดตามแล้ว" : "ติดตาม"}</Text></TouchableOpacity>
     </View>
     {follow ? <Text style={styles.hint}>แจ้งเฉพาะร้านใหม่ที่อนุมัติหรือสินค้าที่กลับมาพร้อมขาย ไม่แจ้งทุกครั้งที่สต็อกเปลี่ยน</Text> : null}
+    {children}
     {loading && !page ? <ActivityIndicator color={Colors.greenPrimary} style={{ marginTop: 12 }} /> : null}
     {page?.items.length ? <><Text style={styles.heading}>รีวิวล่าสุด</Text>
       <Text style={styles.hint}>แสดง {page.items.length} จาก {page.total} รีวิว · เรียงจากใหม่ไปเก่า</Text>

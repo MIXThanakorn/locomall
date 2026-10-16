@@ -545,6 +545,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          delivery_address_snapshot: Json | null
           address_id: number | null
           buyer_id: string
           courier_name: string | null
@@ -564,6 +565,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          delivery_address_snapshot?: never
           address_id?: number | null
           buyer_id: string
           courier_name?: string | null
@@ -583,6 +585,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          delivery_address_snapshot?: never
           address_id?: number | null
           buyer_id?: string
           courier_name?: string | null
@@ -1412,6 +1415,14 @@ export type Database = {
         Args: { p_allocation_id?: number | null }
         Returns: Json
       }
+      get_my_seller_allocations_page: {
+        Args: { p_limit?: number; p_before_created_at?: string; p_before_id?: number }
+        Returns: Json
+      }
+      get_market_seller_contacts_page: {
+        Args: { p_order_ids: number[] }
+        Returns: { allocation_id: number; order_id: number; seller_name: string; seller_username: string | null; seller_phone: string | null }[]
+      }
       get_chat_order_context: {
         Args: { p_room_id: number }
         Returns: {
@@ -1483,6 +1494,10 @@ export type Database = {
         }[]
       }
       get_store_catalog: { Args: { p_store_id: number }; Returns: Json }
+      get_catalog_card_details: {
+        Args: { p_market_ids: number[]; p_store_ids: number[] }
+        Returns: { entity_type: string; entity_id: number; min_price: number | null; rating_average: number; rating_count: number; sold_quantity: number; product_name: string | null; unit: string | null; market_name: string | null }[]
+      }
       increment_cart_item: {
         Args: { p_increment?: number; p_store_id: number }
         Returns: number

@@ -346,7 +346,7 @@ test("Home shows a two-column near-first catalog without cutting off distant sto
   assert.match(home, /styles\.grid/);
   assert.match(home, /items\.map/);
   assert.doesNotMatch(home, /marketItems\.slice|storeItems\.slice/);
-  assert.match(card, /compactCard:\s*\{width:"48\.5%"\}/);
+  assert.match(card, /columns === 1 \? "100%" : "48\.5%"/);
   assert.match(home, /useNearby\(normalizedQuery, kind, \{ sameArea, nearbyOnly, inStockOnly, sort, enabled: preferencesReady \}\)/);
   assert.match(home, /placeholder="ค้นหาตลาด ร้านค้า หรือสินค้า"/);
   assert.match(home, /ผลการค้นหา/);
@@ -373,13 +373,13 @@ test("Cart and notifications show numeric badges, and chat header is participant
   assert.match(migration, /revoke execute on function public\.get_chat_room_header\(bigint\) from public,anon/);
 });
 
-test("Approved store cards show price without unit and cart items have an explicit remove action", () => {
+test("Approved store cards show price with sale unit and cart items have an explicit remove action", () => {
   const discovery = read("src/hooks/useCommerce.ts");
   const card = read("src/components/CommerceCard.tsx");
   const cart = read("app/order/cart.tsx");
   const migration = read("supabase/migrations/20261004061208_demo_wallet_reviews_social_v1.sql");
-  assert.match(discovery, /get_catalog_card_metrics/);
-  assert.match(card, /Number\(item\.unit_price\)\.toLocaleString/);
+  assert.match(discovery, /get_catalog_card_details/);
+  assert.match(card, /catalogPrice\(item\.unit_price, item\.unit, market\)/);
   assert.doesNotMatch(card, /item\.description/);
   assert.match(card, /rating_average/);
   assert.match(card, /sold_quantity/);
@@ -466,7 +466,7 @@ test("Orders separate buyer and seller perspectives and keep seller actions on o
   assert.match(labels, /awaiting_preparation: "รอคุณรับออเดอร์"/);
   assert.match(detail, /accept_allocation/);
   assert.match(detail, /mark_allocation_ready/);
-  assert.match(commerce, /rpc\("get_my_seller_allocations"/);
+  assert.match(commerce, /rpc\("get_my_seller_allocations_page"/);
   assert.match(detail, /rpc\("get_my_seller_allocations", \{ p_allocation_id: Number\(id\) \}/);
   assert.match(detail, /งานของคุณเสร็จแล้ว รอเจ้าของตลาดรับสินค้า/);
   assert.match(read("app/seller/allocations/index.tsx"), /orders\?view=selling/);
@@ -536,7 +536,7 @@ test("Notifications request native permission, register devices securely and sup
   assert.match(push, /Constants\.appOwnership !== "expo"/);
   assert.doesNotMatch(push, /^import .*expo-notifications/m);
   assert.doesNotMatch(bootstrap, /^import .*expo-notifications/m);
-  assert.match(bootstrap, /registerForPushNotifications\(true\)/);
+  assert.match(bootstrap, /registerForPushNotifications\(true, userId\)/);
   assert.match(bootstrap, /hasLocation && !isAdmin && !deviceLocationReady/);
   assert.match(bootstrap, /attemptedUser\.current === userId/);
   assert.match(push, /permission\.canAskAgain/);

@@ -19,9 +19,9 @@ test("core data publication requires RLS and never subscribes to unfilterable de
 test("buyer, seller, cart and admin live views requery through their existing scopes", () => {
   const commerce = read("src/hooks/useCommerce.ts");
   assert.match(commerce, /\.eq\("buyer_id", userId\)/);
-  assert.match(commerce, /rpc\("get_my_seller_allocations"/);
-  assert.match(commerce, /buyer_id=eq\.\$\{userId\}/);
-  assert.match(commerce, /seller_id=eq\.\$\{userId\}/);
+  assert.match(commerce, /rpc\("get_my_seller_allocations_page"/);
+  assert.match(commerce, /buyer_id=eq\." \+ userId/);
+  assert.match(commerce, /seller_id=eq\." \+ userId/);
   assert.match(read("src/context/BadgeContext.tsx"), /table: "carts"/);
   assert.match(read("app/order/cart.tsx"), /useRealtimeRefresh/);
   assert.match(read("app/admin/finance.tsx"), /useRealtimeRefresh/);

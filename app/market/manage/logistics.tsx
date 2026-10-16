@@ -15,6 +15,8 @@ import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { allocationStatusLabel } from "../../../src/lib/displayText";
 import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
 import { formatSaleQuantity } from "../../../src/lib/productUnit";
+import { DeliveryAddressCard } from "../../../src/components/DeliveryAddressCard";
+import { useAuth } from "../../../src/context/AuthContext";
 
 const LOGISTICS_WATCHES: RealtimeWatch[] = [
   { table: "orders", event: "INSERT" }, { table: "orders", event: "UPDATE" },
@@ -23,31 +25,37 @@ const LOGISTICS_WATCHES: RealtimeWatch[] = [
 
 export default function Logistics() {
   const permissions = useCapabilities();
+  const { session } = useAuth();
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [contacts, setContacts] = useState<Record<number, { seller_name: string; seller_username: string | null; seller_phone: string | null }>>({});
   const [loadError, setLoadError] = useState(false);
+  const [pageSize, setPageSize] = useState(25);
+  const [hasMore, setHasMore] = useState(false);
   const generation = useRef(0);
   const [tracking, setTracking] = useState<Record<number, string>>({});
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const submitting = useRef(false);
   const load = useCallback(async () => {
-    if (!permissions.isMarketOwner && !permissions.isAdmin) return;
+    if (!session?.user.id || (!permissions.isMarketOwner && !permissions.isAdmin)) return;
     const request = ++generation.current;
     try {
-      const [result, people] = await Promise.all([
-        supabase.from("orders").select("*,order_items(*,order_allocations(*))").neq("status", "delivered").neq("status", "cancelled").order("created_at"),
-        supabase.rpc("get_market_seller_contacts"),
-      ]);
+      let query = supabase.from("orders").select("*,order_items(*,order_allocations(*))").neq("status", "delivered").neq("status", "cancelled").order("created_at").order("order_id").limit(pageSize + 1);
+      if (orderId) query = query.eq("order_id", Number(orderId));
+      const result = await query;
+      if (result.error) throw result.error;
+      const page = (result.data ?? []).slice(0, pageSize);
+      const people = page.length ? await supabase.rpc("get_market_seller_contacts_page", { p_order_ids: page.map(order => order.order_id) }) : { data: [], error: null };
       if (request !== generation.current) return;
       if (result.error || people.error) throw result.error || people.error;
-      setOrders(result.data ?? []);
+      setOrders(page);
+      setHasMore((result.data?.length ?? 0) > pageSize);
       setContacts(Object.fromEntries((people.data ?? []).map((person) => [person.allocation_id, person])));
       setLoadError(false);
     } catch { if (request === generation.current) setLoadError(true); }
-  }, [permissions.isMarketOwner, permissions.isAdmin]);
+  }, [permissions.isMarketOwner, permissions.isAdmin, session?.user.id, pageSize, orderId]);
   useEffect(() => { void load(); const counter = generation; return () => { counter.current++; }; }, [load]);
   useRealtimeRefresh("market-logistics", load, LOGISTICS_WATCHES, permissions.isMarketOwner || permissions.isAdmin);
   const rpc = async (name: any, args: any) => {
@@ -68,10 +76,12 @@ export default function Logistics() {
       {!loadError && orderId && !orders.some((order) => String(order.order_id) === orderId) ? <Text style={styles.sub}>ออเดอร์นี้ไม่มีงานคงค้างที่จุดรวมแล้ว หรือคุณไม่มีสิทธิ์ดูงานนี้</Text> : null}
       {orders.filter((order) => !orderId || String(order.order_id) === orderId).map((order) => <View key={order.order_id} style={styles.order}><Text style={styles.number}>{order.order_number}</Text><Text style={styles.method}>{order.fulfillment_method === "pickup" ? "นัดรับที่จุดรวม" : "จัดส่งถึงลูกค้า"}</Text>
         {order.order_items.flatMap((item: any) => item.order_allocations.map((allocation: any) => <View key={allocation.allocation_id} style={styles.alloc}><Text style={styles.number}>ผู้ขาย: {contacts[allocation.allocation_id]?.seller_name ?? "กำลังโหลดข้อมูลผู้ขาย"}{contacts[allocation.allocation_id]?.seller_username ? ` (@${contacts[allocation.allocation_id].seller_username})` : ""}</Text><Text style={styles.sub}>เบอร์ติดต่อ: {contacts[allocation.allocation_id]?.seller_phone || "ไม่ระบุ"} · งาน #{allocation.allocation_id}</Text><Text style={styles.item}>{item.product_name} × {formatSaleQuantity(allocation.quantity, item.unit)} · {allocationStatusLabel(allocation.status)}</Text>{allocation.status === "ready_for_pickup" ? <Button disabled={saving} title="รับสินค้าจากผู้ขายแล้ว" size="sm" onPress={() => rpc("record_allocation_collected", { p_allocation_id: allocation.allocation_id })} /> : null}{allocation.status === "collected" ? <Button disabled={saving} title="นำสินค้าถึงจุดรวมแล้ว" size="sm" onPress={() => rpc("record_allocation_at_hub", { p_allocation_id: allocation.allocation_id })} /> : null}</View>))}
+        {order.fulfillment_method === "delivery" ? <DeliveryAddressCard value={order.delivery_address_snapshot} /> : null}
         {order.status === "at_hub" && order.fulfillment_method === "pickup" ? <View style={styles.ready}><Text style={styles.readyText}>สินค้าครบแล้ว พร้อมให้ลูกค้ามารับและยืนยันด้วยตนเอง</Text></View> : null}
         {order.status === "at_hub" && order.fulfillment_method !== "pickup" ? <Button disabled={saving} title="รวมเป็นพัสดุเดียว" onPress={() => rpc("consolidate_order", { p_order_id: order.order_id })} /> : null}
         {order.status === "consolidated" ? <><AppTextInput style={styles.input} placeholder="เลขติดตามพัสดุ" maxLength={120} editable={!saving} value={tracking[order.order_id] ?? ""} onChangeText={(value) => setTracking((current) => ({ ...current, [order.order_id]: value }))} /><Button disabled={saving} title="บันทึกการจัดส่ง" onPress={() => rpc("ship_order", { p_order_id: order.order_id, p_tracking_number: tracking[order.order_id] ?? "", p_courier_name: "Locomall Logistics" })} /></> : null}
       </View>)}
+      {hasMore ? <Button title="โหลดงานเพิ่มเติม" variant="outline" onPress={() => setPageSize(value => value + 25)} /> : null}
     </KeyboardAwareScrollView>
   </PermissionGate>;
 }

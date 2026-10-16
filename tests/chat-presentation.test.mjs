@@ -66,7 +66,10 @@ test("chat visual RPC returns only room partner avatar and public store image, n
 
 test("market cards use store product image; missing and failed images have a resettable fallback", () => {
   const market = readFileSync(new URL("../app/market/[id].tsx", import.meta.url), "utf8");
-  assert.match(market, /ContextImage uri=\{store.image_url\} name=\{store.product_name/);
+  assert.match(market, /CommerceCard/);
+  assert.match(market, /image_url: store.image_url/);
+  const card = readFileSync(new URL("../src/components/CommerceCard.tsx", import.meta.url), "utf8");
+  assert.match(card, /ContextImage uri=\{item.image_url\}/);
   assert.doesNotMatch(market, /seller-evidence|product_image_url/);
   const image = readFileSync(new URL("../src/components/ContextImage.tsx", import.meta.url), "utf8");
   assert.match(image, /key=\{props.uri/);

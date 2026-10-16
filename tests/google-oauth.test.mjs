@@ -17,12 +17,12 @@ test("a stalled browser login reports a timeout instead of spinning forever", as
   await assert.rejects(withGoogleOAuthTimeout(new Promise(() => {}), 1), /ไม่ส่งกลับเข้าแอป/);
 });
 
-test("Google callback accepts tokens, code, and OAuth errors without silently hanging", () => {
-  assert.deepEqual(parseGoogleOAuthCallback(`${redirect}#access_token=access&refresh_token=refresh`, redirect), {
-    kind: "tokens", accessToken: "access", refreshToken: "refresh",
-  });
+test("PKCE callback accepts one code and rejects implicit tokens, foreign destinations and duplicate codes", () => {
+  assert.throws(() => parseGoogleOAuthCallback(`${redirect}#access_token=access&refresh_token=refresh`, redirect), /รูปแบบเก่า/);
   assert.deepEqual(parseGoogleOAuthCallback(`${redirect}?code=one-time`, redirect), { kind: "code", code: "one-time" });
-  assert.throws(() => parseGoogleOAuthCallback(`${redirect}#error_description=Access+denied`, redirect), /Access denied/);
+  assert.throws(() => parseGoogleOAuthCallback(`${redirect}#error_description=Access+denied`, redirect), /ไม่สามารถยืนยัน/);
+  assert.throws(() => parseGoogleOAuthCallback(`${redirect}?code=one&code=two`, redirect));
+  assert.throws(() => parseGoogleOAuthCallback(`https://attacker.example/?code=one`, redirect), /ไม่ตรงกัน/);
   assert.throws(() => parseGoogleOAuthCallback(redirect, redirect), /ไม่ได้รับข้อมูลเข้าสู่ระบบ/);
   assert.throws(() => parseGoogleOAuthCallback("locomall://other#access_token=a&refresh_token=b", redirect), /ไม่ตรงกัน/);
 });

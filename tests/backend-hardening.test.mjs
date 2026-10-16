@@ -118,7 +118,7 @@ test("backend hardening isolates sellers, serializes shipping, rejects NaN, enfo
 });
 
 test("frontend uses seller DTO and translates new business guards; filters stay compact",()=>{
-  for(const path of ["src/hooks/useCommerce.ts","app/seller/allocations/[id].tsx"])assert.match(read(path),/rpc\("get_my_seller_allocations"/);
+  for(const path of ["src/hooks/useCommerce.ts","app/seller/allocations/[id].tsx"])assert.match(read(path),/rpc\("get_my_seller_allocations(?:_page)?"/);
   for(const message of ["valid mobile contact required","too many pending orders","too many pending topups","action rate limit exceeded","stores_unit_price_finite","invalid order transition"]) {
     assert.notEqual(translateDatabaseError({message}),"ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
   }

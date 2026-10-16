@@ -1,4 +1,7 @@
 import { useFocusEffect } from "expo-router";
+import type { QueryData } from "@supabase/supabase-js";
+import { COMMERCE_PAGE_SIZE, type PageCursor, useAccountPage } from "./useAccountPage";
+import { parseSellerAllocations, type SellerAllocation } from "../lib/commerceDto";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -6,7 +9,7 @@ import type { Tables } from "../types/database";
 import type { CatalogSort } from "../lib/catalogSort";
 import { RealtimeWatch, useRealtimeRefresh } from "./useRealtimeRefresh";
 
-export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number; unit_price?: number | null; rating_average?: number; rating_count?: number; sold_quantity?: number; cursor_missing?: boolean; cursor_value?: number };
+export type NearbyResult = { entity_type: string; entity_id: number; market_id: number; name: string; description: string; image_url: string | null; distance_km: number | null; radius_km: number; available_stock: number; product_name?: string | null; unit?: string | null; market_name?: string | null; unit_price?: number | null; rating_average?: number; rating_count?: number; sold_quantity?: number; cursor_missing?: boolean; cursor_value?: number };
 const DISCOVERY_PAGE_SIZE = 24;
 const CATALOG_WATCHES: RealtimeWatch[] = [
   { table: "markets", event: "INSERT" }, { table: "markets", event: "UPDATE" },
@@ -16,6 +19,8 @@ const CATALOG_WATCHES: RealtimeWatch[] = [
 
 export function useNearby(query = "", kind = "all", options: { sameArea?: boolean; nearbyOnly?: boolean; inStockOnly?: boolean; sort?: CatalogSort; enabled?: boolean } = {}) {
   const { deviceLocation, deviceLocationReady, session } = useAuth();
+  // Guests have no saved-location onboarding; absence of GPS must not block public browsing.
+  const discoveryReady = deviceLocationReady || !session;
   const sameArea = options.sameArea ?? false;
   const nearbyOnly = options.nearbyOnly ?? false;
   const inStockOnly = options.inStockOnly ?? false;
@@ -49,16 +54,16 @@ export function useNearby(query = "", kind = "all", options: { sameArea?: boolea
     if (result.error || !result.data) return result;
     const marketIds = result.data.filter((item) => item.entity_type === "market").map((item) => item.entity_id);
     const storeIds = result.data.filter((item) => item.entity_type === "store").map((item) => item.entity_id);
-    const { data: metrics, error: metricsError } = await (supabase as any).rpc("get_catalog_card_metrics", { p_market_ids: marketIds, p_store_ids: storeIds });
+    const { data: metrics, error: metricsError } = await supabase.rpc("get_catalog_card_details", { p_market_ids: marketIds, p_store_ids: storeIds });
     if (metricsError) return { ...result, error: metricsError };
-    const byEntity = new Map<string, Record<string, unknown>>((metrics ?? []).map((metric: any) => [`${metric.entity_type}-${metric.entity_id}`, metric]));
+    const byEntity = new Map((metrics ?? []).map((metric) => [`${metric.entity_type}-${metric.entity_id}`, metric]));
     return { ...result, data: result.data.map((item) => {
       const metric = byEntity.get(`${item.entity_type}-${item.entity_id}`);
       return { ...metric, ...item, unit_price: "unit_price" in item ? item.unit_price : metric?.min_price ?? null };
     }) };
   }, [query, kind, deviceLocation, sameArea, nearbyOnly, inStockOnly, sort, enhanced]);
   const refresh = useCallback(async () => {
-    if (!deviceLocationReady || !enabled) return;
+    if (!discoveryReady || !enabled) return;
     const currentRequest = ++requestId.current;
     requestingMore.current = false;
     setLoadingMore(false);
@@ -70,15 +75,15 @@ export function useNearby(query = "", kind = "all", options: { sameArea?: boolea
     const page = (data ?? []) as NearbyResult[];
     setPageResult({ scope, items: page.slice(0, DISCOVERY_PAGE_SIZE) });
     setHasMore(page.length > DISCOVERY_PAGE_SIZE);
-    setError(requestError?.message ?? null);
+    setError(null);
     } catch {
       if (currentRequest !== requestId.current) return;
       setPageResult((current) => current?.scope === scope ? current : { scope, items: [] });
       setError("โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่");
     } finally { if (currentRequest === requestId.current) setLoading(false); }
-  }, [deviceLocationReady, enabled, fetchPage, scope]);
+  }, [discoveryReady, enabled, fetchPage, scope]);
   const loadMore = useCallback(async () => {
-    if (!deviceLocationReady || !enabled || loading || !hasMore || !items.length || requestingMore.current) return;
+    if (!discoveryReady || !enabled || loading || !hasMore || !items.length || requestingMore.current) return;
     requestingMore.current = true;
     setLoadingMore(true);
     const currentRequest = requestId.current;
@@ -97,90 +102,73 @@ export function useNearby(query = "", kind = "all", options: { sameArea?: boolea
     }
     } catch { if (currentRequest === requestId.current) setError("โหลดรายการเพิ่มเติมไม่สำเร็จ กรุณาลองใหม่"); }
     finally { if (currentRequest === requestId.current) { setLoadingMore(false); requestingMore.current = false; } }
-  }, [deviceLocationReady, enabled, loading, hasMore, items, fetchPage, scope]);
+  }, [discoveryReady, enabled, loading, hasMore, items, fetchPage, scope]);
   useFocusEffect(useCallback(() => {
     const timer = setTimeout(() => void refresh(), 250);
     return () => { clearTimeout(timer); requestId.current += 1; };
   }, [refresh]));
-  useRealtimeRefresh("home-catalog", refresh, CATALOG_WATCHES, deviceLocationReady && enabled);
+  useRealtimeRefresh("home-catalog", refresh, CATALOG_WATCHES, discoveryReady && enabled);
   const currentScope = enabled && pageResult?.scope === scope;
   return { items: enabled ? items : [], loading: !currentScope || loading, loadingMore: currentScope && loadingMore, hasMore: currentScope && hasMore, error: currentScope ? error : null, refresh, loadMore };
 }
 
+function buyerOrdersQuery() {
+  return supabase.from("orders").select("order_id,order_number,created_at,status,total_amount,fulfillment_method,markets(name),order_items(order_item_id,product_name,product_image_url,unit,unit_price,quantity,total_amount,stores(name,image_url))");
+}
+export type BuyerOrder = QueryData<ReturnType<typeof buyerOrdersQuery>>[number];
+const buyerCursor = (row: BuyerOrder) => ({ created_at: new Date(row.created_at).toISOString(), id: row.order_id });
+const sellerCursor = (row: SellerAllocation) => ({ created_at: new Date(row.created_at).toISOString(), id: row.allocation_id });
+const notificationCursor = (row: Tables<"notifications">) => ({ created_at: new Date(row.created_at).toISOString(), id: row.notification_id });
+function beforeCursor(cursor: PageCursor, id: string) {
+  return "created_at.lt." + cursor.created_at + ",and(created_at.eq." + cursor.created_at + "," + id + ".lt." + cursor.id + ")";
+}
+const fetchBuyerOrders = async (userId: string, cursor: PageCursor | null) => {
+  let query = buyerOrdersQuery().eq("buyer_id", userId).order("created_at", { ascending: false }).order("order_id", { ascending: false }).limit(COMMERCE_PAGE_SIZE + 1);
+  if (cursor) query = query.or(beforeCursor(cursor, "order_id"));
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+};
+const fetchSellerAllocations = async (_userId: string, cursor: PageCursor | null) => {
+  const { data, error } = await supabase.rpc("get_my_seller_allocations_page", { p_limit: COMMERCE_PAGE_SIZE + 1, p_before_created_at: cursor?.created_at, p_before_id: cursor?.id });
+  if (error) throw error;
+  return parseSellerAllocations(data);
+};
+const fetchNotifications = async (userId: string, cursor: PageCursor | null, category: string, unreadOnly: boolean) => {
+  let query = supabase.from("notifications").select("*").eq("user_id", userId).neq("category", "chat").is("dismissed_at", null)
+    .order("created_at", { ascending: false }).order("notification_id", { ascending: false }).limit(COMMERCE_PAGE_SIZE + 1);
+  if (cursor) query = query.or(beforeCursor(cursor, "notification_id"));
+  if (category !== "all") query = query.eq("category", category);
+  if (unreadOnly) query = query.is("read_at", null);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+};
 export function useOrders() {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const [result, setResult] = useState<{ userId?: string; orders: any[]; loading: boolean; error: string | null }>({ orders: [], loading: true, error: null });
-  const requestId = useRef(0);
-  const refresh = useCallback(async () => {
-    const currentRequest = ++requestId.current;
-    if (!userId) { setResult({ userId, orders: [], loading: false, error: null }); return; }
-    setResult((current) => ({ userId, orders: current.userId === userId ? current.orders : [], loading: true, error: null }));
-    try {
-      const response = await supabase.from("orders").select("*,markets(name),order_items(*,stores(name,image_url))").eq("buyer_id", userId).order("created_at", { ascending: false });
-      if (response.error) throw response.error;
-      if (currentRequest === requestId.current) setResult({ userId, orders: response.data ?? [], error: null, loading: false });
-    } catch {
-      if (currentRequest === requestId.current) setResult((current) => ({ userId, orders: current.userId === userId ? current.orders : [], error: "โหลดคำสั่งซื้อไม่สำเร็จ", loading: false }));
-    }
-  }, [userId]);
-  useFocusEffect(useCallback(() => { void refresh(); return () => { requestId.current++; }; }, [refresh]));
+  const { session } = useAuth(); const userId = session?.user.id;
+  const page = useAccountPage(fetchBuyerOrders, buyerCursor);
   const watches = useMemo<RealtimeWatch[]>(() => userId ? [
-    { table: "orders", event: "INSERT", filter: `buyer_id=eq.${userId}` },
-    { table: "orders", event: "UPDATE", filter: `buyer_id=eq.${userId}` },
+    { table: "orders", event: "INSERT", filter: "buyer_id=eq." + userId }, { table: "orders", event: "UPDATE", filter: "buyer_id=eq." + userId },
   ] : [], [userId]);
-  useRealtimeRefresh(`buyer-orders-${userId}`, refresh, watches, Boolean(userId));
-  return { orders: result.userId === userId ? result.orders : [], loading: result.userId !== userId || result.loading, error: result.userId === userId ? result.error : null, refresh };
+  useRealtimeRefresh("buyer-orders-" + userId, page.refresh, watches, Boolean(userId));
+  return { ...page, orders: page.rows, error: page.error ? "โหลดคำสั่งซื้อไม่สำเร็จ" : null };
 }
-
 export function useSellerAllocations() {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const [result, setResult] = useState<{ userId?: string; allocations: any[]; loading: boolean; error: string | null }>({ allocations: [], loading: true, error: null });
-  const requestId = useRef(0);
-  const refresh = useCallback(async () => {
-    const currentRequest = ++requestId.current;
-    if (!userId) { setResult({ userId, allocations: [], loading: false, error: null }); return; }
-    setResult((current) => ({ userId, allocations: current.userId === userId ? current.allocations : [], loading: true, error: null }));
-    try {
-      const response = await supabase.rpc("get_my_seller_allocations");
-      if (response.error) throw response.error;
-      if (currentRequest === requestId.current) setResult({ userId, allocations: (response.data ?? []) as any[], error: null, loading: false });
-    } catch {
-      if (currentRequest === requestId.current) setResult((current) => ({ userId, allocations: current.userId === userId ? current.allocations : [], error: "โหลดงานขายไม่สำเร็จ", loading: false }));
-    }
-  }, [userId]);
-  useFocusEffect(useCallback(() => { void refresh(); return () => { requestId.current++; }; }, [refresh]));
+  const { session } = useAuth(); const userId = session?.user.id;
+  const page = useAccountPage(fetchSellerAllocations, sellerCursor);
   const watches = useMemo<RealtimeWatch[]>(() => userId ? [
-    { table: "order_allocations", event: "INSERT", filter: `seller_id=eq.${userId}` },
-    { table: "order_allocations", event: "UPDATE", filter: `seller_id=eq.${userId}` },
+    { table: "order_allocations", event: "INSERT", filter: "seller_id=eq." + userId }, { table: "order_allocations", event: "UPDATE", filter: "seller_id=eq." + userId },
   ] : [], [userId]);
-  useRealtimeRefresh(`seller-allocations-${userId}`, refresh, watches, Boolean(userId));
-  return { allocations: result.userId === userId ? result.allocations : [], loading: result.userId !== userId || result.loading, error: result.userId === userId ? result.error : null, refresh };
+  useRealtimeRefresh("seller-allocations-" + userId, page.refresh, watches, Boolean(userId));
+  return { ...page, allocations: page.rows, error: page.error ? "โหลดงานขายไม่สำเร็จ" : null };
 }
-
-export function useNotifications() {
-  const { session } = useAuth();
-  const userId = session?.user.id;
-  const [result, setResult] = useState<{ userId?: string; items: Tables<"notifications">[]; loading: boolean; error: boolean }>({ items: [], loading: true, error: false });
-  const generation = useRef(0);
-  const refresh = useCallback(async () => {
-    const request = ++generation.current;
-    if (!userId) { setResult({ userId, items: [], loading: false, error: false }); return; }
-    setResult((current) => ({ userId, items: current.userId === userId ? current.items : [], loading: true, error: false }));
-    try {
-      const r = await supabase.from("notifications").select("*").eq("user_id", userId).neq("category", "chat").is("dismissed_at", null).order("created_at", { ascending: false });
-      if (r.error) throw r.error;
-      if (request === generation.current) setResult({ userId, items: r.data ?? [], loading: false, error: false });
-    } catch {
-      if (request === generation.current) setResult((current) => ({ userId, items: current.userId === userId ? current.items : [], loading: false, error: true }));
-    }
-  }, [userId]);
-  useFocusEffect(useCallback(() => { void refresh(); return () => { generation.current++; }; }, [refresh]));
+export function useNotifications(category = "all", unreadOnly = false) {
+  const { session } = useAuth(); const userId = session?.user.id;
+  const fetch = useCallback((userId: string, cursor: PageCursor | null) => fetchNotifications(userId, cursor, category, unreadOnly), [category, unreadOnly]);
+  const page = useAccountPage(fetch, notificationCursor, `${category}:${unreadOnly}`);
   const watches = useMemo<RealtimeWatch[]>(() => userId ? [
-    { table: "notifications", event: "INSERT", filter: `user_id=eq.${userId}` },
-    { table: "notifications", event: "UPDATE", filter: `user_id=eq.${userId}` },
+    { table: "notifications", event: "INSERT", filter: "user_id=eq." + userId }, { table: "notifications", event: "UPDATE", filter: "user_id=eq." + userId },
   ] : [], [userId]);
-  useRealtimeRefresh(`my-notifications-${userId}`, refresh, watches, !!userId);
-  return { items: result.userId === userId ? result.items : [], loading: result.userId !== userId || result.loading, error: result.userId === userId && result.error, refresh };
+  useRealtimeRefresh(`my-notifications-${userId}`, page.refresh, watches, Boolean(userId));
+  return { ...page, items: page.rows };
 }

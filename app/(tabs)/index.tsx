@@ -2,9 +2,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { catalogColumns } from "../../src/lib/catalogPresentation";
 import { CommerceCard } from "../../src/components/CommerceCard";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { KeyboardAwareView } from "../../src/components/KeyboardAware";
@@ -17,6 +18,9 @@ import { CATALOG_SORT_OPTIONS, type CatalogSort } from "../../src/lib/catalogSor
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { fontScale } = useWindowDimensions();
+  const [gridWidth, setGridWidth] = useState(0);
+  const columns = catalogColumns(gridWidth, fontScale);
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | "market" | "store">("all");
@@ -154,12 +158,12 @@ export default function HomeScreen() {
                   <Text style={styles.message}>{emptyHint}</Text>
                 </View>
               ) : null}
-              <View style={styles.grid}>{items.map((item) => (
+              <View style={styles.grid} onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}>{items.map((item) => (
                 <CommerceCard
                   key={`${item.entity_type}-${item.entity_id}`}
                   item={item}
                   onPress={() => openResult(item.entity_type, item.entity_id)}
-                  compact
+                  compact columns={columns}
                 />
               ))}</View>
             </>
@@ -178,8 +182,8 @@ export default function HomeScreen() {
                   <Text style={styles.message}>{emptyHint}</Text>
                 </View>
               ) : null}
-              <View style={styles.grid}>{items.map((item) => (
-                <CommerceCard key={`${item.entity_type}-${item.entity_id}`} item={item} compact onPress={() => openResult(item.entity_type, item.entity_id)} />
+              <View style={styles.grid} onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}>{items.map((item) => (
+                <CommerceCard key={`${item.entity_type}-${item.entity_id}`} item={item} compact columns={columns} onPress={() => openResult(item.entity_type, item.entity_id)} />
               ))}</View>
             </>
           )}

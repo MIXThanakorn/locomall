@@ -2,7 +2,8 @@ import { ScreenHeader } from "../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { BackButton } from "../../src/components/BackButton";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { LoadNotice } from "../../src/components/LoadNotice";
 import { Alert, Image, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button } from "../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -13,6 +14,7 @@ import { supabase } from "../../src/lib/supabase";
 import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
 import { formatSaleQuantity } from "../../src/lib/productUnit";
 import { canBuyerCancel } from "../../src/lib/cartMarkets";
+import { DeliveryAddressCard } from "../../src/components/DeliveryAddressCard";
 
 const deliverySteps = ["awaiting_preparation", "preparing", "at_hub", "consolidated", "shipped", "delivered"];
 const pickupSteps = ["awaiting_preparation", "preparing", "at_hub", "delivered"];
@@ -23,18 +25,31 @@ const buyerPickupLabels: Record<string, string> = { awaiting_preparation: "ร�
 
 export default function OrderDetail() {
   const { id } = useLocalSearchParams<{ id: string }>(); const router = useRouter(); const { session } = useAuth(); const [order, setOrder] = useState<any>(); const [loading, setLoading] = useState(false); const [refreshing, setRefreshing] = useState(false);
-  const load = useCallback(async () => { const { data } = await supabase.from("orders").select("*,markets(name,hub_address),order_items(*,stores(name,image_url),order_allocations(status,stock_deducted_at))").eq("order_id", Number(id)).single(); setOrder(data); }, [id]);
-  useEffect(() => { void load(); }, [load]);
+  const [loadError, setLoadError] = useState(false);
+  const userId = session?.user.id;
+  const generation = useRef(0);
+  const load = useCallback(async () => {
+    const version = ++generation.current;
+    try {
+      if (!userId || !Number.isSafeInteger(Number(id)) || Number(id) <= 0) throw new Error("invalid order");
+      const { data, error } = await supabase.from("orders").select("*,markets(name,hub_address),order_items(*,stores(name,image_url),order_allocations(status,stock_deducted_at))").eq("order_id", Number(id)).single();
+      if (version !== generation.current) return;
+      if (error || !data) throw error ?? new Error("unavailable");
+      setOrder(data); setLoadError(false);
+    } catch { if (version === generation.current) { setOrder(undefined); setLoadError(true); } }
+  }, [id, userId]);
+  useEffect(() => { void load(); const counter = generation; return () => { counter.current++; }; }, [load]);
   const watches = useMemo<RealtimeWatch[]>(() => [{ table: "orders", event: "UPDATE", filter: `order_id=eq.${Number(id)}` }, { table: "order_allocations", event: "UPDATE" }], [id]);
   useRealtimeRefresh(`order-detail-${id}`, load, watches, Number.isSafeInteger(Number(id)) && Number(id) > 0);
   const cancel = async () => { setLoading(true); const { error } = await supabase.rpc("cancel_order", { p_order_id: Number(id), p_reason: "ยกเลิกโดยผู้ซื้อ" }); setLoading(false); if (error) Alert.alert("ยกเลิกไม่สำเร็จ", translateDatabaseError(error)); else await load(); };
   const confirm = () => Alert.alert("ยืนยันการรับสินค้า", order?.fulfillment_method === "pickup" ? "ยืนยันว่าคุณได้รับสินค้าจากจุดรวมเรียบร้อยแล้ว" : "ยืนยันว่าคุณได้รับพัสดุเรียบร้อยแล้ว", [{ text: "ยกเลิก", style: "cancel" }, { text: "ยืนยัน", onPress: async () => { setLoading(true); const { error } = await supabase.rpc("confirm_delivery", { p_order_id: Number(id) }); setLoading(false); if (error) Alert.alert("ยืนยันไม่สำเร็จ", translateDatabaseError(error)); else { Alert.alert("ยืนยันรับสินค้าแล้ว"); await load(); } } }]);
-  if (!order) return <View style={styles.center}><BackButton floating /><Text>กำลังโหลด...</Text></View>;
+  if (!order) return <View style={styles.center}><BackButton floating />{loadError ? <LoadNotice onRetry={() => void load()} /> : <Text>กำลังโหลด...</Text>}</View>;
   const pickup = order.fulfillment_method === "pickup"; const isBuyer = session?.user.id === order.buyer_id; const steps = pickup ? pickupSteps : deliverySteps; const labels = isBuyer ? (pickup ? buyerPickupLabels : buyerDeliveryLabels) : (pickup ? pickupLabels : deliveryLabels); const current = steps.indexOf(order.status);
   const canConfirm = isBuyer && ((pickup && order.status === "at_hub") || (!pickup && order.status === "shipped"));
   return <ScrollView contentContainerStyle={styles.root} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <ScreenHeader title={order.order_number} titleStyle={styles.number} /><Text style={styles.market}>{order.markets?.name}</Text><Text style={styles.date}>วันที่สั่ง {formatThaiDateTime(order.created_at)}</Text>
     <View style={styles.method}><Text style={styles.methodTitle}>{pickup ? "นัดรับที่จุดรวมสินค้า" : "จัดส่งถึงที่อยู่"}</Text><Text style={styles.methodDetail}>{pickup ? `${order.markets?.hub_address}${order.pickup_distance_km ? ` · ${order.pickup_distance_km} กม.` : ""}` : "รวมส่งเป็นพัสดุเดียว"}</Text></View>
+    {!pickup ? <DeliveryAddressCard value={order.delivery_address_snapshot} /> : null}
     <View style={styles.timeline}>{steps.map((step, index) => <View key={step} style={styles.step}><View style={[styles.dot, index <= current && styles.done]} /><Text style={[styles.stepText, index <= current && styles.doneText]}>{labels[step]}</Text></View>)}</View>
     {order.order_items.map((item: any) => <View style={styles.card} key={item.order_item_id}>{item.product_image_url||item.stores?.image_url?<Image source={{uri:item.product_image_url||item.stores?.image_url}} style={styles.productImage}/>:null}<View style={styles.productBody}><Text style={styles.item}>{item.product_name}</Text><Text style={styles.store}>ร้าน {item.stores?.name ?? "ร้านค้า"}</Text><View style={styles.itemDetail}><Text style={styles.alloc}>{formatSaleQuantity(item.quantity, item.unit)} × ฿{Number(item.unit_price).toLocaleString()}</Text><Text style={styles.price}>฿{Number(item.total_amount).toLocaleString()}</Text></View></View></View>)}
     <View style={styles.totalRow}><Text style={styles.item}>{order.payment_method === "demo_wallet" ? "ชำระด้วยยอดจำลองแล้ว · ไม่ใช่เงินจริง" : "ยอดชำระเมื่อได้รับสินค้า"}</Text><Text style={styles.total}>฿{Number(order.total_amount).toLocaleString()}</Text></View>

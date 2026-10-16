@@ -37,7 +37,7 @@ export default function EditStore() {
     <TouchableOpacity style={styles.imageBox} onPress={async () => { try { setImage(await selectSquareImage()); } catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); } }}>
       {image?.uri || store?.image_url ? <Image source={{ uri: image?.uri ?? store.image_url }} style={styles.image} /> : <Text style={styles.imageText}>+ เปลี่ยนรูปร้าน/สินค้า</Text>}
     </TouchableOpacity>
-    <AppTextInput style={styles.input} placeholder="ชื่อร้าน" value={name} onChangeText={setName} /><AppTextInput style={styles.input} placeholder="ชื่อสินค้า" value={product} onChangeText={setProduct} maxLength={120} />
+    <AppTextInput style={styles.input} placeholder="ชื่อร้าน" value={name} onChangeText={setName} maxLength={120} /><AppTextInput style={styles.input} placeholder="ชื่อสินค้า" value={product} onChangeText={setProduct} maxLength={120} />
     <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline maxLength={1500} />
     <ListingAssistant storeId={Number(storeId)} productName={product} description={description} image={image} existingImage={!!store?.image_url} disabled={saving || !store} onApply={(nextProduct, nextDescription) => { setProduct(nextProduct); setDescription(nextDescription); }} />
     <ProductUnitField kind={unitKind} amount={unitAmount} onKindChange={(value) => { setUnitKind(value); setUnitAmount(""); }} onAmountChange={setUnitAmount} disabled={store?.approval_status === "approved" || store?.approval_status === "suspended"} />

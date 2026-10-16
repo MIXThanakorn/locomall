@@ -303,6 +303,17 @@ audit log. Admin ลบถาวรได้เฉพาะ order ที่ย�
 - Leaked-password protection เป็นการตั้งค่า Supabase Auth แยกจาก migration และต้องใช้ Pro ขึ้นไป;
   รอบนี้ไม่ได้เปลี่ยนแผนบริการหรือเปิดบริการที่มีค่าใช้จ่าย
 
+### Security boundary follow-up (16 Oct 2026)
+
+- OAuth and password recovery now use PKCE. Recovery requires a locally stored recovery verifier and a valid code for the expected callback; implicit bearer-token links are refused. Request a fresh recovery link on the device that will open it. Allowlist `locomall://sign-in` and `locomall://new-password` (and actual development/web URLs) in Supabase Auth; this repository does not change hosted Auth settings.
+- Private navigation screens remount on account identity changes, including screens retained in history. Paged state is account/filter scoped and ignores superseded responses. Auth callback screens remain mounted while exchanging a code.
+- New delivery orders snapshot recipient, phone and address under existing order RLS; seller DTOs do not expose it. Historical orders remain explicitly without a checkout snapshot. Existing malformed legacy phone data is not rewritten, but must be corrected before reuse for a new delivery order.
+- Server input limits match form limits: name 120, description 1,500, address/hub 500 characters. At most 20 addresses and 200 new chat rooms per account; opening an existing chat room is not counted as new creation. Mutations are throttled; stock updates 20/min, reviews 10/min, push registration 10/min and at most 10 enabled devices. No pending COD order is automatically expired.
+- Buyer orders, seller allocations and notifications use 25-row keyset pages with Load more. Notification filters run before pagination and unread totals come from the badge count. Logistics fetches a bounded window and contacts only for that window; direct order links query the requested order even if it is not in the first window.
+- Push uses service-only durable jobs and registration versions. Late tickets never enable a device; stale registrations cancel pending jobs. Claims are atomic with leases, batches are at most 100, rate/HTTP failures use bounded backoff, and receipts are checked after 15 minutes. A network timeout without a recorded ticket is `uncertain`, not blindly replayed. Provider receipts are not evidence that a person read a notification.
+- The Push migration initially queues without sending for a two-phase deploy. After deploying worker v7 or later, activate with administrative SQL: `update private.push_worker_control set active=true where singleton=true`. The per-minute database cron wakes the worker only for due work; historical notifications are not replayed. Never grant client access to jobs, worker control, claim RPC or webhook secrets.
+- The six missing FK indexes reported in the audit were added; unused-index notices are not a reason to delete indexes without traffic/query-plan evidence. Supabase JS is pinned with the lockfile. Existing upstream dependency advisories and paid leaked-password protection still require separate release decisions; do not run `npm audit fix --force` against this Expo SDK.
+
 ### Startup and responsive notification actions
 
 - Root navigation defaults to `index` (the session/onboarding gate); the auth group defaults to `splash`. Saved accounts are preserved, and the account picker remains available through Settings rather than becoming the default screen.

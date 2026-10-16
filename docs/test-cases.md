@@ -182,6 +182,23 @@ npx expo export --platform web --output-dir dist
 npm audit --omit=dev --audit-level=high
 ```
 
+### Security boundary regression — 16 Oct 2026
+
+- PKCE: refuse implicit tokens, foreign callbacks and duplicate codes; require the local recovery verifier and recovered account before changing a password. Request a fresh link on the same device.
+- Shared device: resolve an A request after switching to B, fail B's load, and confirm neither private rows nor badge counts from A appear; check retained Back history on actual devices.
+- Snapshot: edit a saved address after checkout and confirm the order recipient stays unchanged. Historical orders must not pretend that current address data is a checkout snapshot. A legacy invalid phone must not block changing the default of a different valid address, but must block a new delivery using that invalid address.
+- Limits: reject oversized names/descriptions/addresses at the DB boundary; enforce address/room/device caps, but opening an existing chat remains possible at the cap. Check stock/review/registration rate limits without changing internal order processing.
+- Push: authenticated Vault wake returns 200 with no jobs; client roles cannot claim/read jobs. Mock a logout between send and successful ticket: enabled remains false. Duplicate wake does not resend accepted work; check actual provider receipts on real APK tests.
+- Paging: load more than 25 rows across ties in created_at, filter notifications before paging, and open a logistics deep link outside the first window.
+
 ทดสอบ Manual/E2E ด้วยบัญชีอย่างน้อย 6 บัญชี: Platform Admin, Market owner,
 Store manager, Seller A, Seller B และ Buyer. ห้ามใช้บัญชีเดียวสลับทุกบทบาท เพราะจะ
 ไม่สามารถพิสูจน์ isolation ของ RLS ได้.
+
+## Catalog presentation (2026-10-16)
+
+- Home/market: use a 320–390 logical-pixel viewport and font scale 1.0/1.3/1.5. Cards should switch to one column when needed; names must not overlap prices or stock badges.
+- Product cards: display the product image/name, shop, sale-unit price, true ready-stock status, and rating only when loaded. Sold quantities are order units, not universally pieces. Missing/broken images must show a fallback.
+- Market: search both shop and product names; combine search with ready-stock filtering; clear filters from the empty state. Shops appear before the latest three reviews, with one review request per target.
+- Store: select quantity and see subtotal before full reviews; stock refresh must clamp selected quantity. Check add-to-cart, self-purchase protection, guest sign-in, chat, and the market link.
+- Real devices: verify the bottom purchase button clears the Android gesture bar/iOS home indicator, including large text and keyboard-open states. Browser checks do not replace APK/iOS verification.

@@ -1,5 +1,6 @@
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { LoadNotice } from "../../src/components/LoadNotice";
+import { Button } from "../../src/components/Button";
 import React from "react";
 import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -63,6 +64,7 @@ export default function OrdersTab() {
           </TouchableOpacity>;
         })}
       </>}
+      {(active === "buying" ? buyer.hasMore : seller.hasMore) ? <Button title="โหลดรายการเพิ่มเติม" variant="outline" loading={active === "buying" ? buyer.loadingMore : seller.loadingMore} onPress={() => void (active === "buying" ? buyer.loadMore() : seller.loadMore())} /> : null}
     </ScrollView>
   </View>;
 }
