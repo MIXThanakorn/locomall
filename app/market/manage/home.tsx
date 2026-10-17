@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { BackButton } from "../../../src/components/BackButton";
@@ -18,6 +19,7 @@ const MARKET_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function MarketManagementHome() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["quickRow"],"wrap":["cardHead"]});
   const router = useRouter();
   const { session, isAdmin } = useAuth();
   const userId = session?.user.id;
@@ -71,7 +73,7 @@ export default function MarketManagementHome() {
   </ScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },
   quickRow: { flexDirection: "row", gap: 10, marginTop: 16 }, quick: { flex: 1, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, alignItems: "center", gap: 5 }, quickText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary },

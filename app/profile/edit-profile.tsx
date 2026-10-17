@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 /* eslint-disable react-hooks/immutability */
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from "react-native";
@@ -15,6 +16,7 @@ import { ownObjectPathFromPublicUrl, selectSquareImage, SelectedImage, uploadPub
 import { mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValidation";
 
 export default function EditProfileScreen() {
+  const styles = useResponsiveStyles(baseStyles, { compactPadding: ["card"] });
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
@@ -111,6 +113,7 @@ export default function EditProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <KeyboardAwareScrollView style={styles.scroll} contentContainerStyle={styles.pageScroll} showsVerticalScrollIndicator={false}>
       <HeaderGradient
         title=""
         variant="gold"
@@ -143,7 +146,7 @@ export default function EditProfileScreen() {
         <Text style={styles.headerEmail}>{email}</Text>
       </HeaderGradient>
 
-      <KeyboardAwareScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>ชื่อ-นามสกุล</Text>
           <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} />
@@ -170,12 +173,14 @@ export default function EditProfileScreen() {
             onPress={handleUpdateProfile}
           />
         </View>
+      </View>
       </KeyboardAwareScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
+  scroll: { flex: 1 }, pageScroll: { flexGrow: 1, paddingBottom: 32 },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -187,7 +192,7 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     alignItems: "center",
-    marginTop: -10,
+    marginTop: 16,
     position: "relative",
   },
   editBadge: {
@@ -216,7 +221,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: -20,
+    marginTop: 16,
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,

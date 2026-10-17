@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +14,7 @@ import { supabase } from "../../src/lib/supabase";
 type Area = { code: string; name_th: string; postal_code?: string | null };
 
 export default function LocationOnboarding() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const { refreshLocation } = useAuth();
   const [provinces, setProvinces] = useState<Area[]>([]);
@@ -64,7 +66,7 @@ export default function LocationOnboarding() {
   </ScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 50 },
   pin: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#EAF1E9" },

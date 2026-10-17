@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
@@ -21,6 +22,7 @@ const APPROVAL_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function AdminApprovals() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"]});
   const [markets, setMarkets] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
   const [sellers, setSellers] = useState<any[]>([]);
@@ -95,7 +97,7 @@ export default function AdminApprovals() {
   </KeyboardAwareScrollView></AdminGate>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 110 },
   eyebrow: { fontFamily: "Kanit_500Medium", color: Colors.goldDark, fontSize: 12, letterSpacing: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, lineHeight: 20 },
   sectionBlock: { marginTop: 24 }, section: { fontFamily: "Kanit_700Bold", fontSize: 19, color: Colors.textDark }, count: { color: Colors.goldDark }, sectionSub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 },

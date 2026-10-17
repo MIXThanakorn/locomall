@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { StyleSheet, Text, View } from "react-native";
 import { AppTextInput } from "./AppTextInput";
 import { DropdownOption, SearchableDropdown } from "./SearchableDropdown";
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function ProductUnitField({ kind, amount, onKindChange, onAmountChange, disabled = false }: Props) {
+  const styles = useResponsiveStyles(baseStyles, {});
   const options: DropdownOption[] = PRODUCT_UNITS.map((unit) => ({ value: unit, label: unit }));
   if (kind && !PRODUCT_UNITS.some((unit) => unit === kind)) {
     options.push({ value: kind, label: `${kind} (หน่วยเดิม)` });
@@ -38,7 +40,7 @@ export function ProductUnitField({ kind, amount, onKindChange, onAmountChange, d
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   label: { fontFamily: "Kanit_500Medium", color: Colors.textDark, marginBottom: 6 },
   input: { minHeight: 54, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 14, marginBottom: 10 },
   hint: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted, marginBottom: 12 },

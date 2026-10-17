@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { AppTextInput } from "../../../src/components/AppTextInput";
@@ -14,6 +15,7 @@ import { formatProductUnit } from "../../../src/lib/productUnit";
 import { ListingAssistant } from "../../../src/components/ListingAssistant";
 
 export default function CreateStore() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const { marketId } = useLocalSearchParams<{ marketId: string }>();
   const router = useRouter();
   const [name, setName] = useState("");
@@ -74,7 +76,7 @@ export default function CreateStore() {
   </KeyboardAwareScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary },
   note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 16 },

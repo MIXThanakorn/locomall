@@ -12,6 +12,7 @@ import { AppAlertProvider } from "../src/components/AppAlertProvider";
 import { PushNotificationBootstrap } from "../src/components/PushNotificationBootstrap";
 import { BadgeProvider } from "../src/context/BadgeContext";
 import { CatalogPreferencesProvider } from "../src/context/CatalogPreferencesContext";
+import { ResponsiveFrame } from "../src/components/ResponsiveFrame";
 
 function AccountScreenBoundary({ children }: PropsWithChildren) {
   const { session } = useAuth();
@@ -45,7 +46,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppAlertProvider><AuthProvider><CatalogPreferencesProvider><LanguageProvider><BadgeProvider><PushNotificationBootstrap />
         <StatusBar style="dark" />
-        <Stack
+        <ResponsiveFrame><Stack
           initialRouteName="index"
           screenLayout={accountScreenLayout}
           screenOptions={{
@@ -55,7 +56,7 @@ export default function RootLayout() {
         >
           <Stack.Screen name="index" options={{ animation: "none" }} />
           <Stack.Screen name="(auth)" options={{ animation: "none" }} />
-        </Stack>
+        </Stack></ResponsiveFrame>
         <PhoneCompletionGuard />
       </BadgeProvider></LanguageProvider></CatalogPreferencesProvider></AuthProvider></AppAlertProvider>
     </SafeAreaProvider>

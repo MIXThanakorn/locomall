@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -7,6 +8,7 @@ import { Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 
 export default function SwitchAccount() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const { session, savedAccounts, refreshSavedAccounts, switchAccount } = useAuth();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export default function SwitchAccount() {
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: Spacing.lg },
   back: { alignSelf: "flex-start", padding: 8 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginTop: 10 },

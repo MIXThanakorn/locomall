@@ -1,16 +1,18 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import React from "react";
-import { Image, View, Text, StyleSheet } from "react-native";
+import { Image, ScrollView, View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, Typography, Spacing } from "../../src/constants/theme";
 import { Button } from "../../src/components/Button";
 
 export default function SplashScreen() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
       <View style={styles.content}>
         <Image
           source={require("../../assets/images/APP_LOGO.png")}
@@ -49,24 +51,29 @@ export default function SplashScreen() {
           onPress={() => router.replace("/(tabs)" as any)}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.goldPrimary,
   },
+  scrollContent: { flexGrow: 1 },
   content: {
     flex: 1,
+    minHeight: 320,
+    paddingVertical: 24,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.xl,
   },
   logo: {
-    width: 240,
-    height: 248,
+    width: "100%",
+    maxWidth: 240,
+    height: "auto",
+    aspectRatio: 240 / 248,
   },
   tagline: {
     fontSize: Typography.fontSizeMd,

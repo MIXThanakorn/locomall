@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
@@ -11,6 +12,7 @@ import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../src/l
 import { translateDatabaseError } from "../../src/lib/databaseError";
 
 export default function CreateMarket() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -72,7 +74,7 @@ export default function CreateMarket() {
   </KeyboardAwareScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary },
   area: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 16 },

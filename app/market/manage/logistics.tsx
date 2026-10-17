@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/set-state-in-effect */
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,6 +25,7 @@ const LOGISTICS_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function Logistics() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const permissions = useCapabilities();
   const { session } = useAuth();
   const { orderId } = useLocalSearchParams<{ orderId?: string }>();
@@ -85,4 +87,4 @@ export default function Logistics() {
     </KeyboardAwareScrollView>
   </PermissionGate>;
 }
-const styles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, order: { backgroundColor: "white", padding: 16, borderRadius: 16, marginTop: 12 }, number: { fontFamily: "Kanit_700Bold" }, method: { fontFamily: "Kanit_500Medium", color: Colors.goldDark }, alloc: { paddingVertical: 10, borderBottomWidth: 1, borderColor: Colors.inputBorder, gap: 6 }, item: { fontFamily: "Kanit_400Regular" }, input: { borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 10, padding: 12, marginVertical: 10 }, ready: { backgroundColor: "#EAF1E9", padding: 12, borderRadius: 12, marginTop: 10 }, readyText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary } });
+const baseStyles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, order: { backgroundColor: "white", padding: 16, borderRadius: 16, marginTop: 12 }, number: { fontFamily: "Kanit_700Bold" }, method: { fontFamily: "Kanit_500Medium", color: Colors.goldDark }, alloc: { paddingVertical: 10, borderBottomWidth: 1, borderColor: Colors.inputBorder, gap: 6 }, item: { fontFamily: "Kanit_400Regular" }, input: { borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 10, padding: 12, marginVertical: 10 }, ready: { backgroundColor: "#EAF1E9", padding: 12, borderRadius: 12, marginTop: 10 }, readyText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary } });

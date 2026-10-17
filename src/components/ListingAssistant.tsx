@@ -1,3 +1,5 @@
+import { ResponsiveFrame } from "./ResponsiveFrame";
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { ScreenHeader } from "./ScreenHeader";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Modal, StyleSheet, Text, View } from "react-native";
@@ -16,6 +18,7 @@ export function ListingAssistant(props: Props) {
   return <ListingAssistantForm key={contextKey} {...props} userId={session?.user.id} />;
 }
 function ListingAssistantForm({ marketId, storeId, productName, description, image, existingImage, disabled, onApply, userId }: Props & { userId?: string }) {
+  const styles = useResponsiveStyles(baseStyles, {});
   const [busy, setBusy] = useState(false); const [result, setResult] = useState<ListingAiResult | null>(null);
   const [draftName, setDraftName] = useState(""); const [draftDescription, setDraftDescription] = useState("");
   const [error, setError] = useState(""); const [visible, setVisible] = useState(false);
@@ -55,7 +58,7 @@ function ListingAssistantForm({ marketId, storeId, productName, description, ima
     <Button title={busy ? "กำลังวิเคราะห์ข้อมูล…" : "วิเคราะห์ข้อมูลสินค้า"} variant="outline" onPress={ask} disabled={!canGenerate} loading={busy} />
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
-      <KeyboardAwareScrollView style={styles.modal} contentContainerStyle={styles.content}>
+      <ResponsiveFrame><KeyboardAwareScrollView style={styles.modal} contentContainerStyle={styles.content}>
         <ScreenHeader title={"คำแนะนำจากการวิเคราะห์ของระบบ"} titleStyle={styles.title} onBackPress={() => setVisible(false)} />
         <Text style={styles.note}>คำแนะนำอาจคลาดเคลื่อน กรุณาตรวจชื่อ รูป สภาพ และคำกล่าวอ้างให้ถูกต้องก่อนนำไปใช้ คุณยังต้องกดบันทึกร้านด้วยตนเอง</Text>
         {result?.usedFallback ? <Text style={styles.note}>บริการหลักไม่พร้อม ระบบใช้บริการสำรองในการวิเคราะห์ครั้งนี้</Text> : null}
@@ -63,17 +66,17 @@ function ListingAssistantForm({ marketId, storeId, productName, description, ima
         <AppTextInput style={styles.input} value={draftName} onChangeText={setDraftName} maxLength={120} />
         <Text style={styles.label}>รายละเอียดสินค้า</Text>
         <AppTextInput style={[styles.input, styles.multiline]} value={draftDescription} onChangeText={setDraftDescription} maxLength={1500} multiline />
-        <Text style={styles.label}>คำค้นแนะนำ (ยังไม่บันทึกเป็นแท็ก)</Text>
+        <Text style={styles.label}>คำค้นแนะนำ</Text>
         <Text style={styles.note}>{result?.suggestion.keywords.join(" · ") || "ไม่มีคำค้นแนะนำ"}</Text>
         <Text style={styles.label}>ข้อมูลที่ควรระบุเพิ่ม</Text>
         {result?.suggestion.missing_information.length ? result.suggestion.missing_information.map((entry, index) => <Text key={index} style={styles.note}>• {entry}</Text>) : <Text style={styles.note}>ระบบไม่มีคำแนะนำเพิ่มเติม กรุณาตรวจสอบข้อมูลด้วยตนเอง</Text>}
         <Button title="ตรวจแล้ว นำชื่อและรายละเอียดไปใช้" onPress={() => { setVisible(false); onApply(draftName.trim(), draftDescription.trim()); }} disabled={!!disabled || !draftName.trim() || !draftDescription.trim()} style={styles.button} />
         <Button title="ปิดโดยไม่เปลี่ยนข้อมูล" variant="ghost" onPress={() => setVisible(false)} />
-      </KeyboardAwareScrollView>
+      </KeyboardAwareScrollView></ResponsiveFrame>
     </Modal>
   </View>;
 }
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   box: { padding: Spacing.md, borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.lg, backgroundColor: Colors.cardBackground, marginBottom: 16 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 19, color: Colors.greenPrimary, marginBottom: 8 },
   note: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 10 },

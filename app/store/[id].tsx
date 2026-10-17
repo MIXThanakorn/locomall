@@ -1,4 +1,5 @@
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomActionLayout } from "../../src/hooks/useBottomActionLayout";
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { BackButton } from "../../src/components/BackButton";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { LoadNotice } from "../../src/components/LoadNotice";
@@ -7,7 +8,7 @@ import { ContextImage } from "../../src/components/ContextImage";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Image, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { Button } from "../../src/components/Button";
@@ -15,7 +16,7 @@ import { CatalogActions } from "../../src/components/CatalogActions";
 import { BorderRadius, Colors, Shadows, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { translateDatabaseError } from "../../src/lib/databaseError";
-import { SelectedImage, selectSquareImage, uploadPrivateImage } from "../../src/lib/storage";
+import { sellerJoinAction } from "../../src/lib/sellerJoin";
 import { supabase } from "../../src/lib/supabase";
 import { formatSaleQuantity } from "../../src/lib/productUnit";
 
@@ -25,18 +26,16 @@ export default function StoreDetail() {
   return <StoreDetailContent key={`${session?.user.id}:${id}`} />;
 }
 function StoreDetailContent() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const bottomAction = useBottomActionLayout();
   const { session } = useAuth();
   const [store, setStore] = useState<any>();
   const [stock, setStock] = useState(0);
   const [sameArea, setSameArea] = useState(false);
-  const [application, setApplication] = useState<any>();
+  const [application, setApplication] = useState<{ status: string } | null>(null);
   const [isSeller, setSeller] = useState(false);
-  const [note, setNote] = useState("");
-  const [sellerImage, setSellerImage] = useState<SelectedImage | null>(null);
-  const [sending, setSending] = useState(false);
   const [adding, setAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [toast, setToast] = useState<string | null>(null);
@@ -55,7 +54,7 @@ function StoreDetailContent() {
     const currentStore = storeResult.data as any;
     if (session?.user.id && currentStore) {
       const [applicationResult] = await Promise.all([
-        supabase.from("store_seller_applications").select("application_id,status,review_note,note,product_image_url").eq("store_id", Number(id)).eq("applicant_id", session.user.id).maybeSingle(),
+        supabase.from("store_seller_applications").select("status").eq("store_id", Number(id)).eq("applicant_id", session.user.id).maybeSingle(),
       ]);
       if (request !== generation.current) return;
       if (applicationResult.error) throw applicationResult.error;
@@ -104,39 +103,16 @@ function StoreDetailContent() {
     if (error) Alert.alert("เปิดแชตไม่สำเร็จ", translateDatabaseError(error));
     else router.push(`/chat/${data}` as never);
   };
-  const chooseSellerImage = async () => {
-    try { setSellerImage(await selectSquareImage()); }
-    catch { Alert.alert("เลือกรูปไม่สำเร็จ", "รองรับเฉพาะรูป JPG, PNG และ WebP กรุณาลองใหม่อีกครั้ง"); }
-  };
-  const applyToSell = async () => {
-    if (!session) return router.push("/(auth)/sign-in" as never);
-    if (!sellerImage) return Alert.alert("กรุณาแนบรูปสินค้า", "ใช้รูปสินค้าจริงของคุณเพื่อให้เจ้าของตลาดตรวจสอบก่อนอนุมัติ");
-    setSending(true);
-    let uploadedPath: string | null = null;
-    try {
-      const uploaded = await uploadPrivateImage("seller-evidence", session.user.id, sellerImage, `seller-product-${id}`);
-      uploadedPath = uploaded.path;
-      const { error } = await supabase.rpc("apply_to_sell_in_store", { p_store_id: Number(id), p_note: note.trim() || undefined, p_product_image_url: uploaded.path });
-      if (error) throw error;
-      uploadedPath = null;
-      setSellerImage(null);
-      Alert.alert("ส่งคำขอร่วมขายแล้ว", "เจ้าของตลาดชุมชนจะตรวจรูปสินค้าและข้อมูลของคุณ");
-      await load();
-    } catch (error: any) {
-      if (uploadedPath) await supabase.storage.from("seller-evidence").remove([uploadedPath]);
-      Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error));
-    }
-    finally { setSending(false); }
-  };
+
 
   if (loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!store) return <View style={styles.center}><BackButton floating />{loadError ? <LoadNotice onRetry={() => void load()} /> : <Text>ไม่พบร้านค้า</Text>}</View>;
   const isManager = Boolean(store.is_manager);
   const cannotBuyOwn = Boolean(session && (isManager || isSeller));
-  const sellerImagePicker = <TouchableOpacity style={styles.applicationImagePicker} onPress={chooseSellerImage}>{sellerImage?<Image source={{uri:sellerImage.uri}} style={styles.applicationImage}/>:<View style={styles.applicationImageEmpty}><Ionicons name="camera-outline" size={28} color={Colors.greenPrimary}/><Text style={styles.applicationImageText}>แนบรูปสินค้าของคุณ (จำเป็น)</Text></View>}</TouchableOpacity>;
+  const joinLabel = sellerJoinAction({ signedIn: !!session, sameArea, isManager, isSeller, status: application?.status });
 
   return <View style={styles.root}>
-    <KeyboardAwareScrollView contentContainerStyle={{ paddingBottom: 160 + insets.bottom }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().then(() => setRefreshVersion((value) => value + 1)).finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
+    <KeyboardAwareScrollView contentContainerStyle={{ paddingBottom: bottomAction.contentBottom }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().then(() => setRefreshVersion((value) => value + 1)).finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
       {loadError ? <LoadNotice onRetry={() => void load()} /> : null}
       <ScreenHeader contentInset={0} title={store.name} titleStyle={styles.title} />
       <ContextImage uri={store.image_url} name={store.product_name || store.name} size={280} style={styles.image} />
@@ -144,7 +120,6 @@ function StoreDetailContent() {
         <TouchableOpacity accessibilityRole="link" accessibilityLabel={`ดูตลาด ${store.markets?.name ?? "ชุมชน"}`} onPress={() => router.push(`/market/${store.market_id}` as never)} style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 8 }}><Ionicons name="storefront-outline" size={18} color={Colors.goldDark} /><Text style={styles.market}>{store.markets?.name} · ดูตลาด</Text><Ionicons name="chevron-forward" size={17} color={Colors.goldDark} /></TouchableOpacity><Text style={styles.product}>{store.product_name}</Text>
         <View style={styles.info}><Text style={styles.price}>฿{Number(store.unit_price).toLocaleString()} / {store.unit}</Text><Text style={styles.stock}>พร้อมขาย {formatSaleQuantity(stock, store.unit)}</Text></View>
         <CatalogActions targetType="store" targetId={Number(id)} refreshVersion={refreshVersion}>
-        {cannotBuyOwn ? <View style={styles.ownStoreNotice}><Ionicons name="information-circle-outline" size={22} color={Colors.greenPrimary} /><Text style={styles.ownStoreText}>นี่คือร้านที่คุณดูแลหรือร่วมขาย จึงไม่สามารถสั่งซื้อจากร้านนี้ด้วยบัญชีเดียวกันได้</Text></View> : null}
         {stock > 0 && !cannotBuyOwn ? <View style={styles.quantityBox}>
           <View><Text style={styles.quantityTitle}>เลือกจำนวน</Text><Text style={styles.quantityHint}>จำนวนที่ต้องการใส่ตะกร้า</Text></View>
           <View style={styles.quantityControl}>
@@ -155,26 +130,20 @@ function StoreDetailContent() {
         </View> : null}
         {stock > 0 && !cannotBuyOwn ? <Text style={styles.subtotal}>รวม ฿{(Number(store.unit_price) * quantity).toLocaleString("th-TH")}</Text> : null}
         <TouchableOpacity accessibilityRole="button" style={styles.contact} onPress={chat}><Ionicons name="chatbubble-ellipses-outline" size={20} color={Colors.greenPrimary} /><Text style={styles.contactLabel}>สอบถามผู้ดูแลร้าน</Text></TouchableOpacity>
-        <Text style={styles.sectionHeading}>รายละเอียดสินค้า</Text><Text style={styles.desc}>{store.description || "ยังไม่มีรายละเอียดเพิ่มเติม"}</Text>
-        <View style={styles.hub}><Ionicons name="cube-outline" size={20} color={Colors.greenPrimary} /><Text style={styles.hubText}>ผู้ขายหลายรายส่งของมารวมที่ {store.markets?.hub_address} แล้วจัดส่งหรือรอลูกค้ามารับที่จุดรวม</Text></View>
+        {joinLabel ? <Button title={joinLabel} variant="outline" onPress={() => router.push({ pathname: "/seller/listings/apply", params: { storeId: id } } as never)} style={{ marginBottom: 20 }} /> : null}
+        {store.description?.trim() ? <><Text style={styles.sectionHeading}>รายละเอียดสินค้า</Text><Text style={styles.desc}>{store.description}</Text></> : null}
+        <View style={styles.hub}><Ionicons name="cube-outline" size={20} color={Colors.greenPrimary} /><Text style={styles.hubText}>จุดรวมสินค้า: {store.markets?.hub_address}</Text></View>
         </CatalogActions>
         {isManager ? <Button title="แก้ไขข้อมูลร้าน" variant="outline" onPress={() => router.push({ pathname: "/store/manage/edit", params: { storeId: id } } as never)} style={{ marginTop: 14 }} /> : null}
-        {!isManager && !isSeller && session ? <View style={styles.sellerBox}>
-          <Text style={styles.sellerTitle}>มีสินค้าชนิดเดียวกัน?</Text>
-          {application?.status === "pending" ? <Text style={styles.pending}>คำขอร่วมขายกำลังรอเจ้าของตลาดชุมชนตรวจสอบ</Text>
-            : application?.status === "rejected" ? <><Text style={styles.rejected}>คำขอเดิมไม่ผ่าน: {application.review_note || "ไม่ระบุเหตุผล"}</Text>{sellerImagePicker}<AppTextInput style={styles.note} placeholder="ข้อมูลเพิ่มเติมสำหรับสมัครใหม่" value={note} onChangeText={setNote} multiline /><Button title="ส่งคำขอใหม่" onPress={applyToSell} loading={sending} /></>
-              : sameArea ? <>{sellerImagePicker}<AppTextInput style={styles.note} placeholder="แนะนำตัวหรือรายละเอียดสินค้าของคุณ" value={note} onChangeText={setNote} multiline /><Button title="ขอเป็นผู้ขายร่วม" onPress={applyToSell} loading={sending} /></>
-                : <Text style={styles.rejected}>คุณจะร่วมขายได้เมื่อพื้นที่หลักอยู่ตำบลเดียวกับตลาดชุมชนนี้</Text>}
-        </View> : null}
         {isSeller ? <TouchableOpacity onPress={() => router.push("/seller/listings" as never)}><Text style={styles.chat}>แก้ไขจำนวนสินค้าที่พร้อมขาย</Text></TouchableOpacity> : null}
       </View>
     </KeyboardAwareScrollView>
-    {toast ? <View style={styles.toast} accessibilityLiveRegion="polite"><Ionicons name="checkmark-circle" size={21} color={Colors.textWhite} /><Text style={styles.toastText}>{toast}</Text></View> : null}
-    <View style={[styles.bottom, { paddingBottom: Math.max(16, insets.bottom + 8) }]}><Button title={cannotBuyOwn ? "ไม่สามารถสั่งสินค้าร้านของตนเอง" : stock > 0 ? `เพิ่ม ${formatSaleQuantity(quantity, store.unit)}ลงตะกร้า` : "สินค้าหมด"} disabled={stock <= 0 || cannotBuyOwn} loading={adding} onPress={add} style={{ backgroundColor: Colors.goldPrimary }} /></View>
+    {toast ? <View style={[styles.toast, { bottom: bottomAction.height + 12 }]} accessibilityLiveRegion="polite"><Ionicons name="checkmark-circle" size={21} color={Colors.textWhite} /><Text style={styles.toastText}>{toast}</Text></View> : null}
+    <View onLayout={bottomAction.onLayout} style={[styles.bottom, { paddingBottom: bottomAction.paddingBottom }]}><Button title={cannotBuyOwn ? "สั่งซื้อร้านของตนเองไม่ได้" : stock > 0 ? `เพิ่ม ${formatSaleQuantity(quantity, store.unit)}ลงตะกร้า` : "สินค้าหมด"} disabled={stock <= 0 || cannotBuyOwn} loading={adding} onPress={add} style={{ backgroundColor: Colors.goldPrimary }} /></View>
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { flex: 1, alignItems: "center", justifyContent: "center" }, image: { width: "100%", height: 280 },
   placeholder: { alignItems: "center", justifyContent: "center", backgroundColor: "#EAF1E9" }, back: { position: "absolute", left: 18, width: 42, height: 42, borderRadius: 21, backgroundColor: "#FFFFFFDD", alignItems: "center", justifyContent: "center" },
   body: { padding: Spacing.lg }, market: { fontFamily: "Kanit_500Medium", color: Colors.goldDark }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary },

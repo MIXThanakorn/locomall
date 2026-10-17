@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { BackButton } from "../../src/components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +14,7 @@ import { supabase } from "../../src/lib/supabase";
 type Area = { code: string; name_th: string; postal_code?: string | null };
 
 export default function PrimaryLocation() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const { session, refreshLocation } = useAuth();
   const [provinces, setProvinces] = useState<Area[]>([]);
   const [districts, setDistricts] = useState<Area[]>([]);
@@ -79,7 +81,7 @@ export default function PrimaryLocation() {
   </ScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginBottom: 14 },

@@ -169,6 +169,18 @@ test("multi-market checkout, hub deductions, legacy orders, cancellation/refund 
     await uid("");
     await db.exec(read("supabase/migrations/20261015120640_backend_consistency_security_hardening.sql"));
     await db.exec("set role authenticated"); await uid(buyer);
+    // Selecting only one of two shops in the SAME market must preserve the other.
+    await db.exec(`reset role;
+      insert into stores(store_id,market_id,manager_id,name,product_name,approval_status,unit_price) values(3,1,'${seller2}','Unselected shop','C','approved',15);
+      insert into seller_listings(listing_id,store_id,seller_id,stock_quantity,reserved_quantity,status) values(4,3,'${seller2}',10,0,'active');
+      set role authenticated`);
+    await add(1,1); await add(3,2);
+    const subsetOrder = await order(1,1,1);
+    assert.equal((await db.query("select count(*)::int n from order_items where order_id=$1",[subsetOrder])).rows[0].n,1);
+    assert.deepEqual((await db.query("select store_id,quantity from cart_items ci join carts c using(cart_id) where c.buyer_id=$1 order by store_id",[buyer])).rows, [{store_id:3,quantity:2}]);
+    await db.query("select public.cancel_order($1)",[subsetOrder]);
+    await assert.rejects(order(2,3,1), /invalid store/);
+    assert.equal((await db.query("select quantity from cart_items ci join carts c using(cart_id) where c.buyer_id=$1 and store_id=3",[buyer])).rows[0].quantity,2);
     const guardedBalanceBefore = (await db.query("select wallet_balance from demo_accounts where user_id=$1",[buyer])).rows[0].wallet_balance;
     const guarded = (await db.query("select public.create_demo_wallet_order('10000000-0000-4000-8000-000000000099',1,1,'[{\"store_id\":1,\"quantity\":1}]') id")).rows[0].id;
     await db.query("select public.cancel_order($1)",[guarded]);

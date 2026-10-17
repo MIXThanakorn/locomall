@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { BackButton } from "../../src/components/BackButton";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,6 +13,7 @@ import { supabase } from "../../src/lib/supabase";
 
 type Area = { userId: string; label: string | null; loading: boolean; error: boolean };
 export default function CatalogSettings() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session, loading: authLoading } = useAuth();
@@ -57,7 +59,7 @@ export default function CatalogSettings() {
     <TouchableOpacity style={styles.home} onPress={() => router.replace("/(tabs)" as never)}><Text style={styles.homeText}>ดูตลาดในหน้าแรก</Text></TouchableOpacity>
   </ScrollView>;
 }
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { paddingHorizontal: 20 }, center: { flex: 1, justifyContent: "center", backgroundColor: Colors.background },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }, title: { flex: 1, fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 22 },
   card: { backgroundColor: Colors.cardBackground, padding: 18, borderRadius: 16, marginVertical: 18 }, heading: { fontFamily: "Kanit_500Medium", color: Colors.textDark, fontSize: 16 },

@@ -1,5 +1,6 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { ScrollView, View, Text, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from "../../src/constants/theme";
@@ -7,10 +8,11 @@ import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
 
 export default function SuccessPasswordScreen() {
+  const styles = useResponsiveStyles(baseStyles, { compactPadding: ["card"] });
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}>
       <HeaderGradient
         title=""
         variant="green"
@@ -40,22 +42,22 @@ export default function SuccessPasswordScreen() {
           />
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
   header: {
     paddingTop: 50,
-    paddingBottom: 60,
+    paddingBottom: 24,
   },
   content: {
     flex: 1,
-    marginTop: -40,
+    marginTop: 16,
     paddingHorizontal: Spacing.lg,
   },
   card: {

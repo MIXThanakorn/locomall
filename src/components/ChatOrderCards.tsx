@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -8,6 +9,7 @@ import { formatThaiDateTime } from "../lib/date";
 import { formatSaleQuantity } from "../lib/productUnit";
 
 export function ChatOrderCards({ items, error, onRetry }: { items: ChatOrderContext[]; error: boolean; onRetry: () => void }) {
+  const styles = useResponsiveStyles(baseStyles, {"wrap":["toggle"]});
   const [expanded, setExpanded] = useState(false);
   const router = useRouter();
   if (error) return <TouchableOpacity onPress={onRetry} style={styles.card}><Text style={styles.detail}>โหลดออเดอร์ที่เกี่ยวข้องไม่สำเร็จ · แตะเพื่อลองใหม่</Text></TouchableOpacity>;
@@ -31,7 +33,7 @@ export function ChatOrderCards({ items, error, onRetry }: { items: ChatOrderCont
     {expanded ? <Text style={styles.detail}>แสดงไม่เกิน 3 รายการล่าสุด · ตรวจสอบการชำระเงินจากหน้าออเดอร์เท่านั้น</Text> : null}
   </View>;
 }
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   box: { marginBottom: 16 }, toggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 44 },
   card: { borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 14, backgroundColor: Colors.cardBackground, padding: 14, marginBottom: 8 },
   title: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, product: { fontFamily: "Kanit_500Medium", color: Colors.textDark, marginTop: 6 },

@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -11,6 +12,7 @@ import { SelectedImage, selectSquareImage, uploadPublicImage } from "../../../sr
 import { supabase } from "../../../src/lib/supabase";
 
 export default function EditMarket() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const { marketId } = useLocalSearchParams<{ marketId: string }>();
   const router = useRouter();
   const [market, setMarket] = useState<any>();
@@ -40,4 +42,4 @@ export default function EditMarket() {
     <Button title="บันทึกการแก้ไข" onPress={save} loading={saving} style={styles.button} />
   </KeyboardAwareScrollView>;
 }
-const styles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 14 }, imageBox: { height: 180, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, borderRadius: BorderRadius.lg, overflow: "hidden", alignItems: "center", justifyContent: "center", marginBottom: 14 }, image: { width: "100%", height: "100%" }, imageText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, input: { minHeight: 54, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 14, marginBottom: 12, fontFamily: "Kanit_400Regular" }, multiline: { minHeight: 86, textAlignVertical: "top" }, button: { backgroundColor: Colors.goldPrimary, marginTop: 6 } });
+const baseStyles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginBottom: 14 }, imageBox: { height: 180, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, borderRadius: BorderRadius.lg, overflow: "hidden", alignItems: "center", justifyContent: "center", marginBottom: 14 }, image: { width: "100%", height: "100%" }, imageText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, input: { minHeight: 54, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.md, padding: 14, marginBottom: 12, fontFamily: "Kanit_400Regular" }, multiline: { minHeight: 86, textAlignVertical: "top" }, button: { backgroundColor: Colors.goldPrimary, marginTop: 6 } });

@@ -1,8 +1,10 @@
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppTextInput } from "./AppTextInput";
 import { BorderRadius, Colors, Spacing } from "../constants/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareView } from "./KeyboardAware";
 
 export type DropdownOption = { value: string; label: string; description?: string };
@@ -19,6 +21,8 @@ type Props = {
 };
 
 export function SearchableDropdown({ label, placeholder, options, value, disabled, searchPlaceholder, autoFocusSearch = true, onChange }: Props) {
+  const styles = useResponsiveStyles(baseStyles, {});
+  const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const selected = options.find((option) => option.value === value);
@@ -48,10 +52,10 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
     <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
       <KeyboardAwareView style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: Math.max(16, insets.bottom + 12) }]}>
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>{label ?? placeholder}</Text>
-            <TouchableOpacity accessibilityLabel="ปิด" onPress={close}><Ionicons name="close" size={24} color={Colors.textDark} /></TouchableOpacity>
+            <TouchableOpacity accessibilityLabel="ปิด" style={styles.close} onPress={close}><Ionicons name="close" size={24} color={Colors.textDark} /></TouchableOpacity>
           </View>
           <View style={styles.searchBox}>
             <Ionicons name="search" size={18} color={Colors.textMuted} />
@@ -77,7 +81,7 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   block: { marginBottom: 16 },
   label: { fontFamily: "Kanit_700Bold", fontSize: 15, color: Colors.textDark, marginBottom: 8 },
   dropdown: { minHeight: 54, borderRadius: BorderRadius.md, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, paddingHorizontal: 16, paddingVertical: 9, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
@@ -87,10 +91,11 @@ const styles = StyleSheet.create({
   placeholder: { color: Colors.textMuted, fontFamily: "Kanit_400Regular" },
   selectedDescription: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted, marginTop: 1 },
   overlay: { flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" },
-  sheet: { maxHeight: "72%", backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.lg, paddingBottom: 34 },
+  sheet: { maxHeight: "85%", width: "100%", maxWidth: 640, alignSelf: "center", backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: Spacing.lg, paddingBottom: 34 },
+  close: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
   sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  sheetTitle: { fontFamily: "Kanit_700Bold", fontSize: 21, color: Colors.greenPrimary },
-  searchBox: { height: 46, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.round, paddingHorizontal: 14, marginBottom: 10 },
+  sheetTitle: { flex: 1, marginRight: 8, fontFamily: "Kanit_700Bold", fontSize: 21, color: Colors.greenPrimary },
+  searchBox: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.round, paddingHorizontal: 14, marginBottom: 10 },
   searchInput: { flex: 1, fontFamily: "Kanit_400Regular", color: Colors.textDark },
   optionList: { flexGrow: 0 },
   option: { minHeight: 50, paddingHorizontal: 12, paddingVertical: 8, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.inputBorder },

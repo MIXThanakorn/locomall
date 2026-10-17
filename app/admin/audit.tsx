@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
@@ -8,6 +9,7 @@ import { approvalStatusLabel, auditActionLabel, auditEntityLabel } from "../../s
 import { supabase } from "../../src/lib/supabase";
 
 export default function AdminAudit() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"]});
   const [logs, setLogs] = useState<any[]>([]); const [events, setEvents] = useState<any[]>([]); const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => { setRefreshing(true); const [audit, approvals] = await Promise.all([supabase.from("admin_audit_logs").select("*").order("created_at", { ascending: false }).limit(100), supabase.from("approval_events").select("*").order("created_at", { ascending: false }).limit(100)]); setLogs(audit.data ?? []); setEvents(approvals.data ?? []); setRefreshing(false); }, []);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
@@ -23,7 +25,7 @@ export default function AdminAudit() {
   </ScrollView></AdminGate>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 110 }, eyebrow: { fontFamily: "Kanit_500Medium", color: Colors.goldDark, fontSize: 12, letterSpacing: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, section: { fontFamily: "Kanit_700Bold", fontSize: 18, marginTop: 24, color: Colors.textDark },
   card: { backgroundColor: Colors.cardBackground, borderRadius: BorderRadius.md, borderWidth: 1, borderColor: Colors.inputBorder, padding: 14, marginTop: 9 }, row: { flexDirection: "row", justifyContent: "space-between", gap: 8 }, action: { flex: 1, fontFamily: "Kanit_500Medium", color: Colors.greenDark }, date: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 10 }, meta: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, marginTop: 5 }, actor: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 11 }, note: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, marginTop: 4 }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, padding: 14 },
 });

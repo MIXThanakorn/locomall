@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -5,6 +6,7 @@ import { Colors } from "../constants/theme";
 import { CatalogReview, reviewDateLabel } from "../lib/catalogReviews";
 
 export function CatalogReviewCard({ review, targetType }: { review: CatalogReview; targetType: "market" | "store" }) {
+  const styles = useResponsiveStyles(baseStyles, {"wrap":["row","scoreRow","badge"]});
   return <View style={styles.card}>
     <View style={styles.row}>
       <View style={styles.avatar}><Ionicons name="person-outline" size={20} color={Colors.greenPrimary} /></View>
@@ -21,7 +23,7 @@ export function CatalogReviewCard({ review, targetType }: { review: CatalogRevie
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   card: { backgroundColor: Colors.cardBackground, borderRadius: 16, borderWidth: 1, borderColor: Colors.divider, padding: 16, marginTop: 10 },
   row: { flexDirection: "row", alignItems: "center", gap: 10 },
   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#EAF4EC", alignItems: "center", justifyContent: "center" },

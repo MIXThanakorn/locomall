@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { useChatHistory } from "../../src/hooks/useChatHistory";
@@ -30,6 +31,7 @@ export default function ChatRoom() {
 }
 
 function ChatRoomContent() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const { id } = useLocalSearchParams<{ id: string }>();
   const roomId = Number(id);
   const router = useRouter();
@@ -207,7 +209,7 @@ function ChatRoomContent() {
   </View></KeyboardAwareView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   productLink: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8, padding: 6, borderRadius: 12, backgroundColor: Colors.inputBackground },
   productCopy: { flex: 1 }, productName: { fontFamily: "Kanit_500Medium", color: Colors.textDark, fontSize: 13 },
   messageRow: { flexDirection: "row", alignItems: "flex-end", gap: 6, marginBottom: 3 }, mineRow: { justifyContent: "flex-end" }, messageAvatar: { width: 28 },

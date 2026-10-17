@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -8,6 +9,7 @@ import { useAuth } from "../../src/context/AuthContext";
 import { supabase } from "../../src/lib/supabase";
 
 export default function SavedCatalog() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const { session } = useAuth();
   const [items, setItems] = useState<any[]>([]);
@@ -38,4 +40,4 @@ export default function SavedCatalog() {
     {!items.length ? <Text style={styles.empty}>ยังไม่มีตลาดหรือร้านที่บันทึกไว้</Text> : null}
   </ScrollView>;
 }
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 80 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 14 }, hint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginTop: 10 }, body: { flex: 1 }, name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, textAlign: "center", marginTop: 30 } });
+const baseStyles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 80 }, back: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 14 }, hint: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, card: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginTop: 10 }, body: { flex: 1 }, name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, textAlign: "center", marginTop: 30 } });

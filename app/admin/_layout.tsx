@@ -1,13 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useResponsiveLayout } from "../../src/components/ResponsiveFrame";
 import { Colors } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { bottomTabSpacing } from "../../src/lib/bottomTabSpacing";
 
 export default function AdminLayout() {
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const { session, loading, isAdmin } = useAuth();
   if (loading || (session && isAdmin === null)) return <View style={styles.loading}><ActivityIndicator color={Colors.greenPrimary} /></View>;
   if (!session) return <Redirect href="/(auth)/sign-in" />;
@@ -17,7 +19,11 @@ export default function AdminLayout() {
     headerShown: false,
     tabBarActiveTintColor: Colors.greenPrimary,
     tabBarInactiveTintColor: Colors.textMuted,
-    tabBarStyle: { ...bottomTabSpacing(insets.bottom), backgroundColor: Colors.cardBackground, borderTopColor: Colors.inputBorder },
+    tabBarActiveBackgroundColor: "#EAF3ED", tabBarHideOnKeyboard: true,
+    tabBarItemStyle: { borderRadius: 14, marginHorizontal: 2 },
+    tabBarLabelPosition: "below-icon",
+    tabBarLabel: ({ children, color, focused }) => <Text numberOfLines={2} style={{ color, fontFamily: focused ? "Kanit_700Bold" : "Kanit_400Regular", fontSize: layout.tabLabelSize, lineHeight: 14, textAlign: "center", paddingHorizontal: 2 }}>{children}</Text>,
+    tabBarStyle: { ...bottomTabSpacing(insets.bottom, layout.fontScale), backgroundColor: Colors.cardBackground, borderTopColor: Colors.inputBorder },
     tabBarLabelStyle: { fontFamily: "Kanit_500Medium", fontSize: 11 },
   }}>
     <Tabs.Screen name="index" options={{ title: "ภาพรวม", tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} /> }} />

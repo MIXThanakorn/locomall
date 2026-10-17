@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -14,6 +15,7 @@ import { mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValid
 type Area = { code: string; name_th: string; postal_code?: string | null };
 
 export default function ShippingAddress() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const { session } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
   const [list, setList] = useState<any[]>([]);
@@ -142,7 +144,7 @@ export default function ShippingAddress() {
   </KeyboardAwareScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginBottom: 20 },
   section: { fontFamily: "Kanit_700Bold", fontSize: 21, color: Colors.textDark, marginTop: 18, marginBottom: 2 },

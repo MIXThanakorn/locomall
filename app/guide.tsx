@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -40,6 +41,7 @@ const guides: Record<SectionKey, GuideSection> = {
 };
 
 export default function GuideScreen() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const params = useLocalSearchParams<{ section?: string }>();
   const initial = params.section && params.section in guides ? params.section as SectionKey : "buyer";
   const [selected, setSelected] = useState<SectionKey>(initial);
@@ -66,7 +68,7 @@ export default function GuideScreen() {
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: 18, backgroundColor: Colors.goldPrimary, flexDirection: "row", alignItems: "center", gap: 13, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   back: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.cardBackground, alignItems: "center", justifyContent: "center" },

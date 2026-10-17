@@ -41,7 +41,7 @@ test("shopping controls precede full reviews while each screen loads its reviews
   assert.ok(actions.indexOf("{children}") < actions.indexOf("รีวิวล่าสุด"));
   assert.ok(store.indexOf("styles.quantityBox") < store.indexOf("</CatalogActions>"));
   assert.ok(market.indexOf("visibleStores.map") < market.indexOf("</CatalogActions>"));
-  assert.match(store, /paddingBottom: Math.max\(16, insets.bottom \+ 8\)/);
+  assert.match(store, /paddingBottom: bottomAction.paddingBottom/);
   assert.match(read("src/components/CommerceCard.tsx"), /ContextImage/);
   assert.match(read("src/components/CommerceCard.tsx"), /height: "auto", aspectRatio: 4 \/ 3/);
   assert.match(read("src/components/CommerceCard.tsx"), /หน่วยสั่งซื้อ/);

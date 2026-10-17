@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { Button } from "../../src/components/Button";
@@ -34,6 +35,7 @@ const CATEGORY_UI = {
 };
 
 export default function NotificationScreen() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const router = useRouter();
@@ -87,11 +89,12 @@ export default function NotificationScreen() {
   if (!auth.session) return <Redirect href="/(auth)/sign-in" />;
 
   return <View style={styles.root}>
+    <ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([refresh(), refreshBadges()]); }} tintColor={Colors.greenPrimary} />}>
     <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
       <Text accessibilityRole="header" style={styles.title}>การแจ้งเตือน</Text>
       <Text style={styles.sub}>คำสั่งซื้อ คำขอ และข่าวสาร · แชตอยู่ในแท็บแชต</Text>
     </View>
-    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([refresh(), refreshBadges()]); }} tintColor={Colors.greenPrimary} />}>
+      <View style={styles.content}>
       {unreadCount > 0 || visibleItems.some((item) => item.read_at) ? <View style={styles.actions}>
         {unreadCount > 0 ? <TouchableOpacity accessibilityRole="button" disabled={markingRead || clearing} onPress={() => void markAllRead()} style={styles.actionButton}>
           <Text style={styles.readAll}>{markingRead ? "กำลังบันทึก…" : "อ่านทั้งหมด"}</Text>
@@ -127,11 +130,12 @@ export default function NotificationScreen() {
         </TouchableOpacity>;
       })}
       {hasMore ? <Button title="โหลดการแจ้งเตือนเพิ่มเติม" variant="outline" loading={loadingMore} onPress={() => void loadMore()} /> : null}
+      </View>
     </ScrollView>
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { alignItems: "center", justifyContent: "center" },
   head: { padding: Spacing.lg, backgroundColor: Colors.goldPrimary, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary, flexShrink: 1 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.greenDark, flexShrink: 1, marginTop: 4 },

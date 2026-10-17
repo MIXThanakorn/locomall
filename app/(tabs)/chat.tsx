@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { useRealtimeRefresh, type RealtimeWatch } from "../../src/hooks/useRealtimeRefresh";
 import { ContextImage } from "../../src/components/ContextImage";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +20,7 @@ export default function ChatList() {
 }
 
 function ChatListContent() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["name"]});
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session, loading: authLoading } = useAuth();
@@ -51,11 +53,12 @@ function ChatListContent() {
   if (!session) return <Redirect href="/(auth)/sign-in" />;
 
   return <View style={styles.root}>
+    <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} />}>
     <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
       <Text style={styles.title}>แชต</Text>
       <Text style={styles.subtitle}>ดูข้อความและประวัติการคุยกับร้านค้า</Text>
     </View>
-    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} />}>
+      <View style={styles.content}>
       {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
       {error ? <TouchableOpacity onPress={() => void load()}><Text style={styles.error}>โหลดแชตไม่สำเร็จ แตะเพื่อลองใหม่</Text></TouchableOpacity> : null}
       {!loading && !error && rooms.length === 0 ? <View style={styles.empty}><Ionicons name="chatbubbles-outline" size={40} color={Colors.greenPrimary} /><Text style={styles.emptyTitle}>ยังไม่มีบทสนทนา</Text><Text style={styles.emptyText}>เปิดหน้าร้านค้าที่สนใจแล้วกดแชตเพื่อเริ่มคุย</Text></View> : null}
@@ -68,11 +71,12 @@ function ChatListContent() {
         </View>
         {room.unread_count > 0 ? <View style={styles.unread}><Text style={styles.unreadText}>{room.unread_count > 99 ? "99+" : room.unread_count}</Text></View> : null}
       </TouchableOpacity>)}
+      </View>
     </ScrollView>
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md, backgroundColor: Colors.goldPrimary, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, subtitle: { fontFamily: "Kanit_400Regular", color: Colors.greenDark },

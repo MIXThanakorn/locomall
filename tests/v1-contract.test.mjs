@@ -237,8 +237,8 @@ test("Store and co-seller approvals show a product photo before review", () => {
   const sql = read("supabase/migrations/20260928033549_order_and_approval_product_images.sql");
   assert.match(sql, /alter table public\.store_seller_applications[\s\S]*add column if not exists product_image_url text/i);
   assert.match(sql, /valid product image required/);
-  const store = read("app/store/[id].tsx");
-  assert.match(store, /กรุณาแนบรูปสินค้า/);
+  const store = read("app/seller/listings/apply.tsx");
+  assert.match(store, /รูปสินค้าจริงของคุณ/);
   assert.match(store, /seller-product-/);
   assert.match(store, /uploadPrivateImage\("seller-evidence"[\s\S]*p_product_image_url: uploaded\.path/);
   for (const path of ["app/market/manage/index.tsx", "app/admin/markets.tsx"]) {
@@ -259,7 +259,8 @@ test("RLS hardening makes sensitive writes RPC-only and evidence private", () =>
   assert.match(sql, /create policy allocations_operational_read[\s\S]*private\.can_access_allocation/i);
   assert.match(sql, /values\('seller-evidence','seller-evidence',false/i);
   assert.match(sql, /get_market_catalog[\s\S]*get_store_catalog/);
-  assert.match(read("app/store/[id].tsx"), /get_or_create_chat_room[\s\S]*uploadPrivateImage\("seller-evidence"/);
+  assert.match(read("app/store/[id].tsx"), /get_or_create_chat_room/);
+  assert.match(read("app/seller/listings/apply.tsx"), /uploadPrivateImage\("seller-evidence"/);
   assert.match(read("app/(tabs)/notification.tsx"), /mark_notification_read/);
 });
 
@@ -267,7 +268,7 @@ test("A rejection reason is required and returned to applicants", () => {
   const sql = read("supabase/migrations/20260926025356_market_store_management_and_pickup.sql");
   assert.match(sql, /rejection reason required/);
   assert.match(read("app/seller/stores.tsx"), /approval_note/);
-  assert.match(read("app/store/[id].tsx"), /review_note/);
+  assert.match(read("app/seller/listings/apply.tsx"), /review_note/);
 });
 
 test("Pickup is capped at 10 km and follows the short at-hub confirmation flow", () => {
@@ -284,7 +285,8 @@ test("Market ownership adds management without removing buyer capabilities", () 
   const profile = read("app/(tabs)/setting.tsx");
   const checkout = read("app/order/checkout.tsx");
   assert.match(read("src/lib/settingsMenu.ts"), /จัดการตลาดชุมชน/);
-  assert.match(profile, /เจ้าของตลาดชุมชน · ซื้อสินค้าได้ตามปกติ/);
+  assert.doesNotMatch(profile, /เจ้าของตลาดชุมชน · ซื้อสินค้าได้ตามปกติ/);
+  assert.match(profile, /getSettingsGroups\(permissions\)/);
   assert.doesNotMatch(checkout, /isMarketOwner.*disabled|!isMarketOwner/);
 });
 
@@ -427,8 +429,8 @@ test("Cart and buyer/seller order history show item, price, fulfillment, and Tha
   const seller = read("app/seller/allocations/[id].tsx");
   const detail = read("app/order/[id].tsx");
   assert.match(cart, /แก้ไขล่าสุด/);
-  assert.match(cart, /subtotal/);
-  assert.match(cart, /รวม \{totalQuantity\} หน่วยสั่งซื้อ/);
+  assert.match(cart, /selectedTotal/);
+  assert.match(cart, /เลือก \{selected.length\} รายการ/);
   assert.match(buyer, /วันที่สั่ง/);
   assert.match(buyer, /fulfillment_method/);
   assert.match(buyer, /item\?\.unit_price/);
@@ -448,7 +450,8 @@ test("Sellers cannot buy their own store and must accept an allocation before pr
   assert.match(sql, /reject_self_purchase_order/);
   assert.match(sql, /create or replace function public\.accept_allocation/);
   assert.match(store, /cannotBuyOwn/);
-  assert.match(store, /ไม่สามารถสั่งสินค้าร้านของตนเอง/);
+  assert.match(store, /สั่งซื้อร้านของตนเองไม่ได้/);
+  assert.match(store, /disabled=\{stock <= 0 \|\| cannotBuyOwn\}/);
   assert.match(seller, /รับออเดอร์และเริ่มเตรียมสินค้า/);
   assert.match(seller, /mark_allocation_ready/);
 });

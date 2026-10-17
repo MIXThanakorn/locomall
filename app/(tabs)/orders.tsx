@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { Button } from "../../src/components/Button";
@@ -15,6 +16,7 @@ import { formatSaleQuantity } from "../../src/lib/productUnit";
 type OrderView = "buying" | "selling";
 
 export default function OrdersTab() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row","itemRow"],"fullWidth":["status"],"wrap":["tabs"]});
   const router = useRouter();
   const { view } = useLocalSearchParams<{ view?: string }>();
   const insets = useSafeAreaInsets();
@@ -31,6 +33,7 @@ export default function OrdersTab() {
   const error = active === "buying" ? buyer.error : seller.error;
 
   return <View style={styles.root}>
+    <ScrollView refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([buyer.refresh(), seller.refresh()]); }} tintColor={Colors.greenPrimary} />}>
     <View style={[styles.head, { paddingTop: insets.top + 12 }]}>
       <Text style={styles.title}>{active === "buying" ? "คำสั่งซื้อของฉัน" : "รายการที่ขาย"}</Text>
       <Text style={styles.sub}>{active === "buying" ? "ติดตามสินค้าที่คุณสั่งซื้อ" : "รับงานและติดตามสินค้าที่คุณต้องเตรียม"}</Text>
@@ -39,7 +42,7 @@ export default function OrdersTab() {
         <TouchableOpacity style={[styles.tab, active === "selling" && styles.tabActive]} onPress={() => router.setParams({ view: "selling" })}><Text style={[styles.tabText, active === "selling" && styles.tabTextActive]}>รายการที่ขาย</Text></TouchableOpacity>
       </View> : null}
     </View>
-    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={loading} onRefresh={() => { void Promise.all([buyer.refresh(), seller.refresh()]); }} tintColor={Colors.greenPrimary} />}>
+      <View style={styles.content}>
       {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
       {error ? <LoadNotice onRetry={() => void (active === "buying" ? buyer.refresh() : seller.refresh())} /> : null}
       {active === "buying" ? <>
@@ -65,16 +68,18 @@ export default function OrdersTab() {
         })}
       </>}
       {(active === "buying" ? buyer.hasMore : seller.hasMore) ? <Button title="โหลดรายการเพิ่มเติม" variant="outline" loading={active === "buying" ? buyer.loadingMore : seller.loadingMore} onPress={() => void (active === "buying" ? buyer.loadMore() : seller.loadMore())} /> : null}
+      </View>
     </ScrollView>
   </View>;
 }
 
 function ProductRow({ item, quantity, total }: { item: any; quantity: number; total: number }) {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row","itemRow"],"fullWidth":["status"],"wrap":["tabs"]});
   const image = item?.product_image_url || item?.stores?.image_url;
   return <View style={styles.itemRow}>{image ? <Image source={{ uri: image }} style={styles.itemImage} /> : <View style={styles.itemImagePlaceholder} />}<View style={styles.itemText}><Text style={styles.item}>{item?.product_name} × {formatSaleQuantity(quantity, item?.unit)}</Text><Text style={styles.store}>{item?.stores?.name ?? "ร้านค้า"} · ฿{Number(item?.unit_price ?? 0).toLocaleString()}/{item?.unit}</Text></View><Text style={styles.itemTotal}>฿{total.toLocaleString()}</Text></View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { alignItems: "center", justifyContent: "center" }, head: { padding: Spacing.lg, backgroundColor: Colors.greenPrimary, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }, title: { fontFamily: "Kanit_700Bold", fontSize: 24, color: "white" }, sub: { fontFamily: "Kanit_400Regular", color: "#DDEBE2" },
   tabs: { flexDirection: "row", backgroundColor: "#FFFFFF22", borderRadius: BorderRadius.round, padding: 4, marginTop: 14 }, tab: { flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: BorderRadius.round }, tabActive: { backgroundColor: "white" }, tabText: { fontFamily: "Kanit_500Medium", color: "#DDEBE2" }, tabTextActive: { color: Colors.greenPrimary },
   content: { padding: Spacing.lg, paddingBottom: 80 }, card: { padding: Spacing.md, backgroundColor: "white", borderRadius: BorderRadius.lg, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.inputBorder }, row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }, number: { fontFamily: "Kanit_700Bold", color: Colors.textDark, flex: 1 }, status: { fontFamily: "Kanit_500Medium", fontSize: 11, color: Colors.greenPrimary, backgroundColor: "#EAF1E9", paddingHorizontal: 7, paddingVertical: 5, borderRadius: 8, maxWidth: "48%", textAlign: "center" }, market: { fontFamily: "Kanit_500Medium", color: Colors.textMedium, marginTop: 8 }, date: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted, marginBottom: 10 }, itemRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8, borderTopWidth: 1, borderTopColor: Colors.inputBorder, gap: 10 }, itemImage: { width: 58, height: 58, borderRadius: 10, backgroundColor: "#EAF1E9" }, itemImagePlaceholder: { width: 58, height: 58, borderRadius: 10, backgroundColor: "#EAF1E9" }, itemText: { flex: 1 }, item: { fontFamily: "Kanit_500Medium", color: Colors.textDark }, store: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted }, itemTotal: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, footer: { marginTop: 10 }, detailLink: { fontFamily: "Kanit_500Medium", fontSize: 12, color: Colors.greenPrimary }, total: { fontFamily: "Kanit_700Bold", fontSize: 18, color: Colors.greenPrimary }, error: { color: Colors.danger, fontFamily: "Kanit_400Regular" }, empty: { fontFamily: "Kanit_400Regular", textAlign: "center", color: Colors.textMuted, marginTop: 40 },

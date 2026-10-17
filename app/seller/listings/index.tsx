@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 /* eslint-disable react-hooks/preserve-manual-memoization */
 import { useFocusEffect } from "expo-router";
@@ -17,6 +18,7 @@ import { formatSaleQuantity } from "../../../src/lib/productUnit";
 import { RealtimeWatch, useRealtimeRefresh } from "../../../src/hooks/useRealtimeRefresh";
 
 export default function Stock() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const permissions = useCapabilities();
   const { session } = useAuth();
   const [list, setList] = useState<any[]>([]);
@@ -78,7 +80,7 @@ export default function Stock() {
   </PermissionGate>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 25, color: Colors.greenPrimary },
   sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginTop: 2 },

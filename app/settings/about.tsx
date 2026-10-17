@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
@@ -6,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../src/constants/theme";
 
 export default function AboutLocomall() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const insets = useSafeAreaInsets();
   return <ScrollView contentContainerStyle={[styles.content, { paddingTop: 0, paddingBottom: insets.bottom + 24 }]}>
@@ -16,7 +18,7 @@ export default function AboutLocomall() {
     <TouchableOpacity style={styles.link} onPress={() => router.push("/guide" as never)}><Text style={styles.linkText}>เปิดคู่มือการใช้งาน</Text></TouchableOpacity>
   </ScrollView>;
 }
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: 20, backgroundColor: Colors.background }, header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
   heading: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 22, flex: 1 }, card: { borderRadius: 16, padding: 18, backgroundColor: Colors.cardBackground, marginBottom: 14 },
   title: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 17 }, body: { fontFamily: "Kanit_400Regular", color: Colors.textMedium, fontSize: 14, lineHeight: 24, marginTop: 8 },

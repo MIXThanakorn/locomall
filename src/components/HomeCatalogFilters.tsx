@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -9,6 +10,7 @@ export type HomeFilters = { kind: "all" | "market" | "store"; nearbyOnly: boolea
 const DEFAULTS: HomeFilters = { kind: "all", nearbyOnly: false, inStockOnly: false, sort: "distance" };
 
 export function HomeCatalogFilters({ value, onChange }: { value: HomeFilters; onChange: (next: HomeFilters) => void }) {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"]});
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -35,8 +37,8 @@ export function HomeCatalogFilters({ value, onChange }: { value: HomeFilters; on
       <View style={styles.overlay}>
         <TouchableOpacity accessibilityLabel="ปิดตัวกรองโดยไม่เปลี่ยนแปลง" style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
         <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + 16, maxHeight: "85%" }]}>
+          <ScrollView contentContainerStyle={{ paddingBottom: 4 }}>
           <View style={styles.header}><Text style={styles.title}>ตัวกรองและการเรียงลำดับ</Text><TouchableOpacity onPress={() => setOpen(false)} accessibilityLabel="ปิดตัวกรอง" style={styles.close}><Ionicons name="close" size={24} color={Colors.greenPrimary} /></TouchableOpacity></View>
-          <ScrollView>
             <TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: draft.nearbyOnly }} style={styles.option} onPress={() => setDraft({ ...draft, nearbyOnly: !draft.nearbyOnly })}>
               <Text style={styles.optionText}>ใกล้เคียง ภายใน 10 กม.</Text><Ionicons name={draft.nearbyOnly ? "checkbox" : "square-outline"} size={24} color={Colors.greenPrimary} />
             </TouchableOpacity>
@@ -50,27 +52,27 @@ export function HomeCatalogFilters({ value, onChange }: { value: HomeFilters; on
               <Text style={styles.optionText}>{option.label}</Text><Ionicons name={draft.sort === option.value ? "radio-button-on" : "radio-button-off"} size={23} color={Colors.greenPrimary} />
             </TouchableOpacity>)}
             <Text style={styles.note}>ตลาดใช้ราคาเริ่มต้น โปรดเทียบหน่วยสินค้าก่อนซื้อ รายการไม่มีราคา/คะแนนอยู่ท้ายเมื่อเลือกเรียงตามข้อมูลนั้น</Text>
-          </ScrollView>
           <View style={styles.actions}>
             <TouchableOpacity style={styles.reset} onPress={() => setDraft({ ...DEFAULTS })}><Text style={styles.label}>ล้างตัวกรองหน้าแรก</Text></TouchableOpacity>
             <TouchableOpacity style={styles.apply} onPress={() => { onChange(draft); setOpen(false); }}><Text style={styles.selectedLabel}>ใช้ตัวกรอง</Text></TouchableOpacity>
           </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>
   </View>;
 }
 
-const styles = StyleSheet.create({
-  block: { marginVertical: 12, gap: 6 }, row: { flexDirection: "row", gap: 7 },
-  chip: { minHeight: 42, paddingHorizontal: 12, borderRadius: 24, borderWidth: 1, borderColor: "#CFE2D5", backgroundColor: "white", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 5 },
+const baseStyles = StyleSheet.create({
+  block: { marginVertical: 12, gap: 6 }, row: { flexDirection: "row", gap: 10, paddingBottom: 2 },
+  chip: { minHeight: 44, paddingHorizontal: 12, borderRadius: 24, borderWidth: 1, borderColor: "#CFE2D5", backgroundColor: "white", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 5 },
   selected: { backgroundColor: Colors.greenPrimary, borderColor: Colors.greenPrimary },
   filter: { borderStyle: "dashed" }, label: { fontFamily: "Kanit_500Medium", fontSize: 13, color: Colors.greenPrimary },
   selectedLabel: { fontFamily: "Kanit_500Medium", color: "white", fontSize: 14 }, summary: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 },
-  overlay: { flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }, sheet: { backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
+  overlay: { flex: 1, backgroundColor: "#00000066", justifyContent: "flex-end" }, sheet: { width: "100%", maxWidth: 640, alignSelf: "center", backgroundColor: Colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }, title: { flex: 1, fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 19 },
   close: { padding: 10 }, option: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48, gap: 10 },
   optionText: { flex: 1, fontFamily: "Kanit_400Regular", fontSize: 15, color: Colors.textDark }, note: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted },
   subtitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark, marginTop: 12, fontSize: 16 }, actions: { flexDirection: "row", gap: 12, paddingTop: 16 },
-  reset: { flex: 1, minHeight: 46, alignItems: "center", justifyContent: "center" }, apply: { flex: 1, minHeight: 46, alignItems: "center", justifyContent: "center", backgroundColor: Colors.greenPrimary, borderRadius: 24 },
+  reset: { flex: 1, minHeight: 48, padding: 10, alignItems: "center", justifyContent: "center" }, apply: { flex: 1, minHeight: 48, padding: 10, alignItems: "center", justifyContent: "center", backgroundColor: Colors.greenPrimary, borderRadius: 24 },
 });

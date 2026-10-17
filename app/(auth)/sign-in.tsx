@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
@@ -17,6 +18,7 @@ import { useAuth } from "../../src/context/AuthContext";
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
+  const styles = useResponsiveStyles(baseStyles, { compactPadding: ["card"] });
   const router = useRouter();
   const { savedAccounts } = useAuth();
   const [email, setEmail] = useState("");
@@ -76,6 +78,7 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.container}>
+      <KeyboardAwareScrollView style={styles.scroll} contentContainerStyle={styles.pageScroll} showsVerticalScrollIndicator={false}>
       <HeaderGradient
         title="สวัสดี!"
         subtitle="ยินดีต้อนรับสู่ Locomall"
@@ -83,7 +86,7 @@ export default function SignInScreen() {
         style={styles.header}
       />
 
-      <KeyboardAwareScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>อีเมล</Text>
           <AppTextInput
@@ -106,7 +109,7 @@ export default function SignInScreen() {
               autoComplete="current-password"
               placeholder="กรอกรหัสผ่าน"
             />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons
                 name={showPassword ? "eye-off-outline" : "eye-outline"}
                 size={20}
@@ -160,12 +163,15 @@ export default function SignInScreen() {
             <Text style={styles.savedAccountsText}>เลือกบัญชีที่เคยใช้บนเครื่องนี้</Text>
           </TouchableOpacity> : null}
         </View>
+      </View>
       </KeyboardAwareScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
+  iconButton: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
+  scroll: { flex: 1 }, pageScroll: { flexGrow: 1, paddingBottom: 32 },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -176,7 +182,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: -20,
+    marginTop: 0,
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,

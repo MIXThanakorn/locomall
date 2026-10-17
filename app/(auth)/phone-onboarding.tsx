@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { BackButton } from "../../src/components/BackButton";
 import { Redirect, useRouter } from "expo-router";
@@ -13,6 +14,7 @@ import { mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValid
 import { supabase } from "../../src/lib/supabase";
 
 export default function PhoneOnboarding() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const { session, loading, hasPhone, refreshPhone, signOut, savedAccounts } = useAuth();
   const [phone, setPhone] = useState("");
@@ -54,7 +56,7 @@ export default function PhoneOnboarding() {
   </KeyboardAwareScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background },
   content: { flexGrow: 1, padding: Spacing.lg, paddingTop: 0, paddingBottom: 80 },

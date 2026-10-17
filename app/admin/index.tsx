@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -19,6 +20,7 @@ const DASHBOARD_WATCHES: RealtimeWatch[] = [
 type Stats = { markets: number; stores: number; sellers: number; orders: number };
 
 export default function AdminDashboard() {
+  const styles = useResponsiveStyles(baseStyles, {"wrap":["header","grid"],"fullWidth":["statCard"]});
   const router = useRouter();
   const { signOut } = useAuth();
   const [stats, setStats] = useState<Stats>({ markets: 0, stores: 0, sellers: 0, orders: 0 });
@@ -68,7 +70,7 @@ export default function AdminDashboard() {
   </ScrollView></AdminGate>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 100 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }, eyebrow: { fontFamily: "Kanit_500Medium", color: Colors.goldDark, fontSize: 12, letterSpacing: 1 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary }, role: { fontFamily: "Kanit_400Regular", color: Colors.textMuted },

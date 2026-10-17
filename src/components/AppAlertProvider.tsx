@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
@@ -5,6 +6,7 @@ import {
   AlertButton,
   AlertOptions,
   Modal,
+  ScrollView,
   Pressable,
   StyleSheet,
   Text,
@@ -21,6 +23,7 @@ type AlertState = {
 };
 
 export function AppAlertProvider({ children }: React.PropsWithChildren) {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"]});
   const [alertState, setAlertState] = useState<AlertState | null>(null);
   useEffect(() => {
     const nativeAlert = Alert.alert;
@@ -64,6 +67,7 @@ export function AppAlertProvider({ children }: React.PropsWithChildren) {
       >
         <Pressable style={styles.backdrop} onPress={dismiss}>
           <Pressable style={styles.card} onPress={(event) => event.stopPropagation()}>
+            <ScrollView style={styles.dialogScroll} contentContainerStyle={{ paddingBottom: 4 }}>
             <View style={[styles.icon, destructive && styles.dangerIcon]}>
               <Ionicons
                 name={destructive ? "log-out-outline" : "information-circle-outline"}
@@ -95,6 +99,7 @@ export function AppAlertProvider({ children }: React.PropsWithChildren) {
                 </TouchableOpacity>
               ))}
             </View>
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -102,7 +107,7 @@ export function AppAlertProvider({ children }: React.PropsWithChildren) {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   backdrop: {
     flex: 1,
     alignItems: "center",
@@ -113,11 +118,14 @@ const styles = StyleSheet.create({
   card: {
     width: "100%",
     maxWidth: 420,
+    maxHeight: "90%",
+    flexShrink: 1,
     padding: Spacing.lg,
     borderRadius: BorderRadius.xl,
     backgroundColor: Colors.cardBackground,
     ...Shadows.modal,
   },
+  dialogScroll: { flexShrink: 1 },
   icon: {
     width: 56,
     height: 56,
@@ -153,6 +161,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.inputBorder,
     paddingHorizontal: Spacing.md,
+    paddingVertical: 12,
   },
   primaryButton: { backgroundColor: Colors.greenPrimary, borderColor: Colors.greenPrimary },
   dangerButton: { backgroundColor: Colors.danger, borderColor: Colors.danger },

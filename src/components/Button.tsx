@@ -1,4 +1,5 @@
 import React from "react";
+import { useResponsiveLayout } from "./ResponsiveFrame";
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, ActivityIndicator } from "react-native";
 import { Colors, Typography, Spacing, BorderRadius } from "../constants/theme";
 
@@ -25,6 +26,7 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const layout = useResponsiveLayout();
   const getContainerStyle = (): ViewStyle => {
     let bg = Colors.goldPrimary;
     let border = "transparent";
@@ -51,6 +53,8 @@ export const Button: React.FC<ButtonProps> = ({
       borderColor: border,
       borderWidth: variant === "outline" ? 1.5 : 0,
       paddingVertical,
+      paddingHorizontal: layout.stack ? 16 : Spacing.lg,
+      minHeight: size === "sm" ? 44 : 48,
       opacity: disabled ? 0.6 : 1,
     };
   };
@@ -75,6 +79,8 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={[styles.button, getContainerStyle(), style]}
       onPress={onPress}
       disabled={disabled || loading}
@@ -98,11 +104,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    gap: Spacing.xs,
+    gap: Spacing.sm,
+    minWidth: 0,
     paddingHorizontal: Spacing.lg,
   },
   text: {
     fontWeight: "700",
     textAlign: "center",
+    flexShrink: 1,
+    minWidth: 0,
   },
 });

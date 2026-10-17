@@ -1,7 +1,10 @@
+import { useBottomActionLayout } from "../../src/hooks/useBottomActionLayout";
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { parseCartSelection, selectedCartItems } from "../../src/lib/cartSelection";
 import { groupCartByMarket } from "../../src/lib/cartMarkets";
 import * as Crypto from "expo-crypto";
 import React, { useCallback, useRef, useState } from "react";
@@ -20,13 +23,15 @@ type Payment = "cod" | "demo_wallet";
 
 export default function Checkout() {
   const { session } = useAuth();
-  const { marketId } = useLocalSearchParams<{ marketId?: string }>();
-  return <CheckoutContent key={`${session?.user.id ?? "guest"}:${marketId ?? ""}`} />;
+  const { marketId, itemIds } = useLocalSearchParams<{ marketId?: string; itemIds?: string }>();
+  return <CheckoutContent key={`${session?.user.id ?? "guest"}:${marketId ?? ""}:${itemIds ?? ""}`} />;
 }
 
 function CheckoutContent() {
-  const router = useRouter(); const { deviceLocation, session } = useAuth();
-  const { marketId } = useLocalSearchParams<{ marketId?: string }>();
+  const styles = useResponsiveStyles(baseStyles, {"wrap":["line"]});
+  const router = useRouter();
+  const bottomAction = useBottomActionLayout(); const { deviceLocation, session } = useAuth();
+  const { marketId, itemIds } = useLocalSearchParams<{ marketId?: string; itemIds?: string }>();
   const userId = session?.user.id;
   const [addresses, setAddresses] = useState<any[]>([]); const [addressId, setAddressId] = useState<number>(); const [cart, setCart] = useState<any>();
   const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery"); const [pickup, setPickup] = useState<any>(); const [loading, setLoading] = useState(false);
@@ -50,7 +55,7 @@ function CheckoutContent() {
     try {
     const [addressResult, cartResult] = await Promise.all([
       supabase.from("user_addresses").select("*,thai_subdistricts(name_th,thai_districts(name_th,thai_provinces(name_th)))").eq("user_id", userId!).order("is_default", { ascending: false }),
-      supabase.from("carts").select("*,cart_items(store_id,quantity,stores(name,product_name,unit_price,market_id,markets(name)))").eq("buyer_id", userId!).maybeSingle(),
+      supabase.from("carts").select("*,cart_items(cart_item_id,store_id,quantity,stores(name,product_name,unit,unit_price,market_id,markets(name)))").eq("buyer_id", userId!).maybeSingle(),
     ]);
     if (request !== generation.current) return;
     if (addressResult.error || cartResult.error) throw addressResult.error || cartResult.error;
@@ -59,7 +64,8 @@ function CheckoutContent() {
     setAddressId((current) => nextAddresses.some((address) => address.address_id === current) ? current : nextAddresses[0]?.address_id);
     const groups = groupCartByMarket(cartResult.data?.cart_items ?? [], cartResult.data?.market_id).filter((group) => group.marketId > 0);
     const selected = marketId ? groups.find((group) => group.marketId === Number(marketId)) : groups.length === 1 ? groups[0] : undefined;
-    setCart(selected ? { ...cartResult.data, market_id: selected.marketId, market_name: selected.marketName, cart_items: selected.items } : null);
+    const chosen = selectedCartItems<any>(cartResult.data?.cart_items ?? [], parseCartSelection(itemIds), Number(marketId));
+    setCart(selected && chosen.length ? { ...cartResult.data, market_id: selected.marketId, market_name: selected.marketName, cart_items: chosen } : null);
     if (selected) {
       const { data, error } = await supabase.rpc("get_pickup_eligibility", { p_market_id: selected.marketId, p_lat: deviceLocation?.latitude, p_lng: deviceLocation?.longitude }).single();
       if (request !== generation.current) return;
@@ -69,7 +75,7 @@ function CheckoutContent() {
     setLoadError(false);
     } catch { if (request === generation.current) setLoadError(true); }
     finally { if (request === generation.current) setInitialLoading(false); }
-  }, [deviceLocation, userId, marketId]);
+  }, [deviceLocation, userId, marketId, itemIds]);
   useFocusEffect(useCallback(() => {
     if (userId) void loadCheckout();
     const counter = generation;
@@ -123,7 +129,7 @@ function CheckoutContent() {
   });
 
   return <View style={styles.root}>
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshCheckout()} tintColor={Colors.greenPrimary} />}>
+    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomAction.contentBottom }]} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refreshCheckout()} tintColor={Colors.greenPrimary} />}>
     <ScreenHeader title={"วิธีรับสินค้า"} titleStyle={styles.title} />
       {initialLoading ? <Text style={styles.detail}>กำลังโหลดตะกร้าและที่อยู่...</Text> : null}
       {loadError ? <LoadNotice onRetry={() => void refreshCheckout()} /> : null}
@@ -143,8 +149,8 @@ function CheckoutContent() {
       {payment === "demo_wallet" ? <TouchableOpacity onPress={() => router.push("/profile/wallet" as never)}><Text style={styles.manage}>ดู Wallet / ขอยอดสาธิต</Text></TouchableOpacity> : null}
       <Text style={styles.title}>รายการสินค้า</Text>{cart?.cart_items?.map((item: any) => <View key={item.store_id} style={styles.line}><Text style={styles.detail}>{item.stores.product_name} × {formatSaleQuantity(item.quantity, item.stores.unit)}</Text><Text style={styles.name}>฿{(Number(item.stores.unit_price) * item.quantity).toLocaleString()}</Text></View>)}
     </ScrollView>
-    <View style={styles.bottom}><Button title={payment === "demo_wallet" ? "ยืนยันและหักยอดจำลอง" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={initialLoading || loadError || !cart?.cart_items?.length || (fulfillment === "delivery" ? !addressId : !pickup?.eligible)} style={styles.button} /></View>
+    <View onLayout={bottomAction.onLayout} style={[styles.bottom, { paddingBottom: bottomAction.paddingBottom }]}><Button title={payment === "demo_wallet" ? "ยืนยันและหักยอดจำลอง" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={initialLoading || loadError || !cart?.cart_items?.length || (fulfillment === "delivery" ? !addressId : !pickup?.eligible)} style={styles.button} /></View>
   </View>;
 }
 
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 150 }, title: { fontFamily: "Kanit_700Bold", fontSize: 22, color: Colors.greenPrimary, marginTop: 14, marginBottom: 10 }, method: { flexDirection: "row", gap: 12, alignItems: "center", backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.lg, padding: 15, marginBottom: 9 }, selected: { borderColor: Colors.greenPrimary, borderWidth: 2, backgroundColor: "#F0F7F2" }, disabled: { opacity: 0.55 }, add: { backgroundColor: "white", borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, borderRadius: BorderRadius.md, padding: 18 }, addText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "center" }, manage: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "right", marginTop: -8, marginBottom: 8 }, cod: { backgroundColor: "white", borderRadius: BorderRadius.md, padding: 16, borderWidth: 1, borderColor: Colors.goldPrimary, marginBottom: 9 }, pickupInfo: { backgroundColor: "#FFF5D9", borderRadius: BorderRadius.lg, padding: 16, marginTop: 12 }, name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, detail: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, flex: 1 }, line: { flexDirection: "row", justifyContent: "space-between", gap: 12, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md, marginBottom: 8 }, bottom: { position: "absolute", left: 0, right: 0, bottom: 0, padding: Spacing.lg, backgroundColor: "white", borderTopWidth: 1, borderTopColor: Colors.inputBorder }, button: { backgroundColor: Colors.goldPrimary } });
+const baseStyles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 150 }, title: { fontFamily: "Kanit_700Bold", fontSize: 22, color: Colors.greenPrimary, marginTop: 14, marginBottom: 10 }, method: { flexDirection: "row", gap: 12, alignItems: "center", backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: BorderRadius.lg, padding: 15, marginBottom: 9 }, selected: { borderColor: Colors.greenPrimary, borderWidth: 2, backgroundColor: "#F0F7F2" }, disabled: { opacity: 0.55 }, add: { backgroundColor: "white", borderWidth: 1, borderStyle: "dashed", borderColor: Colors.greenPrimary, borderRadius: BorderRadius.md, padding: 18 }, addText: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "center" }, manage: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, textAlign: "right", marginTop: -8, marginBottom: 8 }, cod: { backgroundColor: "white", borderRadius: BorderRadius.md, padding: 16, borderWidth: 1, borderColor: Colors.goldPrimary, marginBottom: 9 }, pickupInfo: { backgroundColor: "#FFF5D9", borderRadius: BorderRadius.lg, padding: 16, marginTop: 12 }, name: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, detail: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, flex: 1 }, line: { flexDirection: "row", justifyContent: "space-between", gap: 12, backgroundColor: "white", padding: 14, borderRadius: BorderRadius.md, marginBottom: 8 }, bottom: { position: "absolute", left: 0, right: 0, bottom: 0, padding: Spacing.lg, backgroundColor: "white", borderTopWidth: 1, borderTopColor: Colors.inputBorder }, button: { backgroundColor: Colors.goldPrimary } });

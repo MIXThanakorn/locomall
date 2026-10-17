@@ -1,3 +1,5 @@
+import { useResponsiveLayout } from "../../src/components/ResponsiveFrame";
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -17,7 +19,9 @@ import { HomeCatalogFilters } from "../../src/components/HomeCatalogFilters";
 import { CATALOG_SORT_OPTIONS, type CatalogSort } from "../../src/lib/catalogSort";
 
 export default function HomeScreen() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
+  const layout = useResponsiveLayout();
   const { fontScale } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState(0);
   const columns = catalogColumns(gridWidth, fontScale);
@@ -58,6 +62,16 @@ export default function HomeScreen() {
   return (
     <KeyboardAwareView>
       <View style={styles.container}>
+        <ScrollView
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          onScroll={({ nativeEvent }) => {
+            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 320) loadMore();
+          }}
+          scrollEventThrottle={250}
+        >
         <View style={[styles.hero, { paddingTop: insets.top + 10 }]}>
           <View style={styles.headerRow}>
             <View style={styles.brandIdentity}>
@@ -67,7 +81,7 @@ export default function HomeScreen() {
                 resizeMode="contain"
                 accessibilityLabel="โลโก้ Locomall"
               />
-              <Text style={styles.tagline}>ของดีจากชุมชน{"\n"}ใกล้คุณก่อนเสมอ</Text>
+              {!layout.stack ? <Text style={styles.tagline}>ของดีจากชุมชน{"\n"}ใกล้คุณก่อนเสมอ</Text> : null}
             </View>
             <View style={styles.headerActions}>
               <TouchableOpacity
@@ -108,17 +122,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} />}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          onScroll={({ nativeEvent }) => {
-            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 320) loadMore();
-          }}
-          scrollEventThrottle={250}
-        >
+        <View style={styles.content}>
           {!isSearching && showWelcomeGuide ? (
             <View style={styles.guideCard}>
               <View style={styles.guideIcon}>
@@ -189,13 +193,14 @@ export default function HomeScreen() {
           )}
           {loadingMore ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
           {hasMore && !loadingMore ? <TouchableOpacity style={styles.loadMore} onPress={loadMore}><Text style={styles.more}>ดูเพิ่มเติม</Text></TouchableOpacity> : null}
+        </View>
         </ScrollView>
       </View>
     </KeyboardAwareView>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   hero: {
     backgroundColor: Colors.goldPrimary,
@@ -218,8 +223,8 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", gap: 8, flexShrink: 0 },
   headerButton: {
     position: "relative",
-    width: 42,
-    height: 42,
+    width: 44,
+    minHeight: 44,
     borderRadius: 21,
     backgroundColor: Colors.cardBackground,
     alignItems: "center",
@@ -228,7 +233,7 @@ const styles = StyleSheet.create({
   cartBadge: { position: "absolute", top: -6, right: -7, minWidth: 19, height: 19, borderRadius: 10, paddingHorizontal: 3, backgroundColor: Colors.danger, alignItems: "center", justifyContent: "center" },
   cartBadgeText: { fontFamily: "Kanit_700Bold", fontSize: 10, color: "#FFFFFF", lineHeight: 15 },
   searchBox: {
-    height: 48,
+    minHeight: 48,
     borderRadius: BorderRadius.round,
     backgroundColor: Colors.cardBackground,
     flexDirection: "row",

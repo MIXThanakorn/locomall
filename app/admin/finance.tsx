@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useFocusEffect } from "expo-router";
 import * as Crypto from "expo-crypto";
@@ -20,6 +21,7 @@ const FINANCE_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function AdminDemoFinance() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"]});
   const [requests, setRequests] = useState<any[]>([]);
   const [sellers, setSellers] = useState<any[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
@@ -71,4 +73,4 @@ export default function AdminDemoFinance() {
   </KeyboardAwareScrollView></AdminGate>;
 }
 
-const styles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 90 }, link: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 12 }, notice: { fontFamily: "Kanit_500Medium", color: Colors.danger, backgroundColor: "white", padding: 12, borderRadius: BorderRadius.md, marginVertical: 12 }, heading: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 19, marginTop: 18, marginBottom: 9 }, card: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginBottom: 10 }, bold: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 18 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, input: { borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: BorderRadius.md, marginVertical: 9, padding: 10, color: Colors.textDark }, row: { flexDirection: "row", gap: 8 }, button: { flex: 1 } });
+const baseStyles = StyleSheet.create({ root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 90 }, link: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary }, title: { fontFamily: "Kanit_700Bold", fontSize: 27, color: Colors.greenPrimary, marginTop: 12 }, notice: { fontFamily: "Kanit_500Medium", color: Colors.danger, backgroundColor: "white", padding: 12, borderRadius: BorderRadius.md, marginVertical: 12 }, heading: { fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 19, marginTop: 18, marginBottom: 9 }, card: { backgroundColor: "white", padding: 14, borderRadius: BorderRadius.lg, marginBottom: 10 }, bold: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 18 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, input: { borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: BorderRadius.md, marginVertical: 9, padding: 10, color: Colors.textDark }, row: { flexDirection: "row", gap: 8 }, button: { flex: 1 } });

@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { BackButton } from "../../src/components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,6 +9,7 @@ import { Colors, Spacing } from "../../src/constants/theme";
 import { useCapabilities } from "../../src/hooks/useCapabilities";
 
 export default function SellerDashboard() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["card"]});
   const router = useRouter();
   const permissions = useCapabilities();
   if (permissions.loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;
@@ -34,7 +36,7 @@ export default function SellerDashboard() {
   </ScrollView>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { padding: Spacing.lg, paddingTop: 0, backgroundColor: Colors.background, flexGrow: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background },
   title: { fontFamily: "Kanit_700Bold", fontSize: 25, color: Colors.greenPrimary },

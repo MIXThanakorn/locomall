@@ -120,6 +120,9 @@ test("demo migration executes and protects wallet, refunds, reviews and settleme
     await db.query("select public.save_purchase_review($1,null,5,'good')", [second]);
     await db.query("select public.save_purchase_review($1,null,4,'edited')", [second]);
     await db.query("select public.save_purchase_review($1,$2,5,'store')", [second, item]);
+    await db.query("select public.save_purchase_review($1,$2,4,'edited store')", [second, item]);
+    assert.equal((await db.query("select count(*)::int n from purchase_reviews where order_item_id=$1", [item])).rows[0].n, 1);
+    assert.equal((await db.query("select body from purchase_reviews where order_item_id=$1", [item])).rows[0].body, "edited store");
     assert.equal((await db.query("select rating_count from public.markets where market_id=1")).rows[0].rating_count, 1);
     assert.equal((await db.query("select rating_count from public.stores where store_id=1")).rows[0].rating_count, 1);
     const review = (await db.query("select review_id from public.purchase_reviews where market_id=1")).rows[0].review_id;

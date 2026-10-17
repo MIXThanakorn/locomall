@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
@@ -14,6 +15,7 @@ const statusLabels: Record<string, string> = { awaiting_preparation: "รอผ�
 const ORDER_WATCHES: RealtimeWatch[] = [{ table: "orders", event: "INSERT" }, { table: "orders", event: "UPDATE" }];
 
 export default function AdminOrders() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"]});
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +48,7 @@ export default function AdminOrders() {
   </ScrollView></AdminGate>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 110 }, eyebrow: { fontFamily: "Kanit_500Medium", color: Colors.goldDark, fontSize: 12, letterSpacing: 1 }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, lineHeight: 20, marginBottom: 14 },
   card: { backgroundColor: Colors.cardBackground, borderRadius: BorderRadius.lg, borderWidth: 1, borderColor: Colors.inputBorder, padding: 16, marginTop: 10 }, row: { flexDirection: "row", justifyContent: "space-between", gap: 10, alignItems: "center" }, number: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, status: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, fontSize: 12, backgroundColor: "#E8F2EC", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 99 }, market: { fontFamily: "Kanit_500Medium", marginTop: 7 }, meta: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, date: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 11, marginTop: 8 }, total: { fontFamily: "Kanit_700Bold", color: Colors.goldDark, marginTop: 8 }, cancel: { borderColor: Colors.danger, marginTop: 12 }, empty: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, textAlign: "center", marginTop: 60 },
 });

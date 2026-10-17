@@ -1,8 +1,8 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
-/* eslint-disable react-hooks/set-state-in-effect */
 import { BackButton } from "../../src/components/BackButton";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { Alert, Image, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button } from "../../src/components/Button";
@@ -24,7 +24,10 @@ const buyerDeliveryLabels: Record<string, string> = { awaiting_preparation: "ร
 const buyerPickupLabels: Record<string, string> = { awaiting_preparation: "รอผู้ขายรับคำสั่งซื้อ", preparing: "ผู้ขายกำลังเตรียมสินค้าให้คุณ", at_hub: "สินค้าพร้อมให้คุณรับที่จุดรวม", delivered: "คุณได้รับสินค้าแล้ว", cancelled: "คำสั่งซื้อของคุณถูกยกเลิก" };
 
 export default function OrderDetail() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["card"],"wrap":["itemDetail","totalRow"]});
   const { id } = useLocalSearchParams<{ id: string }>(); const router = useRouter(); const { session } = useAuth(); const [order, setOrder] = useState<any>(); const [loading, setLoading] = useState(false); const [refreshing, setRefreshing] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewError, setReviewError] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const userId = session?.user.id;
   const generation = useRef(0);
@@ -36,9 +39,14 @@ export default function OrderDetail() {
       if (version !== generation.current) return;
       if (error || !data) throw error ?? new Error("unavailable");
       setOrder(data); setLoadError(false);
+      if (data.buyer_id === userId && data.status === "delivered") {
+        const result = await (supabase as any).from("purchase_reviews").select("order_item_id,hidden_at").eq("order_id", Number(id)).eq("buyer_id", userId);
+        if (version !== generation.current) return;
+        setReviewError(Boolean(result.error)); setReviews(result.data ?? []);
+      } else { setReviews([]); setReviewError(false); }
     } catch { if (version === generation.current) { setOrder(undefined); setLoadError(true); } }
   }, [id, userId]);
-  useEffect(() => { void load(); const counter = generation; return () => { counter.current++; }; }, [load]);
+  useFocusEffect(useCallback(() => { void load(); const counter = generation; return () => { counter.current++; }; }, [load]));
   const watches = useMemo<RealtimeWatch[]>(() => [{ table: "orders", event: "UPDATE", filter: `order_id=eq.${Number(id)}` }, { table: "order_allocations", event: "UPDATE" }], [id]);
   useRealtimeRefresh(`order-detail-${id}`, load, watches, Number.isSafeInteger(Number(id)) && Number(id) > 0);
   const cancel = async () => { setLoading(true); const { error } = await supabase.rpc("cancel_order", { p_order_id: Number(id), p_reason: "ยกเลิกโดยผู้ซื้อ" }); setLoading(false); if (error) Alert.alert("ยกเลิกไม่สำเร็จ", translateDatabaseError(error)); else await load(); };
@@ -55,11 +63,11 @@ export default function OrderDetail() {
     <View style={styles.totalRow}><Text style={styles.item}>{order.payment_method === "demo_wallet" ? "ชำระด้วยยอดจำลองแล้ว · ไม่ใช่เงินจริง" : "ยอดชำระเมื่อได้รับสินค้า"}</Text><Text style={styles.total}>฿{Number(order.total_amount).toLocaleString()}</Text></View>
     {order.tracking_number ? <View style={styles.tracking}><Text style={styles.item}>เลขติดตาม: {order.tracking_number}</Text><Text style={styles.alloc}>{order.courier_name}</Text></View> : null}
     {canConfirm ? <Button title={pickup ? "ยืนยันว่าได้รับสินค้าที่จุดรวมแล้ว" : "ยืนยันว่าได้รับสินค้าแล้ว"} onPress={confirm} loading={loading} /> : null}
-    {isBuyer && order.status === "delivered" ? <View style={styles.reviewBox}><Text style={styles.item}>รีวิวหลังได้รับสินค้า</Text><Button title="รีวิวตลาดชุมชน" variant="outline" onPress={() => router.push({ pathname: "/order/review", params: { orderId: id } } as never)} />{order.order_items.map((item: any) => <Button key={item.order_item_id} title={`รีวิวร้าน ${item.stores?.name ?? item.product_name}`} variant="outline" onPress={() => router.push({ pathname: "/order/review", params: { orderId: id, itemId: String(item.order_item_id) } } as never)} style={{ marginTop: 8 }} />)}</View> : null}
+    {isBuyer && order.status === "delivered" ? <View style={styles.reviewBox}><Text style={styles.item}>รีวิวหลังได้รับสินค้า</Text>{reviewError ? <LoadNotice onRetry={() => void load()} /> : null}<Button title={reviews.some((review) => review.order_item_id === null) ? "แก้ไขการรีวิวตลาดชุมชน" : "รีวิวตลาดชุมชน"} disabled={reviewError || reviews.some((review) => review.order_item_id === null && review.hidden_at)} variant="outline" onPress={() => router.push({ pathname: "/order/review", params: { orderId: id } } as never)} />{order.order_items.map((item: any) => <Button key={item.order_item_id} title={`${reviews.some((review) => review.order_item_id === item.order_item_id) ? "แก้ไขการรีวิว" : "รีวิว"}ร้าน ${item.stores?.name ?? item.product_name}`} disabled={reviewError || reviews.some((review) => review.order_item_id === item.order_item_id && review.hidden_at)} variant="outline" onPress={() => router.push({ pathname: "/order/review", params: { orderId: id, itemId: String(item.order_item_id) } } as never)} style={{ marginTop: 8 }} />)}</View> : null}
     {!isBuyer && ((pickup && order.status === "at_hub") || (!pickup && order.status === "shipped")) ? <Text style={styles.onlyBuyer}>รอผู้ซื้อยืนยันการรับสินค้า</Text> : null}
     {isBuyer && canBuyerCancel(order) ? <Button title="ยกเลิกคำสั่งซื้อ" variant="outline" onPress={cancel} loading={loading} style={{ marginTop: 10 }} /> : null}
     {isBuyer && !canBuyerCancel(order) && !["cancelled", "delivered"].includes(order.status) ? <Text style={styles.onlyBuyer}>ไม่สามารถยกเลิกได้หลังเจ้าของตลาดรับสินค้าจากผู้ขายรายแรกแล้ว</Text> : null}
   </ScrollView>;
 }
 
-const styles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 60, backgroundColor: Colors.background, flexGrow: 1 }, center: { flex: 1, alignItems: "center", justifyContent: "center" }, number: { fontFamily: "Kanit_700Bold", fontSize: 24, color: Colors.greenPrimary }, market: { fontFamily: "Kanit_500Medium", color: Colors.textMedium }, date: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, method: { backgroundColor: "#FFF5D9", borderRadius: BorderRadius.lg, padding: 14, marginTop: 14 }, methodTitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, methodDetail: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, timeline: { marginVertical: 22 }, step: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }, dot: { width: 15, height: 15, borderRadius: 8, backgroundColor: Colors.inputBorder }, done: { backgroundColor: Colors.greenPrimary }, stepText: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, doneText: { color: Colors.textDark, fontFamily: "Kanit_500Medium" }, card: { backgroundColor: "white", padding: 12, borderRadius: 16, marginBottom: 10, flexDirection: "row", gap: 12 }, productImage: { width: 88, height: 88, borderRadius: 12, backgroundColor: "#EAF1E9" }, productBody: { flex: 1 }, item: { fontFamily: "Kanit_700Bold" }, store: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13 }, itemDetail: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }, price: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 18 }, alloc: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted }, totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 16 }, total: { fontFamily: "Kanit_700Bold", fontSize: 22, color: Colors.greenPrimary }, tracking: { padding: 16, backgroundColor: "#EAF1E9", borderRadius: 16, marginBottom: 16 }, onlyBuyer: { fontFamily: "Kanit_500Medium", color: Colors.textMuted, textAlign: "center", padding: 14 }, reviewBox: { marginTop: 18, gap: 8 } });
+const baseStyles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 60, backgroundColor: Colors.background, flexGrow: 1 }, center: { flex: 1, alignItems: "center", justifyContent: "center" }, number: { fontFamily: "Kanit_700Bold", fontSize: 24, color: Colors.greenPrimary }, market: { fontFamily: "Kanit_500Medium", color: Colors.textMedium }, date: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 12 }, method: { backgroundColor: "#FFF5D9", borderRadius: BorderRadius.lg, padding: 14, marginTop: 14 }, methodTitle: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, methodDetail: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, timeline: { marginVertical: 22 }, step: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 }, dot: { width: 15, height: 15, borderRadius: 8, backgroundColor: Colors.inputBorder }, done: { backgroundColor: Colors.greenPrimary }, stepText: { fontFamily: "Kanit_400Regular", color: Colors.textMuted }, doneText: { color: Colors.textDark, fontFamily: "Kanit_500Medium" }, card: { backgroundColor: "white", padding: 12, borderRadius: 16, marginBottom: 10, flexDirection: "row", gap: 12 }, productImage: { width: 88, height: 88, borderRadius: 12, backgroundColor: "#EAF1E9" }, productBody: { flex: 1 }, item: { fontFamily: "Kanit_700Bold" }, store: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13 }, itemDetail: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }, price: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 18 }, alloc: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted }, totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 16 }, total: { fontFamily: "Kanit_700Bold", fontSize: 22, color: Colors.greenPrimary }, tracking: { padding: 16, backgroundColor: "#EAF1E9", borderRadius: 16, marginBottom: 16 }, onlyBuyer: { fontFamily: "Kanit_500Medium", color: Colors.textMuted, textAlign: "center", padding: 14 }, reviewBox: { marginTop: 18, gap: 8 } });

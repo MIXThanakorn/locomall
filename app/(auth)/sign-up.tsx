@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
@@ -15,6 +16,7 @@ import { translateAuthError } from "../../src/lib/authError";
 import { emailValidationError, mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValidation";
 
 export default function SignUpScreen() {
+  const styles = useResponsiveStyles(baseStyles, { stack: ["genderRow"], compactPadding: ["card"] });
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -86,6 +88,11 @@ export default function SignUpScreen() {
 
   return (
     <View style={styles.container}>
+      <KeyboardAwareScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.pageScroll}
+        showsVerticalScrollIndicator={false}
+      >
       <HeaderGradient
         title=""
         variant="green"
@@ -98,11 +105,7 @@ export default function SignUpScreen() {
         </View>
       </HeaderGradient>
 
-      <KeyboardAwareScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <View style={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>ชื่อ–นามสกุล</Text>
           <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="ชื่อและนามสกุลจริง" />
@@ -117,7 +120,7 @@ export default function SignUpScreen() {
           <Text style={styles.passwordHint}>อย่างน้อย 10 ตัว และต้องมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์</Text>
           <View style={styles.passwordContainer}>
             <AppTextInput style={styles.passwordInput} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoComplete="new-password" autoCapitalize="none" placeholder="สร้างรหัสผ่าน" />
-            <TouchableOpacity onPress={() => setShowPassword((value) => !value)} accessibilityLabel={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => setShowPassword((value) => !value)} accessibilityLabel={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
               <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -125,7 +128,7 @@ export default function SignUpScreen() {
           <Text style={styles.inputLabel}>ยืนยันรหัสผ่าน</Text>
           <View style={styles.passwordContainer}>
             <AppTextInput style={styles.passwordInput} value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry={!showPasswordConfirmation} autoComplete="new-password" autoCapitalize="none" placeholder="กรอกรหัสผ่านอีกครั้ง" />
-            <TouchableOpacity onPress={() => setShowPasswordConfirmation((value) => !value)} accessibilityLabel={showPasswordConfirmation ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => setShowPasswordConfirmation((value) => !value)} accessibilityLabel={showPasswordConfirmation ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
               <Ionicons name={showPasswordConfirmation ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -185,24 +188,27 @@ export default function SignUpScreen() {
             onPress={handleSignUp}
           />
         </View>
+      </View>
       </KeyboardAwareScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
+  iconButton: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
+  scroll: { flex: 1 }, pageScroll: { flexGrow: 1, paddingBottom: 32 },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
   header: {
-    paddingTop: 50,
-    paddingBottom: 50,
+    paddingTop: 0,
+    paddingBottom: 24,
     alignItems: "center",
   },
   avatarContainer: {
     alignSelf: "center",
-    marginTop: -10,
+    marginTop: 0,
     position: "relative",
   },
   editBadge: {
@@ -220,7 +226,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: -25,
+    marginTop: 0,
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,

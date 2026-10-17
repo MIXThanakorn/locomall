@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { LoadNotice } from "../../src/components/LoadNotice";
 import { useRealtimeRefresh, type RealtimeWatch } from "../../src/hooks/useRealtimeRefresh";
@@ -9,6 +10,7 @@ import { ActivityIndicator, RefreshControl, StyleSheet, Text, TouchableOpacity, 
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { CatalogActions } from "../../src/components/CatalogActions";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
+import { Button } from "../../src/components/Button";
 import { AppTextInput } from "../../src/components/AppTextInput";
 import { CommerceCard } from "../../src/components/CommerceCard";
 import { catalogColumns, filterMarketStores } from "../../src/lib/catalogPresentation";
@@ -22,6 +24,7 @@ export default function MarketDetail() {
   return <MarketDetailContent key={`${session?.user.id}:${id}`} />;
 }
 function MarketDetailContent() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { fontScale } = useWindowDimensions();
@@ -85,9 +88,8 @@ function MarketDetailContent() {
       </TouchableOpacity> : null}
       <View style={styles.row}>
         <Text style={styles.title}>ร้านค้าในชุมชน</Text>
-        {session && sameArea ? <TouchableOpacity onPress={() => router.push({ pathname: "/seller/listings/join", params: { marketId: id } } as never)}><Text style={styles.apply}>ขอเปิดร้าน</Text></TouchableOpacity> : null}
+        {session && sameArea ? <Button title="ขอเปิดร้าน" size="sm" variant="outline" onPress={() => router.push({ pathname: "/seller/listings/join", params: { marketId: id } } as never)} /> : null}
       </View>
-      {session && !sameArea ? <View style={styles.areaNotice}><Ionicons name="location-outline" size={18} color={Colors.goldDark} /><Text style={styles.areaText}>เปิดร้านได้เมื่อพื้นที่หลักของคุณอยู่ตำบลเดียวกับตลาดชุมชนนี้</Text></View> : null}
       <AppTextInput accessibilityLabel="ค้นหาร้านหรือสินค้าในตลาดนี้" placeholder="ค้นหาร้านหรือสินค้าในตลาดนี้" value={query} onChangeText={setQuery} style={styles.search} />
       <View style={styles.filterRow}><Text style={styles.resultCount}>พบ {visibleStores.length} ร้าน</Text><TouchableOpacity accessibilityRole="checkbox" accessibilityState={{ checked: inStockOnly }} onPress={() => setInStockOnly((value) => !value)} style={[styles.stockFilter, inStockOnly && styles.stockFilterActive]}><Ionicons name={inStockOnly ? "checkbox" : "square-outline"} size={18} color={inStockOnly ? "white" : Colors.greenPrimary} /><Text style={[styles.filterText, inStockOnly && { color: "white" }]}>พร้อมขาย</Text></TouchableOpacity></View>
       {!visibleStores.length ? <View style={styles.emptyBox}><Text style={styles.empty}>ไม่พบร้านค้าที่ตรงกับเงื่อนไข</Text>{query || inStockOnly ? <TouchableOpacity onPress={() => { setQuery(""); setInStockOnly(false); }}><Text style={styles.apply}>ล้างการค้นหาและตัวกรอง</Text></TouchableOpacity> : null}</View> : null}
@@ -105,7 +107,7 @@ function MarketDetailContent() {
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { flex: 1, alignItems: "center", justifyContent: "center" },
   marketSummary: { flexDirection: "row", alignItems: "center", gap: 12 }, summaryText: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary }, heroDescription: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13 },
   grid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },

@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -10,6 +11,7 @@ type ContextHelpProps = {
 };
 
 export function ContextHelp({ title, steps, initiallyOpen = false }: ContextHelpProps) {
+  const styles = useResponsiveStyles(baseStyles, {});
   const [open, setOpen] = useState(initiallyOpen);
 
   return <View style={styles.card}>
@@ -33,7 +35,7 @@ export function ContextHelp({ title, steps, initiallyOpen = false }: ContextHelp
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   card: { backgroundColor: "#F0F7F2", borderWidth: 1, borderColor: "#CFE2D5", borderRadius: BorderRadius.lg, marginTop: Spacing.md, marginBottom: Spacing.sm, overflow: "hidden" },
   header: { minHeight: 54, paddingHorizontal: 14, flexDirection: "row", alignItems: "center", gap: 9 },
   icon: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.cardBackground, alignItems: "center", justifyContent: "center" },

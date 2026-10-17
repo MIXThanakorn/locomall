@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -22,6 +23,7 @@ const PAGE_SIZE = 20;
 const WATCHES: RealtimeWatch[] = [{ table: "stores", event: "UPDATE" }, { table: "markets", event: "UPDATE" }];
 
 export default function AdminStores() {
+  const styles = useResponsiveStyles(baseStyles, {"stack":["search","pager"],"wrap":["filters"]});
   const { isAdmin } = useAuth();
   const [stores, setStores] = useState<Store[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
@@ -118,7 +120,7 @@ export default function AdminStores() {
   </KeyboardAwareScrollView></AdminGate>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, content: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 110 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 28, color: Colors.greenPrimary, marginTop: 12 }, sub: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, lineHeight: 21, fontSize: 13 },
   search: { flexDirection: "row", gap: 10, marginVertical: 16 }, searchInput: { flex: 1, padding: 12, borderRadius: BorderRadius.md, backgroundColor: Colors.inputBackground },

@@ -40,7 +40,7 @@ export const HeaderGradient: React.FC<HeaderGradientProps> = ({
   };
 
   const getTextColor = () => {
-    return variant === "white" ? Colors.textDark : Colors.textWhite;
+    return variant === "green" ? Colors.textWhite : Colors.greenPrimary;
   };
 
   const isWhite = variant === "white";
@@ -63,7 +63,7 @@ export const HeaderGradient: React.FC<HeaderGradientProps> = ({
       <ScreenHeader contentInset={0} title={title} titleStyle={[styles.title, { color: getTextColor() }]}
         showBack={showBack} color={variant === "green" ? Colors.textWhite : Colors.greenPrimary}
         onBackPress={onBackPress && router.canGoBack() ? onBackPress : undefined} rightAction={rightAction}>
-        {subtitle ? <Text style={[styles.subtitle, { color: isWhite ? Colors.textMuted : "rgba(255,255,255,0.9)" }]}>{subtitle}</Text> : null}
+        {subtitle ? <Text style={[styles.subtitle, { color: variant === "green" ? "#DDEBE2" : Colors.textMedium }]}>{subtitle}</Text> : null}
       </ScreenHeader>
       {children}
     </View>
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: Typography.fontSizeSm,
     marginTop: 2,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   rightAction: {
     marginLeft: Spacing.sm,

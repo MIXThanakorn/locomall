@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useLocalSearchParams } from "expo-router";
 import { useState } from "react";
@@ -10,6 +11,7 @@ import { useCatalogReviews } from "../../src/hooks/useCatalogReviews";
 import { parseReviewRoute, ReviewTarget } from "../../src/lib/catalogReviews";
 
 export default function CatalogReviewsScreen() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const params = useLocalSearchParams<{ targetType: string; targetId: string }>();
   const target = parseReviewRoute(params.targetType, params.targetId);
   if (!target) return <View style={styles.root}><ScreenHeader contentInset={0} title="ไม่พบรายการรีวิว" titleStyle={styles.heading} /></View>;
@@ -17,6 +19,7 @@ export default function CatalogReviewsScreen() {
 }
 
 function ReviewList({ targetType, targetId }: { targetType: ReviewTarget; targetId: number }) {
+  const styles = useResponsiveStyles(baseStyles, {});
   const insets = useSafeAreaInsets();
   const [stars, setStars] = useState<number | null>(null);
   const { page, summary, error, loading, loadingMore, refresh, loadMore } = useCatalogReviews(targetType, targetId, stars);
@@ -44,7 +47,7 @@ function ReviewList({ targetType, targetId }: { targetType: ReviewTarget; target
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, invalid: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   header: { flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: Colors.divider, backgroundColor: Colors.cardBackground },
   back: { padding: 8, marginRight: 8 }, title: { flex: 1 }, heading: { fontFamily: "Kanit_700Bold", color: Colors.greenPrimary, fontSize: 22 },

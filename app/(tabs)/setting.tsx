@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
@@ -10,6 +11,7 @@ import { getSettingsGroups, SettingsAction } from "../../src/lib/settingsMenu";
 import { supabase } from "../../src/lib/supabase";
 
 export default function Settings() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session, loading, signOut } = useAuth();
@@ -61,6 +63,7 @@ export default function Settings() {
   if (!session) return <Redirect href="/(auth)/sign-in" />;
 
   return <View style={styles.root}>
+    <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); setRefreshVersion((value) => value + 1); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
     <View style={[styles.hero, { paddingTop: insets.top + 18 }]}>
       <Text style={styles.pageTitle}>ตั้งค่า</Text>
       <View style={styles.avatar}>{profile?.user_img_url
@@ -68,9 +71,8 @@ export default function Settings() {
         : <Ionicons name="person" size={34} color={Colors.greenPrimary} />}</View>
       <Text style={styles.name}>{profile?.display_name || profile?.full_name || "ผู้ใช้ Locomall"}</Text>
       <Text style={styles.email}>{session.user.email}</Text>
-      {permissions.isMarketOwner ? <Text style={styles.badge}>เจ้าของตลาดชุมชน · ซื้อสินค้าได้ตามปกติ</Text> : null}
     </View>
-    <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); setRefreshVersion((value) => value + 1); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
+      <View style={styles.content}>
       {loadError ? <TouchableOpacity onPress={() => void load()}><Text style={styles.error}>โหลดข้อมูลบัญชีไม่สำเร็จ · แตะเพื่อลองใหม่</Text></TouchableOpacity> : null}
       {permissions.loading ? <ActivityIndicator color={Colors.greenPrimary} /> : null}
       {groups.map((group) => <View key={group.title} style={styles.group}>
@@ -82,11 +84,12 @@ export default function Settings() {
         </TouchableOpacity>)}
       </View>)}
       <TouchableOpacity style={styles.logout} disabled={leavingAccount} onPress={leaveAccount}><Text style={styles.logoutText}>ออกจากระบบ</Text></TouchableOpacity>
+      </View>
     </ScrollView>
   </View>;
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   center: { alignItems: "center", justifyContent: "center" },
   hero: { backgroundColor: Colors.greenPrimary, padding: Spacing.lg, paddingBottom: 26, alignItems: "center", borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },

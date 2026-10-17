@@ -40,6 +40,6 @@ test("settings actions point to real routes and notification permission opens de
   assert.match(settings, /Linking.openSettings\(\)/);
   assert.match(settings, /getSettingsGroups\(permissions\)/);
   assert.match(settings, /loadGeneration.current/);
-  assert.match(read("app/(tabs)/_layout.tsx"), /title: "ตั้งค่า"[\s\S]*name="settings-outline"/);
+  assert.match(read("app/(tabs)/_layout.tsx"), /title: "ตั้งค่า"[\s\S]*tabIcon\("settings-outline", "settings"\)/);
   assert.equal(groups.find((group) => group.title === "แอปและความช่วยเหลือ").actions[0].command, "notification-permission");
 });

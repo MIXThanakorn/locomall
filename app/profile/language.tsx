@@ -1,3 +1,4 @@
+import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { AppTextInput } from "../../src/components/AppTextInput";
@@ -10,6 +11,7 @@ import { KeyboardAwareView } from "../../src/components/KeyboardAware";
 import { useLanguage, Language } from "../../src/context/LanguageContext";
 
 export default function LanguageScreen() {
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const { language, setLanguage, t } = useLanguage();
   const [selectedLang, setSelectedLang] = useState<Language>(language);
@@ -103,7 +105,7 @@ export default function LanguageScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,

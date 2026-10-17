@@ -19,7 +19,7 @@ test("cold startup defaults to session gate, not the saved-account picker", () =
 
 test("notification actions wrap outside the header and grow with text size", () => {
   const source = read("app/(tabs)/notification.tsx");
-  const header = source.slice(source.indexOf('<View style={[styles.head'), source.indexOf('<ScrollView contentContainerStyle={styles.content}'));
+  const header = source.slice(source.indexOf('<View style={[styles.head'), source.indexOf('<View style={styles.content}>'));
   assert.ok(!header.includes("TouchableOpacity"));
   assert.match(source, /actions: \{[^}]*flexWrap: "wrap"/);
   const button = source.match(/actionButton: \{([^}]+)\}/)[1];
