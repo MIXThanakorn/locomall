@@ -9,7 +9,7 @@ import { Colors, Spacing } from "../../src/constants/theme";
 import { useCapabilities } from "../../src/hooks/useCapabilities";
 
 export default function SellerDashboard() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["card"]});
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const permissions = useCapabilities();
   if (permissions.loading) return <View style={styles.center}><BackButton floating /><ActivityIndicator color={Colors.greenPrimary} /></View>;

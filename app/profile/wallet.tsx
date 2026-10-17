@@ -21,7 +21,7 @@ const labels: Record<string, string> = {
 };
 
 export default function DemoWallet() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row"]});
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["mini"]});
   const { session } = useAuth();
   const userId = session?.user.id;
   const [account, setAccount] = useState<any>();

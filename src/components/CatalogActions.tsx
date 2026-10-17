@@ -12,7 +12,7 @@ import { CatalogReviewCard } from "./CatalogReviewCard";
 
 type Target = "market" | "store";
 export function CatalogActions({ targetType, targetId, refreshVersion = 0, children }: { targetType: Target; targetId: number; refreshVersion?: number; children?: ReactNode }) {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row"]});
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const { session } = useAuth();
   const [favorite, setFavorite] = useState(false);

@@ -21,7 +21,7 @@ const FINANCE_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function AdminDemoFinance() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row"]});
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["button"]});
   const [requests, setRequests] = useState<any[]>([]);
   const [sellers, setSellers] = useState<any[]>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});

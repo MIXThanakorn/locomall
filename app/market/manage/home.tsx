@@ -19,7 +19,7 @@ const MARKET_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function MarketManagementHome() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["quickRow"],"wrap":["cardHead"]});
+  const styles = useResponsiveStyles(baseStyles, {"stack":["quickRow"],"fullWidth":["quick"]});
   const router = useRouter();
   const { session, isAdmin } = useAuth();
   const userId = session?.user.id;

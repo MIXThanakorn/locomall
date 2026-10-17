@@ -16,7 +16,7 @@ import { formatSaleQuantity } from "../../src/lib/productUnit";
 type OrderView = "buying" | "selling";
 
 export default function OrdersTab() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row","itemRow"],"fullWidth":["status"],"wrap":["tabs"]});
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const { view } = useLocalSearchParams<{ view?: string }>();
   const insets = useSafeAreaInsets();
@@ -48,7 +48,7 @@ export default function OrdersTab() {
       {active === "buying" ? <>
         {!buyer.loading && !buyer.error && !buyer.orders.length ? <Text style={styles.empty}>ยังไม่มีรายการที่คุณสั่งซื้อ</Text> : null}
         {buyer.orders.map((order) => <TouchableOpacity key={order.order_id} style={styles.card} onPress={() => router.push(`/order/${order.order_id}` as never)}>
-          <View style={styles.row}><Text style={styles.number}>{order.order_number}</Text><Text style={styles.status}>{buyerOrderStatusLabel(order.status)}</Text></View>
+          <View style={styles.orderHead}><Text style={styles.number}>{order.order_number}</Text><Text style={styles.status}>{buyerOrderStatusLabel(order.status)}</Text></View>
           <Text style={styles.market}>{order.markets?.name ?? "ตลาดชุมชน"} · {order.fulfillment_method === "pickup" ? "นัดรับที่จุดรวม" : "จัดส่งถึงที่อยู่"}</Text>
           <Text style={styles.date}>วันที่สั่ง {formatThaiDateTime(order.created_at)}</Text>
           {order.order_items?.map((item: any) => <ProductRow key={item.order_item_id} item={item} quantity={item.quantity} total={Number(item.total_amount)} />)}
@@ -59,7 +59,7 @@ export default function OrdersTab() {
         {seller.allocations.map((allocation) => {
           const item = allocation.order_items; const order = item?.orders; const subtotal = allocation.quantity * Number(item?.unit_price ?? 0);
           return <TouchableOpacity key={allocation.allocation_id} style={styles.card} onPress={() => router.push(`/seller/allocations/${allocation.allocation_id}` as never)}>
-            <View style={styles.row}><Text style={styles.number}>{order?.order_number}</Text><Text style={styles.status}>{sellerAllocationStatusLabel(allocation.status)}</Text></View>
+            <View style={styles.orderHead}><Text style={styles.number}>{order?.order_number}</Text><Text style={styles.status}>{sellerAllocationStatusLabel(allocation.status)}</Text></View>
             <Text style={styles.market}>{item?.stores?.name ?? "ร้านค้า"} · {item?.stores?.markets?.name ?? "ตลาดชุมชน"}</Text>
             <Text style={styles.date}>วันที่ลูกค้าสั่ง {formatThaiDateTime(order?.created_at)}</Text>
             <ProductRow item={item} quantity={allocation.quantity} total={subtotal} />
@@ -74,13 +74,13 @@ export default function OrdersTab() {
 }
 
 function ProductRow({ item, quantity, total }: { item: any; quantity: number; total: number }) {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row","itemRow"],"fullWidth":["status"],"wrap":["tabs"]});
+  const styles = useResponsiveStyles(baseStyles, {});
   const image = item?.product_image_url || item?.stores?.image_url;
-  return <View style={styles.itemRow}>{image ? <Image source={{ uri: image }} style={styles.itemImage} /> : <View style={styles.itemImagePlaceholder} />}<View style={styles.itemText}><Text style={styles.item}>{item?.product_name} × {formatSaleQuantity(quantity, item?.unit)}</Text><Text style={styles.store}>{item?.stores?.name ?? "ร้านค้า"} · ฿{Number(item?.unit_price ?? 0).toLocaleString()}/{item?.unit}</Text></View><Text style={styles.itemTotal}>฿{total.toLocaleString()}</Text></View>;
+  return <View style={styles.itemRow}>{image ? <Image source={{ uri: image }} style={styles.itemImage} /> : <View style={styles.itemImagePlaceholder} />}<View style={styles.itemText}><Text style={styles.item}>{item?.product_name} × {formatSaleQuantity(quantity, item?.unit)}</Text><Text style={styles.store}>{item?.stores?.name ?? "ร้านค้า"} · ฿{Number(item?.unit_price ?? 0).toLocaleString()}/{item?.unit}</Text><Text style={styles.itemTotal}>฿{total.toLocaleString()}</Text></View></View>;
 }
 
 const baseStyles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background }, center: { alignItems: "center", justifyContent: "center" }, head: { padding: Spacing.lg, backgroundColor: Colors.greenPrimary, borderBottomLeftRadius: 24, borderBottomRightRadius: 24 }, title: { fontFamily: "Kanit_700Bold", fontSize: 24, color: "white" }, sub: { fontFamily: "Kanit_400Regular", color: "#DDEBE2" },
   tabs: { flexDirection: "row", backgroundColor: "#FFFFFF22", borderRadius: BorderRadius.round, padding: 4, marginTop: 14 }, tab: { flex: 1, alignItems: "center", paddingVertical: 9, borderRadius: BorderRadius.round }, tabActive: { backgroundColor: "white" }, tabText: { fontFamily: "Kanit_500Medium", color: "#DDEBE2" }, tabTextActive: { color: Colors.greenPrimary },
-  content: { padding: Spacing.lg, paddingBottom: 80 }, card: { padding: Spacing.md, backgroundColor: "white", borderRadius: BorderRadius.lg, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.inputBorder }, row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }, number: { fontFamily: "Kanit_700Bold", color: Colors.textDark, flex: 1 }, status: { fontFamily: "Kanit_500Medium", fontSize: 11, color: Colors.greenPrimary, backgroundColor: "#EAF1E9", paddingHorizontal: 7, paddingVertical: 5, borderRadius: 8, maxWidth: "48%", textAlign: "center" }, market: { fontFamily: "Kanit_500Medium", color: Colors.textMedium, marginTop: 8 }, date: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted, marginBottom: 10 }, itemRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8, borderTopWidth: 1, borderTopColor: Colors.inputBorder, gap: 10 }, itemImage: { width: 58, height: 58, borderRadius: 10, backgroundColor: "#EAF1E9" }, itemImagePlaceholder: { width: 58, height: 58, borderRadius: 10, backgroundColor: "#EAF1E9" }, itemText: { flex: 1 }, item: { fontFamily: "Kanit_500Medium", color: Colors.textDark }, store: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted }, itemTotal: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, footer: { marginTop: 10 }, detailLink: { fontFamily: "Kanit_500Medium", fontSize: 12, color: Colors.greenPrimary }, total: { fontFamily: "Kanit_700Bold", fontSize: 18, color: Colors.greenPrimary }, error: { color: Colors.danger, fontFamily: "Kanit_400Regular" }, empty: { fontFamily: "Kanit_400Regular", textAlign: "center", color: Colors.textMuted, marginTop: 40 },
+  content: { padding: Spacing.lg, paddingBottom: 80 }, card: { padding: Spacing.md, backgroundColor: "white", borderRadius: BorderRadius.lg, marginBottom: Spacing.md, borderWidth: 1, borderColor: Colors.inputBorder }, orderHead: { alignItems: "flex-start", gap: 6 }, row: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8 }, number: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, status: { fontFamily: "Kanit_500Medium", fontSize: 11, color: Colors.greenPrimary, backgroundColor: "#EAF1E9", paddingHorizontal: 7, paddingVertical: 5, borderRadius: 8, maxWidth: "100%", alignSelf: "flex-start" }, market: { fontFamily: "Kanit_500Medium", color: Colors.textMedium, marginTop: 8 }, date: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted, marginBottom: 10 }, itemRow: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 8, borderTopWidth: 1, borderTopColor: Colors.inputBorder, gap: 10 }, itemImage: { width: 58, height: 58, borderRadius: 10, backgroundColor: "#EAF1E9" }, itemImagePlaceholder: { width: 58, height: 58, borderRadius: 10, backgroundColor: "#EAF1E9" }, itemText: { flex: 1 }, item: { fontFamily: "Kanit_500Medium", color: Colors.textDark }, store: { fontFamily: "Kanit_400Regular", fontSize: 12, color: Colors.textMuted }, itemTotal: { marginTop: 4, fontFamily: "Kanit_700Bold", color: Colors.textDark }, footer: { marginTop: 10 }, detailLink: { flexShrink: 1, fontFamily: "Kanit_500Medium", fontSize: 12, color: Colors.greenPrimary }, total: { fontFamily: "Kanit_700Bold", fontSize: 18, color: Colors.greenPrimary }, error: { color: Colors.danger, fontFamily: "Kanit_400Regular" }, empty: { fontFamily: "Kanit_400Regular", textAlign: "center", color: Colors.textMuted, marginTop: 40 },
 });

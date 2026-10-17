@@ -15,9 +15,9 @@ export function useResponsiveStyles<T extends Named>(base: T, rules: Rules<T> = 
       ...value,
       // Long Thai names, amounts and email addresses must be allowed to shrink/wrap.
       ...("fontFamily" in value || "fontSize" in value || value.flex === 1 ? { minWidth: 0, flexShrink: value.flexShrink ?? 1 } : {}),
-      ...(rules.wrap?.includes(key) ? { flexWrap: "wrap", gap: 12 } : {}),
+      ...(rules.wrap?.includes(key) ? { flexWrap: "wrap", gap: Math.max(typeof value.gap === "number" ? value.gap : 0, 8) } : {}),
       ...(rules.stack?.includes(key) ? {
-        gap: Math.max(typeof value.gap === "number" ? value.gap : 0, 12),
+        gap: Math.max(typeof value.gap === "number" ? value.gap : 0, 8),
         ...(layout.stack ? { flexDirection: "column", alignItems: "stretch" } : {}),
       } : {}),
       ...(layout.stack && rules.fullWidth?.includes(key) ? { width: "100%", maxWidth: "100%", flex: 0 } : {}),

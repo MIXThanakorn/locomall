@@ -12,7 +12,7 @@ import { translateDatabaseError } from "../../../../src/lib/databaseError";
 import { supabase } from "../../../../src/lib/supabase";
 
 export default function StoreRequestDetail() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["rowLabel"]});
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["rowLabel","rowValue"]});
   const { id } = useLocalSearchParams<{ id: string }>(); const router = useRouter();
   const [detail, setDetail] = useState<any>(); const [note, setNote] = useState(""); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false);
   useEffect(() => { supabase.rpc("get_store_request_detail", { p_store_id: Number(id) }).single().then(({ data, error }) => { if (error) Alert.alert("เปิดคำขอไม่สำเร็จ", translateDatabaseError(error)); setDetail(data); setLoading(false); }); }, [id]);
@@ -33,5 +33,5 @@ export default function StoreRequestDetail() {
   </KeyboardAwareScrollView>;
 }
 function Row({ label, value }: { label: string; value: string }) {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["rowLabel"]}); return <View style={styles.row}><Text style={styles.rowLabel}>{label}</Text><Text style={styles.rowValue}>{value}</Text></View>; }
+  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["rowLabel","rowValue"]}); return <View style={styles.row}><Text style={styles.rowLabel}>{label}</Text><Text style={styles.rowValue}>{value}</Text></View>; }
 const baseStyles = StyleSheet.create({ root: { padding: Spacing.lg, paddingTop: 0, paddingBottom: 70, backgroundColor: Colors.background, flexGrow: 1 }, center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.background }, title: { fontFamily: "Kanit_700Bold", fontSize: 26, color: Colors.greenPrimary, marginBottom: 14 }, image: { height: 190, width: "100%", borderRadius: BorderRadius.lg, marginBottom: 12 }, card: { backgroundColor: "white", padding: 16, borderRadius: BorderRadius.lg, marginBottom: 12 }, heading: { fontFamily: "Kanit_700Bold", fontSize: 18, color: Colors.textDark, marginBottom: 8 }, row: { flexDirection: "row", gap: 10, marginTop: 5 }, rowLabel: { width: 90, fontFamily: "Kanit_500Medium", color: Colors.textMuted }, rowValue: { flex: 1, fontFamily: "Kanit_400Regular", color: Colors.textDark }, label: { fontFamily: "Kanit_700Bold", color: Colors.textDark }, note: { minHeight: 90, borderWidth: 1, borderColor: Colors.inputBorder, backgroundColor: "white", borderRadius: BorderRadius.md, padding: 12, fontFamily: "Kanit_400Regular", textAlignVertical: "top", marginTop: 8 }, actions: { gap: 10, marginTop: 14 } });

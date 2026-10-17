@@ -24,7 +24,7 @@ export default function Cart() {
 }
 
 function CartContent() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["head","itemTop","itemBottom"],"wrap":["totalRow"]});
+  const styles = useResponsiveStyles(baseStyles, {"wrap":["itemBottom","totalRow"]});
   const router = useRouter();
   const bottomAction = useBottomActionLayout();
   const { refreshBadges } = useBadgeCounts();

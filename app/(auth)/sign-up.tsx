@@ -16,7 +16,7 @@ import { translateAuthError } from "../../src/lib/authError";
 import { emailValidationError, mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValidation";
 
 export default function SignUpScreen() {
-  const styles = useResponsiveStyles(baseStyles, { stack: ["genderRow"], compactPadding: ["card"] });
+  const styles = useResponsiveStyles(baseStyles, { stack: ["genderRow"], fullWidth: ["genderBtn"], compactPadding: ["card"] });
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");

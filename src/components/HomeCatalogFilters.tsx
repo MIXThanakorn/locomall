@@ -10,7 +10,7 @@ export type HomeFilters = { kind: "all" | "market" | "store"; nearbyOnly: boolea
 const DEFAULTS: HomeFilters = { kind: "all", nearbyOnly: false, inStockOnly: false, sort: "distance" };
 
 export function HomeCatalogFilters({ value, onChange }: { value: HomeFilters; onChange: (next: HomeFilters) => void }) {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"]});
+  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"],"fullWidth":["reset","apply"]});
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);

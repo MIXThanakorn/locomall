@@ -23,7 +23,7 @@ const APPROVAL_WATCHES: RealtimeWatch[] = [
 ];
 
 export default function ApprovalQueue() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["card","actions"]});
+  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"]});
   const permissions = useCapabilities(); const router = useRouter();
   const { applicationId } = useLocalSearchParams<{ applicationId?: string }>();
   const [loadError, setLoadError] = useState(false);

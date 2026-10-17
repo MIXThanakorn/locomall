@@ -11,7 +11,7 @@ import { supabase } from "../../src/lib/supabase";
 import { approvalStatusLabel } from "../../src/lib/displayText";
 
 export default function MyStores() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["card"]});
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter(); const { session } = useAuth(); const userId = session?.user.id; const [stores, setStores] = useState<any[]>([]); const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => { if (!userId) return; const { data } = await supabase.from("stores").select("store_id,name,product_name,approval_status,approval_note,markets(name)").eq("manager_id", userId).order("created_at"); setStores(data ?? []); }, [userId]);
   useEffect(() => { void load(); }, [load]);

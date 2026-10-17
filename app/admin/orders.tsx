@@ -15,7 +15,7 @@ const statusLabels: Record<string, string> = { awaiting_preparation: "รอผ�
 const ORDER_WATCHES: RealtimeWatch[] = [{ table: "orders", event: "INSERT" }, { table: "orders", event: "UPDATE" }];
 
 export default function AdminOrders() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row"]});
+  const styles = useResponsiveStyles(baseStyles, {"wrap":["row"]});
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);

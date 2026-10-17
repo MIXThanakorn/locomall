@@ -23,7 +23,7 @@ type AlertState = {
 };
 
 export function AppAlertProvider({ children }: React.PropsWithChildren) {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"]});
+  const styles = useResponsiveStyles(baseStyles, {"stack":["actions"],"fullWidth":["button"]});
   const [alertState, setAlertState] = useState<AlertState | null>(null);
   useEffect(() => {
     const nativeAlert = Alert.alert;
