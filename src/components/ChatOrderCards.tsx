@@ -5,7 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Colors } from "../constants/theme";
 import { type ChatOrderContext, chatOrderDetailPath, shortChatOrderNumber } from "../lib/chatOrderContext";
 import { orderStatusLabel } from "../lib/displayText";
-import { formatThaiDateTime } from "../lib/date";
+import { formatChatDateTime } from "../lib/date";
 import { formatSaleQuantity } from "../lib/productUnit";
 
 export function ChatOrderCards({ items, error, onRetry }: { items: ChatOrderContext[]; error: boolean; onRetry: () => void }) {
@@ -24,7 +24,7 @@ export function ChatOrderCards({ items, error, onRetry }: { items: ChatOrderCont
         <Text style={styles.title}>{shortChatOrderNumber(item.order_number)} · {orderStatusLabel(item.order_status)}</Text>
         <Text style={styles.product} numberOfLines={2}>{item.product_name} × {formatSaleQuantity(item.quantity, item.unit)}</Text>
         <Text style={styles.detail}>ยอดเฉพาะสินค้าร้านนี้ ฿{Number(item.item_amount).toLocaleString()}</Text>
-        {expanded ? <Text style={styles.detail}>สั่งเมื่อ {formatThaiDateTime(item.created_at)}</Text> : null}
+        {expanded ? <Text style={styles.detail}>สั่งเมื่อ {formatChatDateTime(item.created_at)}</Text> : null}
         {path ? <TouchableOpacity accessibilityRole="button" onPress={() => router.push(path as never)} style={styles.open}>
           <Text style={styles.link}>{item.viewer_is_buyer ? "ดูออเดอร์" : "ดูงานขายของฉัน"}</Text>
         </TouchableOpacity> : <Text style={styles.detail}>ข้อมูลสรุปสำหรับผู้ดูแลร้าน</Text>}

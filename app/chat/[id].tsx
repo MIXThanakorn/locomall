@@ -18,7 +18,7 @@ import { Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
 import { supabase } from "../../src/lib/supabase";
 import { translateDatabaseError } from "../../src/lib/databaseError";
-import { formatThaiDateTime } from "../../src/lib/date";
+import { formatChatDateTime } from "../../src/lib/date";
 import { formatChatClock, shouldShowChatTimeDivider } from "../../src/lib/chatTime";
 import { useBadgeCounts } from "../../src/context/BadgeContext";
 
@@ -186,7 +186,7 @@ function ChatRoomContent() {
           const grouped = sameChatGroup(messages[index - 1], message);
           const groupEnd = !sameChatGroup(message, messages[index + 1]);
           return <React.Fragment key={message.message_id}>
-            {shouldShowChatTimeDivider(messages, index) ? <Text style={styles.timeDivider}>{formatThaiDateTime(message.created_at)}</Text> : null}
+            {shouldShowChatTimeDivider(messages, index) ? <Text style={styles.timeDivider}>{formatChatDateTime(message.created_at)}</Text> : null}
             <View style={[styles.messageRow, mine && styles.mineRow, { marginTop: grouped ? 0 : 8 }]}>
               {!mine ? <View style={styles.messageAvatar}>{groupEnd ? <ContextImage uri={visuals?.partner_image_url} name={header.partner_name} person size={28} /> : null}</View> : null}
               <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>

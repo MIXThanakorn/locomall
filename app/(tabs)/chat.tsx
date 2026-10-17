@@ -8,7 +8,7 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, Toucha
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { useAuth } from "../../src/context/AuthContext";
-import { formatThaiDateTime } from "../../src/lib/date";
+import { formatChatDateTime } from "../../src/lib/date";
 import { supabase } from "../../src/lib/supabase";
 import type { Database } from "../../src/types/database";
 
@@ -20,7 +20,7 @@ export default function ChatList() {
 }
 
 function ChatListContent() {
-  const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["name"]});
+  const styles = useResponsiveStyles(baseStyles, {});
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { session, loading: authLoading } = useAuth();
@@ -65,7 +65,7 @@ function ChatListContent() {
       {rooms.map((room) => <TouchableOpacity key={room.room_id} style={styles.room} activeOpacity={0.8} onPress={() => router.push(`/chat/${room.room_id}` as never)}>
         <ContextImage uri={visuals[room.room_id]} name={room.partner_name} person size={48} />
         <View style={styles.roomCopy}>
-          <View style={styles.row}><Text style={styles.name} numberOfLines={1}>{room.partner_name}</Text>{room.last_message_at ? <Text style={styles.date}>{formatThaiDateTime(room.last_message_at)}</Text> : null}</View>
+          <View style={styles.row}><Text style={styles.name} numberOfLines={1}>{room.partner_name}</Text>{room.last_message_at ? <Text style={styles.date}>{formatChatDateTime(room.last_message_at)}</Text> : null}</View>
           <Text style={styles.store} numberOfLines={1}>{room.partner_role} · ร้าน {room.store_name}</Text>
           <Text style={styles.preview} numberOfLines={1}>{room.last_message ? `${room.last_sender_id === userId ? "คุณ: " : ""}${room.last_message}` : `สินค้า ${room.product_name || "จากชุมชน"} · เริ่มสนทนาได้เลย`}</Text>
         </View>
@@ -83,8 +83,8 @@ const baseStyles = StyleSheet.create({
   content: { padding: Spacing.lg, paddingBottom: 100, flexGrow: 1 },
   room: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: Colors.cardBackground, borderWidth: 1, borderColor: Colors.inputBorder, padding: 13, borderRadius: BorderRadius.lg, marginBottom: 10 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", backgroundColor: "#EAF1E9" },
-  roomCopy: { flex: 1 }, row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 6 },
-  name: { flex: 1, fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 15 }, date: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 10 },
+  roomCopy: { flex: 1 }, row: { flexDirection: "column", alignItems: "flex-start", gap: 2 },
+  name: { width: "100%", fontFamily: "Kanit_700Bold", color: Colors.textDark, fontSize: 15 }, date: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 11 },
   store: { fontFamily: "Kanit_500Medium", color: Colors.greenPrimary, fontSize: 12 }, preview: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, fontSize: 13, marginTop: 2 },
   unread: { minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 5, backgroundColor: Colors.danger, alignItems: "center", justifyContent: "center" }, unreadText: { color: Colors.textWhite, fontFamily: "Kanit_700Bold", fontSize: 11 },
   empty: { alignItems: "center", marginTop: 56 }, emptyTitle: { fontFamily: "Kanit_700Bold", fontSize: 18, color: Colors.textDark, marginTop: 10 }, emptyText: { fontFamily: "Kanit_400Regular", color: Colors.textMuted, marginTop: 4, textAlign: "center" },
