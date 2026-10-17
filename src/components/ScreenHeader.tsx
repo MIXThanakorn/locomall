@@ -40,7 +40,7 @@ export function ScreenHeader({ title, titleStyle, color = Colors.greenPrimary, s
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: SCREEN_HEADER_GUTTER, paddingBottom: 12 },
+  header: { alignSelf: "stretch", paddingHorizontal: SCREEN_HEADER_GUTTER, paddingBottom: 12 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44 },
   titleBox: { flex: 1, minWidth: 0 },
   title: { fontFamily: "Kanit_700Bold", fontSize: 24 },

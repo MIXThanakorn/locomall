@@ -20,6 +20,7 @@ test("responsive layout uses logical container width, supports landscape and doe
 });
 
 test("selected bottom tabs have a background plus filled icon; scaled labels fit above system navigation", () => {
+  assert.match(read("src/components/ScreenHeader.tsx"), /header: \{ alignSelf: "stretch"/);
   const tabs = read("app/(tabs)/_layout.tsx");
   assert.match(tabs, /tabBarActiveBackgroundColor/);
   assert.match(tabs, /focused && styles.iconActive/);
