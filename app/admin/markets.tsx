@@ -50,7 +50,7 @@ export default function AdminApprovals() {
     const [from, to] = adminPageRange(page);
     const [marketResult, storeResult, sellerResult] = await Promise.all([
       supabase.from("markets").select("market_id,name,description,hub_address,owner_id,created_at", { count: "exact" }).eq("approval_status", "pending").order("created_at").order("market_id").range(from, to),
-      supabase.from("stores").select("store_id,name,product_name,image_url,unit,unit_price,manager_id,created_at,markets(name,owner_id)", { count: "exact" }).eq("approval_status", "pending").order("created_at").range(from, to),
+      supabase.from("stores").select("store_id,name,product_name,image_url,unit,unit_price,manager_id,created_at,markets(name,owner_id)", { count: "exact" }).eq("approval_status", "pending").order("created_at").order("store_id").range(from, to),
       supabase.from("store_seller_applications").select("application_id,applicant_id,note,product_image_url,created_at,stores(name,product_name,image_url,markets(name,owner_id))", { count: "exact" }).eq("status", "pending").order("created_at").order("application_id").range(from, to),
     ]);
     if (request !== generation.current) return;
