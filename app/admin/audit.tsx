@@ -1,7 +1,9 @@
+import { LoadNotice } from "../../src/components/LoadNotice";
+import { AdminSectionNav } from "../../src/components/AdminSectionNav";
 import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AdminGate } from "../../src/components/AdminGate";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -11,17 +13,34 @@ import { supabase } from "../../src/lib/supabase";
 export default function AdminAudit() {
   const styles = useResponsiveStyles(baseStyles, {});
   const [logs, setLogs] = useState<any[]>([]); const [events, setEvents] = useState<any[]>([]); const [refreshing, setRefreshing] = useState(false);
-  const load = useCallback(async () => { setRefreshing(true); const [audit, approvals] = await Promise.all([supabase.from("admin_audit_logs").select("*").order("created_at", { ascending: false }).limit(100), supabase.from("approval_events").select("*").order("created_at", { ascending: false }).limit(100)]); setLogs(audit.data ?? []); setEvents(approvals.data ?? []); setRefreshing(false); }, []);
-  useFocusEffect(useCallback(() => { void load(); }, [load]));
+  const [loadError, setLoadError] = useState(false);
+  const generation = useRef(0);
+  const load = useCallback(async () => {
+    const request = ++generation.current; setRefreshing(true);
+    try {
+      const [audit, approvals] = await Promise.all([
+        supabase.from("admin_audit_logs").select("*").order("created_at", { ascending: false }).order("audit_id", { ascending: false }).limit(100),
+        supabase.from("approval_events").select("*").order("created_at", { ascending: false }).order("event_id", { ascending: false }).limit(100),
+      ]);
+      if (request !== generation.current) return;
+      if (audit.error || approvals.error) throw new Error("audit unavailable");
+      setLogs(audit.data ?? []); setEvents(approvals.data ?? []); setLoadError(false);
+    } catch { if (request === generation.current) setLoadError(true); }
+    finally { if (request === generation.current) setRefreshing(false); }
+  }, []);
+  useFocusEffect(useCallback(() => { void load(); return () => { generation.current++; }; }, [load]));
   const logCard = (item: any, approval = false) => {
     const note = item.note ?? item.metadata?.note;
     return <View key={`${approval ? "event" : "audit"}-${approval ? item.event_id : item.audit_id}`} style={styles.card}><View style={styles.row}><Text style={styles.action}>{auditActionLabel(item.action)}</Text><Text style={styles.date}>{new Date(item.created_at).toLocaleString("th-TH")}</Text></View><Text style={styles.meta}>{auditEntityLabel(item.entity_type)} · เลขที่ {item.entity_id ?? "-"}</Text><Text style={styles.actor}>ผู้ดำเนินการ: {item.actor_id ? `${item.actor_id.slice(0, 8)}…` : "ระบบ"}</Text>{note ? <Text style={styles.note}>หมายเหตุ: {note}</Text> : null}{item.metadata?.previous_status && item.metadata?.status ? <Text style={styles.note}>{approvalStatusLabel(item.metadata.previous_status)} → {approvalStatusLabel(item.metadata.status)}</Text> : null}</View>;
   };
   return <AdminGate><ScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
     <ScreenHeader title={"ประวัติระบบ"} titleStyle={styles.title} />
+    <AdminSectionNav active="audit" />
     <Text style={styles.eyebrow}>ประวัติการดำเนินการ</Text><Text style={styles.sub}>เก็บรายการอนุมัติ ปฏิเสธ และการดำเนินการสำคัญของผู้ดูแลระบบ</Text>
-    <Text style={styles.section}>รายการของผู้ดูแลระบบ ({logs.length})</Text>{logs.length ? logs.map((item) => logCard(item)) : <Text style={styles.empty}>ยังไม่มีประวัติการดำเนินการ</Text>}
-    <Text style={styles.section}>ประวัติการอนุมัติ ({events.length})</Text>{events.length ? events.map((item) => logCard(item, true)) : <Text style={styles.empty}>ยังไม่มีประวัติการอนุมัติ</Text>}
+    <Text style={styles.sub}>แสดงประวัติล่าสุดหมวดละไม่เกิน 100 รายการ</Text>
+    {loadError ? <LoadNotice onRetry={() => void load()} /> : refreshing ? <Text style={styles.sub}>กำลังโหลดประวัติ…</Text> : null}
+    <Text style={styles.section}>รายการของผู้ดูแลระบบ ({logs.length})</Text>{logs.length ? logs.map((item) => logCard(item)) : !refreshing && !loadError ? <Text style={styles.empty}>ยังไม่มีประวัติการดำเนินการ</Text> : null}
+    <Text style={styles.section}>ประวัติการอนุมัติ ({events.length})</Text>{events.length ? events.map((item) => logCard(item, true)) : !refreshing && !loadError ? <Text style={styles.empty}>ยังไม่มีประวัติการอนุมัติ</Text> : null}
   </ScrollView></AdminGate>;
 }
 

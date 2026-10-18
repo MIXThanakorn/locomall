@@ -1,3 +1,4 @@
+import { AdminSectionNav } from "../../src/components/AdminSectionNav";
 import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { useFocusEffect } from "expo-router";
@@ -94,6 +95,7 @@ export default function AdminStores() {
   return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content}
     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} tintColor={Colors.greenPrimary} />}>
     <ScreenHeader title={"ดูแลร้านค้า"} titleStyle={styles.title} color={Colors.greenPrimary} />
+    <AdminSectionNav active="stores" />
     <Text style={styles.sub}>ระงับหรือคืนสิทธิ์การรับคำสั่งซื้อใหม่ ไม่ลบออเดอร์ สต็อก หรือยอดเงิน และไม่ใช่การแบนบัญชีผู้ใช้</Text>
     <View style={styles.search}><AppTextInput style={styles.searchInput} placeholder="ค้นหาชื่อร้านค้า" value={search} onChangeText={setSearch} maxLength={100} returnKeyType="search"
       onSubmitEditing={() => { setPage(0); setQuery(search.trim()); }} />

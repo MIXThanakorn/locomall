@@ -73,15 +73,15 @@ export default function HomeScreen() {
           scrollEventThrottle={250}
         >
         <View style={[styles.hero, { paddingTop: insets.top + 10 }]}>
-          <View style={styles.headerRow}>
-            <View style={styles.brandIdentity}>
+          <View style={[styles.headerRow, layout.stack && { flexWrap: "wrap", gap: 8 }]}>
+            <View style={[styles.brandIdentity, layout.stack && { flexBasis: 144 }]}>
               <Image
                 source={require("../../assets/images/APP_LOGO.png")}
-                style={styles.brandLogo}
+                style={[styles.brandLogo, layout.stack && { width: 44, height: 48 }]}
                 resizeMode="contain"
                 accessibilityLabel="โลโก้ Locomall"
               />
-              {!layout.stack ? <Text style={styles.tagline}>ของดีจากชุมชน{"\n"}ใกล้คุณก่อนเสมอ</Text> : null}
+              <Text style={[styles.tagline, layout.stack && { fontSize: 12, lineHeight: 18 }]}>ของดีจากชุมชน{"\n"}ใกล้คุณก่อนเสมอ</Text>
             </View>
             <View style={styles.headerActions}>
               <TouchableOpacity
