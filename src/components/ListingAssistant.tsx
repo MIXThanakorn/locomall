@@ -38,11 +38,11 @@ function ListingAssistantForm({ marketId, storeId, productName, description, ima
     setBusy(true); setError(""); setResult(null);
     try {
       const response = await suggestListing({ marketId, storeId, productName, description, image }, controller.signal);
-      if (!state.active) return;
+      if (!state.active || controller.signal.aborted) return;
       setResult(response); setDraftName(response.suggestion.product_name); setDraftDescription(response.suggestion.description); setVisible(true);
     } catch (failure) {
       if (!state.active) return;
-      setError(controller.signal.aborted ? "การวิเคราะห์ใช้เวลานานเกินไป กรุณาลองใหม่ภายหลังหรือกรอกข้อมูลเอง" : failure instanceof Error ? failure.message : "วิเคราะห์ข้อมูลไม่สำเร็จ");
+      setError(controller.signal.aborted ? controller.signal.reason === "user_cancelled" ? "ยกเลิกการวิเคราะห์แล้ว ข้อมูลเดิมยังไม่เปลี่ยน คุณกรอกต่อเองได้" : "การวิเคราะห์ใช้เวลานานเกินไป กรุณาลองใหม่ภายหลังหรือกรอกข้อมูลเอง" : failure instanceof Error ? failure.message : "วิเคราะห์ข้อมูลไม่สำเร็จ");
     } finally { clearTimeout(timer); if (state.active) { setBusy(false); state.controller = null; } }
   };
   const ask = () => {
@@ -56,6 +56,7 @@ function ListingAssistantForm({ marketId, storeId, productName, description, ima
     <Text style={styles.title}>ระบบช่วยวิเคราะห์ข้อมูลสินค้า</Text>
     <Text style={styles.note}>เพิ่มรูปหรือข้อมูลเบื้องต้น เพื่อรับคำแนะนำจากระบบและตรวจแก้ก่อนนำไปใช้ ระบบไม่แก้ราคา สต็อก หรือบันทึกร้านแทนคุณ</Text>
     <Button title={busy ? "กำลังวิเคราะห์ข้อมูล…" : "วิเคราะห์ข้อมูลสินค้า"} variant="outline" onPress={ask} disabled={!canGenerate} loading={busy} />
+    {busy ? <Button title="ยกเลิกการวิเคราะห์" variant="ghost" onPress={() => { pending.current.controller?.abort("user_cancelled"); }} /> : null}
     {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
     <Modal visible={visible} animationType="slide" onRequestClose={() => setVisible(false)}>
       <ResponsiveFrame><KeyboardAwareScrollView style={styles.modal} contentContainerStyle={styles.content}>

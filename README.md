@@ -485,6 +485,15 @@ concurrent database test หรือการทดสอบ role boundary ก�
 
 ## ผู้ช่วย AI ร่างข้อมูลสินค้า
 
+Reliability update (20 October 2026): users can cancel an in-progress analysis without applying a draft.
+The app validates all draft fields and requires the server's review flag before displaying results.
+A missing primary model (404) switches directly to the configured fallback; malformed provider output
+is rejected rather than treated as a retryable network failure. Generation observes a shared 35-second
+server deadline and retains the bounded 503 retry policy; this does not guarantee provider availability.
+Run `node scripts/check-listing-ai.mjs` for a text-only provider smoke test, or append
+`.env.local --image-smoke` to test the repository logo image (never customer data).
+These provider diagnostics do not exercise authenticated end-to-end app permissions or save any listing.
+
 หน้าเปิดร้านและแก้ไขร้านมีปุ่ม “วิเคราะห์ข้อมูลสินค้า” เพื่อช่วยร่างชื่อสินค้า รายละเอียด คำค้น และข้อมูลที่ควรระบุเพิ่ม
 จากรูป/ข้อมูลสินค้า ผู้ขายต้องยินยอมส่งข้อมูลให้ Google และตรวจแก้ร่างก่อนนำไปใช้
 ไม่มีการเปลี่ยนราคา สต็อก หรือบันทึกร้านอัตโนมัติ คำค้นยังเป็นคำแนะนำ ไม่บันทึกเป็นแท็ก.

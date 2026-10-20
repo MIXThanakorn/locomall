@@ -9,6 +9,7 @@ dist/
 dist-*/
 web-build/
 outputs/
+/tmp/
 output/
 reports/
 coverage/

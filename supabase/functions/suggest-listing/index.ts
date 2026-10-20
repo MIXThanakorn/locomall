@@ -13,6 +13,7 @@ const messages: Record<string, string> = {
   provider_busy: "ระบบวิเคราะห์ข้อมูลไม่พร้อมให้บริการชั่วคราว กรุณาลองใหม่ภายหลัง คุณยังกรอกข้อมูลเองได้",
   provider_request: "ระบบวิเคราะห์ข้อมูลไม่รองรับคำขอนี้ กรุณาแจ้งผู้ดูแล", invalid_response: "ผลการวิเคราะห์ข้อมูลไม่ครบ กรุณาลองใหม่หรือกรอกเอง",
   blocked_content: "ระบบไม่สามารถวิเคราะห์เนื้อหานี้ได้ กรุณาตรวจสอบรูปและรายละเอียด", internal_error: "วิเคราะห์ข้อมูลไม่สำเร็จ กรุณาลองใหม่ภายหลัง",
+  request_cancelled: "ยกเลิกหรือใช้เวลาวิเคราะห์นานเกินไป คุณยังกรอกข้อมูลเองได้",
 };
 function reply(data: unknown, status = 200, headers: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), { status, headers: { ...cors, ...headers, "content-type": "application/json", "Cache-Control": "no-store" } });
@@ -50,6 +51,7 @@ Deno.serve(async (req) => {
       input.image = validateImage({ mimeType: blob.type.split(";")[0], base64: btoa(binary) });
     }
     const result = await generateSuggestion(input, { apiKey, model, fallbackModel: Deno.env.get("GEMINI_FALLBACK_MODEL") ?? "gemini-3.8-flash" }, {
+      signal: AbortSignal.any([req.signal, AbortSignal.timeout(35000)]),
       onAttempt: (diagnostic) => console.info("suggest-listing-upstream", JSON.stringify(diagnostic)),
     });
     return reply({ ...result, requiresReview: true });

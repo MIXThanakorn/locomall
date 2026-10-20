@@ -92,7 +92,7 @@ export function normalizeModel(value: string): string {
   return name;
 }
 type AttemptDiagnostic = { model: string; status: number | "timeout" | "network"; durationMs: number };
-type Dependencies = { fetch?: typeof fetch; sleep?: (ms: number) => Promise<void>; timeoutMs?: number; onAttempt?: (diagnostic: AttemptDiagnostic) => void };
+type Dependencies = { fetch?: typeof fetch; sleep?: (ms: number) => Promise<void>; timeoutMs?: number; signal?: AbortSignal; onAttempt?: (diagnostic: AttemptDiagnostic) => void };
 export async function generateSuggestion(input: ListingInput, config: { apiKey: string; model: string; fallbackModel?: string }, deps: Dependencies = {}) {
   const primary = normalizeModel(config.model);
   const fallback = config.fallbackModel ? normalizeModel(config.fallbackModel) : primary;
@@ -101,8 +101,11 @@ export async function generateSuggestion(input: ListingInput, config: { apiKey: 
   const sleep = deps.sleep ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const attempts = fallback === primary ? [primary, primary] : [primary, primary, fallback];
   for (let attempt = 0; attempt < attempts.length; attempt++) {
+    if (deps.signal?.aborted) throw new AiError("request_cancelled", 408);
     const model = attempts[attempt];
     const controller = new AbortController();
+    const abort = () => controller.abort();
+    deps.signal?.addEventListener("abort", abort, { once: true });
     const started = Date.now();
     const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? 12000);
     let transient = false;
@@ -120,25 +123,36 @@ export async function generateSuggestion(input: ListingInput, config: { apiKey: 
         await response.body?.cancel(); // Never expose upstream bodies (may contain credentials or submitted text).
         if (response.status === 429) throw new AiError("provider_quota", 429);
         if (response.status === 401 || response.status === 403) throw new AiError("provider_auth", 503);
-        if (response.status >= 500 || response.status === 404) transient = true;
+        if (response.status === 404 && model === primary && fallback !== primary) {
+          attempt = attempts.length - 2; // A missing model cannot recover by retrying the same name.
+          transient = true;
+        } else if (response.status >= 500) transient = true;
         else throw new AiError("provider_request", 502);
       } else {
-        const value = await readLimitedJson(response, 64 * 1024);
+        let value: unknown;
+        try { value = await readLimitedJson(response, 64 * 1024); }
+        catch (error) {
+          if (error instanceof AiError) throw new AiError("invalid_response", 502);
+          throw error;
+        }
         if (!record(value)) throw new AiError("invalid_response", 502);
-        const body = value as { candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[]; promptFeedback?: { blockReason?: string } };
+        const body = value as { candidates?: unknown; promptFeedback?: { blockReason?: string } };
         if (body.promptFeedback?.blockReason) throw new AiError("blocked_content", 422);
-        const candidate = body.candidates?.[0];
+        const candidate = Array.isArray(body.candidates) ? body.candidates[0] : null;
         if (candidate?.finishReason !== "STOP") throw new AiError(candidate?.finishReason === "SAFETY" ? "blocked_content" : "invalid_response", candidate?.finishReason === "SAFETY" ? 422 : 502);
-        const raw = candidate.content?.parts?.filter((part) => !part.thought).map((part) => part.text ?? "").join("");
+        const parts = candidate.content?.parts;
+        if (!Array.isArray(parts) || parts.some((part: unknown) => !record(part) || (part.text !== undefined && typeof part.text !== "string"))) throw new AiError("invalid_response", 502);
+        const raw = parts.filter((part) => !part.thought).map((part) => part.text ?? "").join("");
         let parsed: unknown;
         try { parsed = JSON.parse(raw ?? ""); } catch { throw new AiError("invalid_response", 502); }
         return { suggestion: validateSuggestion(parsed), model, usedFallback: model !== primary };
       }
     } catch (error) {
+      if (deps.signal?.aborted) throw new AiError("request_cancelled", 408);
       if (error instanceof AiError) throw error;
       deps.onAttempt?.({ model, status: controller.signal.aborted ? "timeout" : "network", durationMs: Date.now() - started });
       transient = true; // Network/timeouts: same bounded policy as 503.
-    } finally { clearTimeout(timer); }
+    } finally { clearTimeout(timer); deps.signal?.removeEventListener("abort", abort); }
     if (transient && attempt < attempts.length - 1) await sleep(attempt === 0 ? 600 + Math.floor(Math.random() * 400) : 200);
   }
   throw new AiError("provider_busy", 503);
