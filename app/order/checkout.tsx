@@ -17,9 +17,10 @@ import { useAuth } from "../../src/context/AuthContext";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
 import { formatSaleQuantity } from "../../src/lib/productUnit";
+import { stripePayment } from "../../src/lib/stripePayment";
 
 type Fulfillment = "delivery" | "pickup";
-type Payment = "cod" | "demo_wallet";
+type Payment = "cod" | "demo_wallet" | "stripe_test";
 
 export default function Checkout() {
   const { session } = useAuth();
@@ -37,6 +38,7 @@ function CheckoutContent() {
   const [fulfillment, setFulfillment] = useState<Fulfillment>("delivery"); const [pickup, setPickup] = useState<any>(); const [loading, setLoading] = useState(false);
   const [payment, setPayment] = useState<Payment>("cod");
   const [demoBalance, setDemoBalance] = useState(0);
+  const [balanceError,setBalanceError]=useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -45,9 +47,12 @@ function CheckoutContent() {
   const retry = useRef<{ fingerprint: string; requestId: string } | null>(null);
 
   useFocusEffect(useCallback(() => {
-    if (!userId) { setDemoBalance(0); return; }
-    void (supabase as any).from("demo_accounts").select("wallet_balance").eq("user_id", userId).maybeSingle()
-      .then(({ data }: any) => setDemoBalance(Number(data?.wallet_balance ?? 0)));
+    let active=true;
+    setDemoBalance(0);setBalanceError(false);
+    if (!userId) return;
+    void supabase.from("demo_accounts").select("wallet_balance").eq("user_id", userId).maybeSingle()
+      .then(({ data,error }) => {if(active){setBalanceError(!!error);if(!error)setDemoBalance(Number(data?.wallet_balance??0));}},()=>{if(active)setBalanceError(true);});
+    return ()=>{active=false};
   }, [userId]));
 
   const loadCheckout = useCallback(async () => {
@@ -86,14 +91,16 @@ function CheckoutContent() {
     try {
       await loadCheckout();
       if (userId) {
-        const { data } = await (supabase as any).from("demo_accounts").select("wallet_balance").eq("user_id", userId).maybeSingle();
-        setDemoBalance(Number(data?.wallet_balance ?? 0));
+        const version=generation.current;
+        const { data,error } = await supabase.from("demo_accounts").select("wallet_balance").eq("user_id", userId).maybeSingle();
+        if(version===generation.current){setBalanceError(!!error);if(!error)setDemoBalance(Number(data?.wallet_balance??0));}
       }
     } finally { setRefreshing(false); }
   };
 
   const submit = async () => {
     if (submitting.current || initialLoading || loadError) return;
+    if(payment==='demo_wallet'&&balanceError)return Alert.alert('ยังโหลดยอดจำลองไม่ได้','กรุณารีเฟรชหรือเลือกวิธีชำระอื่น');
     if (!cart) return Alert.alert("ไม่พบสินค้าในตะกร้า");
     if (fulfillment === "delivery" && !addressId) return Alert.alert("กรุณาเลือกที่อยู่จัดส่ง");
     if (fulfillment === "pickup" && !pickup?.eligible) return Alert.alert("ไม่สามารถเลือกนัดรับได้", "นัดรับได้เมื่อคุณอยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร");
@@ -112,8 +119,14 @@ function CheckoutContent() {
     };
     const fingerprint = JSON.stringify({ userId, marketId: cart.market_id, addressId: args.p_address_id, items, fulfillment, payment });
     if (!retry.current || retry.current.fingerprint !== fingerprint) retry.current = { fingerprint, requestId: Crypto.randomUUID() };
+    if (payment === "stripe_test") {
+      const result = await stripePayment({action:'create',requestId:retry.current.requestId,purchase:{marketId:args.p_market_id,addressId:args.p_address_id,items,fulfillment,latitude:args.p_lat,longitude:args.p_lng}});
+      retry.current=null;
+      router.replace(`/order/${result.orderId}` as never);
+      return;
+    }
     const { data, error } = payment === "demo_wallet"
-      ? await (supabase as any).rpc("create_demo_wallet_order", { ...args, p_request_id: retry.current.requestId })
+      ? await supabase.rpc("create_demo_wallet_order", { ...args, p_request_id: retry.current.requestId })
       : await supabase.rpc("create_cod_order_once", { ...args, p_request_id: retry.current.requestId });
     if (error) return Alert.alert("สั่งซื้อไม่สำเร็จ", translateDatabaseError(error));
     retry.current = null;
@@ -144,12 +157,14 @@ function CheckoutContent() {
       </> : <View style={styles.pickupInfo}><Text style={styles.name}>ขั้นตอนนัดรับ</Text><Text style={styles.detail}>รับคำสั่งซื้อ → ผู้ขายกำลังเตรียม → สินค้าถึงจุดรวมพร้อมรับ → คุณกดยืนยันหลังได้รับสินค้า</Text></View>}
 
       <Text style={styles.title}>การชำระเงิน</Text>
+      {balanceError?<Text style={styles.detail} accessibilityRole="alert">ยังโหลดยอด Wallet จำลองไม่ได้ กรุณาดึงลงเพื่อรีเฟรช</Text>:null}
       <TouchableOpacity style={[styles.cod, payment === "cod" && styles.selected]} onPress={() => setPayment("cod")}><Text style={styles.name}>ชำระเงินเมื่อได้รับสินค้า (COD)</Text><Text style={styles.detail}>{fulfillment === "pickup" ? "ชำระเงินเมื่อมารับสินค้าที่จุดรวม" : "ชำระเงินกับผู้จัดส่งเมื่อได้รับสินค้า"}</Text></TouchableOpacity>
       <TouchableOpacity style={[styles.cod, payment === "demo_wallet" && styles.selected]} onPress={() => setPayment("demo_wallet")}><Text style={styles.name}>ใช้ยอดจำลอง · ไม่ใช่เงินจริง</Text><Text style={styles.detail}>ยอดคงเหลือสาธิต ฿{demoBalance.toLocaleString()} · ไม่มีการตัดเงินจริง</Text></TouchableOpacity>
+      <TouchableOpacity style={[styles.cod,payment==='stripe_test'&&styles.selected]} onPress={()=>setPayment('stripe_test')}><Text style={styles.name}>Stripe · โหมดทดสอบ</Text><Text style={styles.detail}>บัตรทดสอบ / PromptPay ตามช่องทางที่เปิดใช้ · ไม่มีการตัดเงินจริง</Text></TouchableOpacity>
       {payment === "demo_wallet" ? <TouchableOpacity onPress={() => router.push("/profile/wallet" as never)}><Text style={styles.manage}>ดู Wallet / ขอยอดสาธิต</Text></TouchableOpacity> : null}
       <Text style={styles.title}>รายการสินค้า</Text>{cart?.cart_items?.map((item: any) => <View key={item.store_id} style={styles.line}><Text style={styles.detail}>{item.stores.product_name} × {formatSaleQuantity(item.quantity, item.stores.unit)}</Text><Text style={styles.name}>฿{(Number(item.stores.unit_price) * item.quantity).toLocaleString()}</Text></View>)}
     </ScrollView>
-    <View onLayout={bottomAction.onLayout} style={[styles.bottom, { paddingBottom: bottomAction.paddingBottom }]}><Button title={payment === "demo_wallet" ? "ยืนยันและหักยอดจำลอง" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={initialLoading || loadError || !cart?.cart_items?.length || (fulfillment === "delivery" ? !addressId : !pickup?.eligible)} style={styles.button} /></View>
+    <View onLayout={bottomAction.onLayout} style={[styles.bottom, { paddingBottom: bottomAction.paddingBottom }]}><Button title={payment==='stripe_test'?'สร้างออเดอร์และไปชำระเงินทดสอบ':payment === "demo_wallet" ? "ยืนยันและหักยอดจำลอง" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={initialLoading || loadError || !cart?.cart_items?.length || (fulfillment === "delivery" ? !addressId : !pickup?.eligible)} style={styles.button} /></View>
   </View>;
 }
 

@@ -478,6 +478,11 @@ concurrent database test หรือการทดสอบ role boundary ก�
 
 ## V1 non-goals
 
+Stripe Sandbox integration (3 November 2026) is now available for test-only checkout.
+It does not enable live payments, wallet deposits/withdrawals, escrow, or automatic
+seller payouts. See [Stripe setup and APK acceptance tests](docs/stripe-sandbox.md).
+Payment secrets remain server-side; redirects alone never confirm payment.
+
 - **เงินจริง**: Payment Gateway, PromptPay QR ที่ใช้โอนได้, bank transfer,
   การเติม/ถอนเงินจริง และการโอนผู้ขายจริง
 - ค่าคอมมิชชันและค่าจัดส่งในแอป

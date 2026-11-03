@@ -1,3 +1,4 @@
+// Generated from the public schema; preserve explicit nullable RPC argument overrides.
 export type Json =
   | string
   | number
@@ -10,32 +11,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+    PostgrestVersion: "14.15"
   }
   public: {
     Tables: {
@@ -304,6 +280,229 @@ export type Database = {
           },
         ]
       }
+      demo_accounts: {
+        Row: {
+          seller_pending: number
+          seller_settled: number
+          updated_at: string
+          user_id: string
+          wallet_balance: number
+        }
+        Insert: {
+          seller_pending?: number
+          seller_settled?: number
+          updated_at?: string
+          user_id: string
+          wallet_balance?: number
+        }
+        Update: {
+          seller_pending?: number
+          seller_settled?: number
+          updated_at?: string
+          user_id?: string
+          wallet_balance?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      demo_ledger: {
+        Row: {
+          created_at: string
+          entry_id: number
+          entry_type: string
+          order_id: number | null
+          seller_delta: number
+          settlement_id: string | null
+          topup_request_id: string | null
+          user_id: string
+          wallet_delta: number
+        }
+        Insert: {
+          created_at?: string
+          entry_id?: never
+          entry_type: string
+          order_id?: number | null
+          seller_delta?: number
+          settlement_id?: string | null
+          topup_request_id?: string | null
+          user_id: string
+          wallet_delta?: number
+        }
+        Update: {
+          created_at?: string
+          entry_id?: never
+          entry_type?: string
+          order_id?: number | null
+          seller_delta?: number
+          settlement_id?: string | null
+          topup_request_id?: string | null
+          user_id?: string
+          wallet_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "demo_ledger_settlement_fk"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "demo_settlements"
+            referencedColumns: ["settlement_id"]
+          },
+          {
+            foreignKeyName: "demo_ledger_topup_request_id_fkey"
+            columns: ["topup_request_id"]
+            isOneToOne: false
+            referencedRelation: "demo_topup_requests"
+            referencedColumns: ["request_id"]
+          },
+          {
+            foreignKeyName: "demo_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      demo_order_requests: {
+        Row: {
+          order_id: number | null
+          payload: Json
+          request_id: string
+          user_id: string
+        }
+        Insert: {
+          order_id?: number | null
+          payload: Json
+          request_id: string
+          user_id: string
+        }
+        Update: {
+          order_id?: number | null
+          payload?: Json
+          request_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_order_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "demo_order_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      demo_settlements: {
+        Row: {
+          amount: number
+          created_at: string
+          evidence_note: string
+          recorded_by: string
+          seller_id: string
+          settlement_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          evidence_note: string
+          recorded_by: string
+          seller_id: string
+          settlement_id?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          evidence_note?: string
+          recorded_by?: string
+          seller_id?: string
+          settlement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_settlements_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "demo_settlements_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      demo_topup_requests: {
+        Row: {
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_note: string | null
+          request_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          request_id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_note?: string | null
+          request_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "demo_topup_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "demo_topup_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       markets: {
         Row: {
           approval_note: string | null
@@ -318,6 +517,8 @@ export type Database = {
           name: string
           owner_id: string
           province_code: string
+          rating_average: number
+          rating_count: number
           subdistrict_code: string
           updated_at: string
         }
@@ -334,6 +535,8 @@ export type Database = {
           name: string
           owner_id: string
           province_code: string
+          rating_average?: number
+          rating_count?: number
           subdistrict_code: string
           updated_at?: string
         }
@@ -350,6 +553,8 @@ export type Database = {
           name?: string
           owner_id?: string
           province_code?: string
+          rating_average?: number
+          rating_count?: number
           subdistrict_code?: string
           updated_at?: string
         }
@@ -386,10 +591,10 @@ export type Database = {
       }
       notifications: {
         Row: {
-          dismissed_at: string | null
           body: string
           category: string
           created_at: string
+          dismissed_at: string | null
           entity_id: number | null
           entity_type: string | null
           notification_id: number
@@ -399,10 +604,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          dismissed_at?: string | null
           body: string
           category?: string
           created_at?: string
+          dismissed_at?: string | null
           entity_id?: number | null
           entity_type?: string | null
           notification_id?: never
@@ -412,10 +617,10 @@ export type Database = {
           user_id: string
         }
         Update: {
-          dismissed_at?: string | null
           body?: string
           category?: string
           created_at?: string
+          dismissed_at?: string | null
           entity_id?: number | null
           entity_type?: string | null
           notification_id?: never
@@ -436,7 +641,6 @@ export type Database = {
       }
       order_allocations: {
         Row: {
-          stock_deducted_at: string | null
           allocation_id: number
           created_at: string
           listing_id: number
@@ -444,10 +648,10 @@ export type Database = {
           quantity: number
           seller_id: string
           status: string
+          stock_deducted_at: string | null
           updated_at: string
         }
         Insert: {
-          stock_deducted_at?: string | null
           allocation_id?: never
           created_at?: string
           listing_id: number
@@ -455,10 +659,10 @@ export type Database = {
           quantity: number
           seller_id: string
           status?: string
+          stock_deducted_at?: string | null
           updated_at?: string
         }
         Update: {
-          stock_deducted_at?: string | null
           allocation_id?: never
           created_at?: string
           listing_id?: number
@@ -466,6 +670,7 @@ export type Database = {
           quantity?: number
           seller_id?: string
           status?: string
+          stock_deducted_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -545,16 +750,17 @@ export type Database = {
       }
       orders: {
         Row: {
-          delivery_address_snapshot: Json | null
           address_id: number | null
           buyer_id: string
           courier_name: string | null
           created_at: string
           delivered_at: string | null
+          delivery_address_snapshot: Json | null
           fulfillment_method: string
           market_id: number
           order_id: number
           order_number: string
+          payment_method: string
           payment_status: string
           pickup_distance_km: number | null
           pickup_ready_at: string | null
@@ -565,16 +771,17 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          delivery_address_snapshot?: never
           address_id?: number | null
           buyer_id: string
           courier_name?: string | null
           created_at?: string
           delivered_at?: string | null
+          delivery_address_snapshot?: Json | null
           fulfillment_method?: string
           market_id: number
           order_id?: never
           order_number?: string
+          payment_method?: string
           payment_status?: string
           pickup_distance_km?: number | null
           pickup_ready_at?: string | null
@@ -585,16 +792,17 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          delivery_address_snapshot?: never
           address_id?: number | null
           buyer_id?: string
           courier_name?: string | null
           created_at?: string
           delivered_at?: string | null
+          delivery_address_snapshot?: Json | null
           fulfillment_method?: string
           market_id?: number
           order_id?: never
           order_number?: string
+          payment_method?: string
           payment_status?: string
           pickup_distance_km?: number | null
           pickup_ready_at?: string | null
@@ -714,6 +922,170 @@ export type Database = {
           wallet_balance?: number
         }
         Relationships: []
+      }
+      purchase_reviews: {
+        Row: {
+          body: string
+          buyer_id: string
+          created_at: string
+          hidden_at: string | null
+          hidden_by: string | null
+          hide_reason: string | null
+          market_id: number | null
+          order_id: number
+          order_item_id: number | null
+          review_id: number
+          stars: number
+          store_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          buyer_id: string
+          created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hide_reason?: string | null
+          market_id?: number | null
+          order_id: number
+          order_item_id?: number | null
+          review_id?: never
+          stars: number
+          store_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          buyer_id?: string
+          created_at?: string
+          hidden_at?: string | null
+          hidden_by?: string | null
+          hide_reason?: string | null
+          market_id?: number | null
+          order_id?: number
+          order_item_id?: number | null
+          review_id?: never
+          stars?: number
+          store_id?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_reviews_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "purchase_reviews_hidden_by_fkey"
+            columns: ["hidden_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "purchase_reviews_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["market_id"]
+          },
+          {
+            foreignKeyName: "purchase_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "purchase_reviews_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["order_item_id"]
+          },
+          {
+            foreignKeyName: "purchase_reviews_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      push_delivery_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          job_id: number
+          last_error: string | null
+          lease_until: string | null
+          next_attempt_at: string
+          notification_id: number
+          push_device_id: number
+          receipt_checks: number
+          registration_version: string
+          status: string
+          ticket_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          job_id?: never
+          last_error?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string
+          notification_id: number
+          push_device_id: number
+          receipt_checks?: number
+          registration_version: string
+          status?: string
+          ticket_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          job_id?: never
+          last_error?: string | null
+          lease_until?: string | null
+          next_attempt_at?: string
+          notification_id?: number
+          push_device_id?: number
+          receipt_checks?: number
+          registration_version?: string
+          status?: string
+          ticket_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_delivery_jobs_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["notification_id"]
+          },
+          {
+            foreignKeyName: "push_delivery_jobs_push_device_id_fkey"
+            columns: ["push_device_id"]
+            isOneToOne: false
+            referencedRelation: "user_push_devices"
+            referencedColumns: ["push_device_id"]
+          },
+          {
+            foreignKeyName: "push_delivery_jobs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       seller_listings: {
         Row: {
@@ -841,6 +1213,8 @@ export type Database = {
           market_id: number
           name: string
           product_name: string
+          rating_average: number
+          rating_count: number
           store_id: number
           unit: string
           unit_price: number
@@ -856,6 +1230,8 @@ export type Database = {
           market_id: number
           name: string
           product_name: string
+          rating_average?: number
+          rating_count?: number
           store_id?: never
           unit?: string
           unit_price: number
@@ -871,6 +1247,8 @@ export type Database = {
           market_id?: number
           name?: string
           product_name?: string
+          rating_average?: number
+          rating_count?: number
           store_id?: never
           unit?: string
           unit_price?: number
@@ -1066,6 +1444,38 @@ export type Database = {
           },
         ]
       }
+      user_catalog_links: {
+        Row: {
+          created_at: string
+          kind: string
+          target_id: number
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          target_id: number
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          target_id?: number
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_catalog_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_locations: {
         Row: {
           district_code: string
@@ -1139,6 +1549,7 @@ export type Database = {
           last_success_at: string | null
           platform: string
           push_device_id: number
+          registration_version: string
           updated_at: string
           user_id: string
         }
@@ -1152,6 +1563,7 @@ export type Database = {
           last_success_at?: string | null
           platform: string
           push_device_id?: never
+          registration_version?: string
           updated_at?: string
           user_id: string
         }
@@ -1165,6 +1577,7 @@ export type Database = {
           last_success_at?: string | null
           platform?: string
           push_device_id?: never
+          registration_version?: string
           updated_at?: string
           user_id?: string
         }
@@ -1186,17 +1599,6 @@ export type Database = {
       accept_allocation: {
         Args: { p_allocation_id: number }
         Returns: undefined
-      }
-      get_catalog_review_page: {
-        Args: {
-          p_target_type: string
-          p_target_id: number
-          p_stars?: number | null
-          p_limit?: number
-          p_before_created_at?: string | null
-          p_before_review_id?: number | null
-        }
-        Returns: Json
       }
       apply_for_market: {
         Args: {
@@ -1228,6 +1630,10 @@ export type Database = {
         }
         Returns: number
       }
+      begin_stripe_order: {
+        Args: { p_payload: Json; p_request: string; p_user: string }
+        Returns: Json
+      }
       cancel_order: {
         Args: {
           p_admin_override?: boolean
@@ -1235,6 +1641,31 @@ export type Database = {
           p_reason?: string
         }
         Returns: undefined
+      }
+      claim_push_delivery_jobs: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          job_id: number
+          last_error: string | null
+          lease_until: string | null
+          next_attempt_at: string
+          notification_id: number
+          push_device_id: number
+          receipt_checks: number
+          registration_version: string
+          status: string
+          ticket_id: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "push_delivery_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       complete_location_onboarding: {
         Args: {
@@ -1264,14 +1695,31 @@ export type Database = {
         Args: { p_request_id: string; p_market_id: number; p_address_id: number | null; p_items: Json; p_fulfillment_method?: string; p_lat?: number; p_lng?: number }
         Returns: number
       }
-      get_chat_messages_page: {
-        Args: { p_room_id: number; p_limit?: number; p_cursor_at?: string; p_cursor_id?: number; p_newer?: boolean }
-        Returns: { message_id: number; sender_id: string; message: string; created_at: string }[]
+      create_demo_wallet_order: {
+        Args: {
+          p_address_id: number | null
+          p_fulfillment_method?: string
+          p_items: Json
+          p_lat?: number
+          p_lng?: number
+          p_market_id: number
+          p_request_id: string
+        }
+        Returns: number
+      }
+      decide_demo_topup: {
+        Args: { p_approve: boolean; p_note?: string; p_request_id: string }
+        Returns: undefined
       }
       delete_cancelled_order: {
         Args: { p_order_id: number; p_reason: string }
         Returns: undefined
       }
+      disable_my_push_device: {
+        Args: { p_expo_push_token: string }
+        Returns: undefined
+      }
+      disable_my_push_devices: { Args: never; Returns: undefined }
       discover_catalog_page: {
         Args: {
           p_after_distance_km?: number | null
@@ -1295,51 +1743,38 @@ export type Database = {
           radius_km: number
         }[]
       }
-      discover_same_area_catalog_page: {
+      discover_filtered_catalog_page: {
         Args: {
-          p_after_distance_km?: number | null
-          p_after_entity_id?: number | null
-          p_after_entity_type?: string | null
+          p_after_distance_km?: number
+          p_after_entity_id?: number
+          p_after_entity_type?: string
+          p_after_missing?: boolean
+          p_after_value?: number
+          p_in_stock_only?: boolean
           p_kind?: string
-          p_lat?: number | null
+          p_lat?: number
           p_limit?: number
-          p_lng?: number | null
-          p_query?: string | null
-        }
-        Returns: {
-          available_stock: number
-          description: string
-          distance_km: number | null
-          entity_id: number
-          entity_type: string
-          image_url: string | null
-          market_id: number
-          name: string
-          radius_km: number
-        }[]
-      }
-      discover_nearby_catalog_page: {
-        Args: {
+          p_lng?: number
+          p_nearby_only?: boolean
+          p_query?: string
           p_same_area?: boolean
-          p_after_distance_km?: number | null
-          p_after_entity_id?: number | null
-          p_after_entity_type?: string | null
-          p_kind?: string
-          p_lat?: number | null
-          p_limit?: number
-          p_lng?: number | null
-          p_query?: string | null
+          p_sort?: string
         }
         Returns: {
           available_stock: number
+          cursor_missing: boolean
+          cursor_value: number
           description: string
-          distance_km: number | null
+          distance_km: number
           entity_id: number
           entity_type: string
-          image_url: string | null
+          image_url: string
           market_id: number
           name: string
           radius_km: number
+          rating_average: number
+          rating_count: number
+          unit_price: number
         }[]
       }
       discover_nearby: {
@@ -1362,38 +1797,123 @@ export type Database = {
           radius_km: number
         }[]
       }
-      discover_filtered_catalog_page: {
+      discover_nearby_catalog_page: {
         Args: {
+          p_after_distance_km?: number
+          p_after_entity_id?: number
+          p_after_entity_type?: string
           p_kind?: string
-          p_lat?: number | null
+          p_lat?: number
           p_limit?: number
-          p_lng?: number | null
-          p_query?: string | null
+          p_lng?: number
+          p_query?: string
           p_same_area?: boolean
-          p_nearby_only?: boolean
-          p_in_stock_only?: boolean
-          p_sort?: string
-          p_after_missing?: boolean | null
-          p_after_value?: number | null
-          p_after_distance_km?: number | null
-          p_after_entity_type?: string | null
-          p_after_entity_id?: number | null
         }
         Returns: {
           available_stock: number
           description: string
-          distance_km: number | null
+          distance_km: number
           entity_id: number
           entity_type: string
-          image_url: string | null
+          image_url: string
           market_id: number
           name: string
           radius_km: number
-          unit_price: number | null
+        }[]
+      }
+      discover_same_area_catalog_page: {
+        Args: {
+          p_after_distance_km?: number
+          p_after_entity_id?: number
+          p_after_entity_type?: string
+          p_kind?: string
+          p_lat?: number
+          p_limit?: number
+          p_lng?: number
+          p_query?: string
+        }
+        Returns: {
+          available_stock: number
+          description: string
+          distance_km: number
+          entity_id: number
+          entity_type: string
+          image_url: string
+          market_id: number
+          name: string
+          radius_km: number
+        }[]
+      }
+      dismiss_my_read_notifications: { Args: never; Returns: number }
+      get_catalog_card_details: {
+        Args: { p_market_ids: number[]; p_store_ids: number[] }
+        Returns: {
+          entity_id: number
+          entity_type: string
+          market_name: string
+          min_price: number
+          product_name: string
           rating_average: number
           rating_count: number
-          cursor_missing: boolean
-          cursor_value: number
+          sold_quantity: number
+          unit: string
+        }[]
+      }
+      get_catalog_card_metrics: {
+        Args: { p_market_ids: number[]; p_store_ids: number[] }
+        Returns: {
+          entity_id: number
+          entity_type: string
+          min_price: number
+          rating_average: number
+          rating_count: number
+          sold_quantity: number
+        }[]
+      }
+      get_catalog_review_page: {
+        Args: {
+          p_target_type: string
+          p_target_id: number
+          p_stars?: number | null
+          p_limit?: number
+          p_before_created_at?: string | null
+          p_before_review_id?: number | null
+        }
+        Returns: Json
+      }
+      get_catalog_reviews: {
+        Args: { p_target_id: number; p_target_type: string }
+        Returns: Json
+      }
+      get_chat_messages_page: {
+        Args: {
+          p_cursor_at?: string
+          p_cursor_id?: number
+          p_limit?: number
+          p_newer?: boolean
+          p_room_id: number
+        }
+        Returns: {
+          created_at: string
+          message: string
+          message_id: number
+          sender_id: string
+        }[]
+      }
+      get_chat_order_context: {
+        Args: { p_room_id: number }
+        Returns: {
+          allocation_id: number
+          created_at: string
+          item_amount: number
+          order_id: number
+          order_item_id: number
+          order_number: string
+          order_status: string
+          product_name: string
+          quantity: number
+          unit: string
+          viewer_is_buyer: boolean
         }[]
       }
       get_chat_room_header: {
@@ -1407,59 +1927,80 @@ export type Database = {
           store_name: string
         }[]
       }
-      get_my_chat_visuals: {
-        Args: { p_room_ids?: number[] }
-        Returns: { room_id: number; partner_image_url: string | null; product_image_url: string | null }[]
+      get_market_application_contacts: {
+        Args: never
+        Returns: {
+          applicant_name: string
+          applicant_phone: string
+          applicant_username: string
+          application_id: number
+        }[]
       }
-      get_my_seller_allocations: {
-        Args: { p_allocation_id?: number | null }
-        Returns: Json
-      }
-      get_my_seller_allocations_page: {
-        Args: { p_limit?: number; p_before_created_at?: string; p_before_id?: number }
-        Returns: Json
+      get_market_catalog: { Args: { p_market_id: number }; Returns: Json }
+      get_market_seller_contacts: {
+        Args: { p_order_id?: number }
+        Returns: {
+          allocation_id: number
+          order_id: number
+          seller_name: string
+          seller_phone: string
+          seller_username: string
+        }[]
       }
       get_market_seller_contacts_page: {
         Args: { p_order_ids: number[] }
-        Returns: { allocation_id: number; order_id: number; seller_name: string; seller_username: string | null; seller_phone: string | null }[]
-      }
-      get_chat_order_context: {
-        Args: { p_room_id: number }
         Returns: {
+          allocation_id: number
           order_id: number
-          order_item_id: number
-          order_number: string
-          product_name: string
-          quantity: number
-          unit: string
-          item_amount: number
-          order_status: string
-          created_at: string
-          viewer_is_buyer: boolean
-          allocation_id: number | null
+          seller_name: string
+          seller_phone: string
+          seller_username: string
         }[]
       }
       get_my_chat_inbox: {
         Args: never
         Returns: {
-          room_id: number
-          store_name: string
-          product_name: string | null
+          last_message: string
+          last_message_at: string
+          last_sender_id: string
           market_name: string
           partner_name: string
           partner_role: string
-          last_message: string | null
-          last_message_at: string | null
-          last_sender_id: string | null
+          product_name: string
+          room_id: number
           sort_at: string
+          store_name: string
           unread_count: number
         }[]
       }
-      get_public_store_prices: {
-        Args: { p_store_ids: number[] }
-        Returns: { store_id: number; unit_price: number }[]
+      get_my_chat_visuals: {
+        Args: { p_room_ids?: number[] }
+        Returns: {
+          partner_image_url: string
+          product_image_url: string
+          room_id: number
+        }[]
       }
-      get_market_catalog: { Args: { p_market_id: number }; Returns: Json }
+      get_my_demo_seller_held: { Args: never; Returns: number }
+      get_my_notification_target: {
+        Args: { p_notification_id: number }
+        Returns: {
+          entity_id: number
+          entity_type: string
+        }[]
+      }
+      get_my_seller_allocations: {
+        Args: { p_allocation_id?: number }
+        Returns: Json
+      }
+      get_my_seller_allocations_page: {
+        Args: {
+          p_before_created_at?: string
+          p_before_id?: number
+          p_limit?: number
+        }
+        Returns: Json
+      }
       get_or_create_chat_room: { Args: { p_store_id: number }; Returns: number }
       get_pickup_eligibility: {
         Args: { p_lat?: number; p_lng?: number; p_market_id: number }
@@ -1469,6 +2010,14 @@ export type Database = {
           hub_address: string
         }[]
       }
+      get_public_store_prices: {
+        Args: { p_store_ids: number[] }
+        Returns: {
+          store_id: number
+          unit_price: number
+        }[]
+      }
+      get_store_catalog: { Args: { p_store_id: number }; Returns: Json }
       get_store_request_detail: {
         Args: { p_store_id: number }
         Returns: {
@@ -1493,41 +2042,26 @@ export type Database = {
           unit_price: number
         }[]
       }
-      get_store_catalog: { Args: { p_store_id: number }; Returns: Json }
-      get_catalog_card_details: {
-        Args: { p_market_ids: number[]; p_store_ids: number[] }
-        Returns: { entity_type: string; entity_id: number; min_price: number | null; rating_average: number; rating_count: number; sold_quantity: number; product_name: string | null; unit: string | null; market_name: string | null }[]
-      }
       increment_cart_item: {
         Args: { p_increment?: number; p_store_id: number }
         Returns: number
       }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_allocation_ready: {
         Args: { p_allocation_id: number }
         Returns: undefined
       }
+      mark_my_chat_room_read: {
+        Args: { p_room_id: number }
+        Returns: undefined
+      }
+      mark_my_non_chat_notifications_read: { Args: never; Returns: undefined }
       mark_notification_read: {
         Args: { p_notification_id: number }
         Returns: undefined
       }
-      mark_my_chat_room_read: { Args: { p_room_id: number }; Returns: undefined }
-      mark_my_non_chat_notifications_read: { Args: never; Returns: undefined }
-      dismiss_my_read_notifications: { Args: never; Returns: number }
-      get_market_seller_contacts: { Args: { p_order_id?: number }; Returns: { allocation_id: number; order_id: number; seller_name: string; seller_username: string | null; seller_phone: string | null }[] }
-      get_market_application_contacts: { Args: never; Returns: { application_id: number; applicant_name: string; applicant_username: string | null; applicant_phone: string | null }[] }
-      get_my_notification_target: { Args: { p_notification_id: number }; Returns: { entity_type: string | null; entity_id: number | null }[] }
-      mark_all_notifications_read: { Args: never; Returns: undefined }
-      disable_my_push_devices: { Args: never; Returns: undefined }
-      disable_my_push_device: {
-        Args: { p_expo_push_token: string }
-        Returns: undefined
-      }
-      register_my_push_device: {
-        Args: {
-          p_device_name?: string | null
-          p_expo_push_token: string
-          p_platform: string
-        }
+      moderate_purchase_review: {
+        Args: { p_hide: boolean; p_reason?: string; p_review_id: number }
         Returns: undefined
       }
       record_allocation_at_hub: {
@@ -1538,7 +2072,28 @@ export type Database = {
         Args: { p_allocation_id: number }
         Returns: undefined
       }
+      record_demo_settlement: {
+        Args: {
+          p_evidence_note: string
+          p_request_id: string
+          p_seller_id: string
+        }
+        Returns: string
+      }
+      register_my_push_device: {
+        Args: {
+          p_device_name?: string | null
+          p_expo_push_token: string
+          p_platform: string
+        }
+        Returns: undefined
+      }
       remove_cart_item: { Args: { p_store_id: number }; Returns: undefined }
+      request_demo_topup: {
+        Args: { p_amount: number; p_request_id: string }
+        Returns: string
+      }
+      reserve_listing_ai_request: { Args: { p_user_id: string }; Returns: Json }
       review_market: {
         Args: { p_approve: boolean; p_market_id: number; p_note?: string }
         Returns: undefined
@@ -1546,10 +2101,6 @@ export type Database = {
       review_store: {
         Args: { p_approve: boolean; p_note?: string; p_store_id: number }
         Returns: undefined
-      }
-      set_store_suspension: {
-        Args: { p_store_id: number; p_suspend: boolean; p_note: string; p_expected_updated_at: string }
-        Returns: boolean
       }
       review_store_seller: {
         Args: { p_application_id: number; p_approve: boolean; p_note?: string }
@@ -1566,6 +2117,24 @@ export type Database = {
         }
         Returns: number
       }
+      save_purchase_review: {
+        Args: {
+          p_body?: string
+          p_order_id: number
+          p_order_item_id: number
+          p_stars: number
+        }
+        Returns: number
+      }
+      set_catalog_link: {
+        Args: {
+          p_enabled: boolean
+          p_kind: string
+          p_target_id: number
+          p_target_type: string
+        }
+        Returns: undefined
+      }
       set_market_image: {
         Args: { p_image_url: string; p_market_id: number }
         Returns: undefined
@@ -1574,6 +2143,15 @@ export type Database = {
         Args: { p_image_url: string; p_store_id: number }
         Returns: undefined
       }
+      set_store_suspension: {
+        Args: {
+          p_expected_updated_at: string
+          p_note: string
+          p_store_id: number
+          p_suspend: boolean
+        }
+        Returns: boolean
+      }
       ship_order: {
         Args: {
           p_courier_name: string
@@ -1581,6 +2159,24 @@ export type Database = {
           p_tracking_number: string
         }
         Returns: undefined
+      }
+      stripe_context: {
+        Args: { p_order: number; p_user: string }
+        Returns: Json
+      }
+      stripe_due_payments: { Args: never; Returns: Json }
+      sync_stripe_payment: {
+        Args: {
+          p_amount: number
+          p_currency: string
+          p_intent?: string
+          p_order: number
+          p_refund?: string
+          p_session: string
+          p_state: string
+          p_url: string
+        }
+        Returns: Json
       }
       update_market: {
         Args: {
@@ -1777,9 +2373,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       allocation_status: [

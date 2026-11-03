@@ -106,6 +106,25 @@
 
 ## ข้อเสนอการแบ่งเฟส
 
+### เริ่มตั้งค่าและทดสอบด้วยตนเอง (ปรับปรุง 3 พฤศจิกายน 2026)
+
+1. สร้าง OA สำหรับทดสอบใน LINE Official Account Manager แล้วเปิด Messaging API จาก OA นั้น
+   อย่าเริ่มจากการสร้าง Messaging API channel โดยตรงใน Developers Console
+2. เลือก Provider ของ Locomall ให้ถูกต้อง หากจะเพิ่ม LINE Login ภายหลังให้ใช้ Provider เดียวกัน
+3. เพิ่ม OA เป็นเพื่อน ตั้งข้อความต้อนรับและ rich menu สำหรับช่วยเหลือ แล้วลองส่ง–ตอบข้อความใน OA Manager
+   ขั้นนี้ยังไม่ใช่การเชื่อมออเดอร์กับแอป
+4. เมื่อต้องการส่งอัตโนมัติ เตรียม Channel secret และ Channel access token เก็บฝั่ง backend เท่านั้น
+   ไม่ส่งคีย์ลงแชท ไม่ใส่ใน APK หรือ EXPO_PUBLIC
+5. ต้องติดตั้ง LINE webhook backend เพิ่มก่อน จึงนำ URL ไปกด Verify และเปิด Use webhook ได้
+   โปรเจ็กต์ยังไม่มี LINE endpoint ในรอบ Stripe นี้
+6. ถ้าจะให้ OA ประกาศในกลุ่ม ให้เปิด Allow bot to join group chats และใช้กลุ่มส่วนตัวปกติ
+   ไม่ใช้ OpenChat แทน Messaging API group
+7. เมื่อทำ account linking แล้ว ให้ลองหลายบัญชี สลับบัญชี ยกเลิกการเชื่อม บล็อก OA และ event ซ้ำ
+   ต้องไม่ส่งข้อมูลออเดอร์ผิดคนหรือทำให้สถานะออเดอร์ขึ้นอยู่กับการส่ง LINE สำเร็จ
+
+อ้างอิง [เริ่มใช้ Messaging API](https://developers.line.biz/en/docs/messaging-api/getting-started/)
+และ [การรับ webhook](https://developers.line.biz/en/docs/messaging-api/receiving-messages/).
+
 1. ตอนนี้: ใช้ระงับร้านในแอป + สรุปบทบาท/นโยบาย; เลือกกับอาจารย์ว่า OpenChat โพสต์ด้วยคน
    หรือกลุ่ม LINE ปกติส่งอัตโนมัติ ตัดสินใจก่อนตั้ง backend ส่งข้อความ
 2. Prototype ถัดไป: OA สำหรับ support และ rich menu; หากเลือกกลุ่มปกติ เพิ่ม outbox/worker

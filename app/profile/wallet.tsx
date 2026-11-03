@@ -14,6 +14,7 @@ import { formatThaiDateTime } from "../../src/lib/date";
 import { translateDatabaseError } from "../../src/lib/databaseError";
 import { supabase } from "../../src/lib/supabase";
 import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRefresh";
+import type { Tables } from "../../src/types/database";
 
 const labels: Record<string, string> = {
   topup: "ผู้ดูแลเติมยอดสาธิต", purchase: "ใช้ยอดสาธิตสั่งซื้อ", refund: "คืนยอดจากออเดอร์ที่ยกเลิก",
@@ -24,10 +25,10 @@ export default function DemoWallet() {
   const styles = useResponsiveStyles(baseStyles, {"stack":["row"],"fullWidth":["mini"]});
   const { session } = useAuth();
   const userId = session?.user.id;
-  const [account, setAccount] = useState<any>();
+  const [account, setAccount] = useState<Tables<'demo_accounts'>|null>();
   const [sellerHeld, setSellerHeld] = useState(0);
-  const [requests, setRequests] = useState<any[]>([]);
-  const [entries, setEntries] = useState<any[]>([]);
+  const [requests, setRequests] = useState<Tables<'demo_topup_requests'>[]>([]);
+  const [entries, setEntries] = useState<Tables<'demo_ledger'>[]>([]);
   const [amount, setAmount] = useState("100");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,10 +40,10 @@ export default function DemoWallet() {
     if (!userId) return;
     const version = ++loadVersion.current;
     const [a, r, e, h] = await Promise.all([
-      (supabase as any).from("demo_accounts").select("*").eq("user_id", userId).maybeSingle(),
-      (supabase as any).from("demo_topup_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
-      (supabase as any).from("demo_ledger").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
-      (supabase as any).rpc("get_my_demo_seller_held"),
+      supabase.from("demo_accounts").select("*").eq("user_id", userId).maybeSingle(),
+      supabase.from("demo_topup_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+      supabase.from("demo_ledger").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(50),
+      supabase.rpc("get_my_demo_seller_held"),
     ]);
     if (version !== loadVersion.current) return;
     if (a.error || r.error || e.error || h.error) setLoadError(true);
@@ -77,7 +78,7 @@ export default function DemoWallet() {
     if (!Number.isFinite(value) || value < 1 || value > 10000 || Math.round(value * 100) !== value * 100)
       return Alert.alert("จำนวนไม่ถูกต้อง", "กรอกยอดสาธิต 1–10,000 บาท และไม่เกิน 2 ตำแหน่งทศนิยม");
     setBusy(true);
-    const { error } = await (supabase as any).rpc("request_demo_topup", { p_request_id: Crypto.randomUUID(), p_amount: value });
+    const { error } = await supabase.rpc("request_demo_topup", { p_request_id: Crypto.randomUUID(), p_amount: value });
     setBusy(false);
     if (error) Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error));
     else { Alert.alert("ส่งคำขอสาธิตแล้ว", "ผู้ดูแลต้องกดยืนยันในระบบก่อนยอดจะเพิ่ม ไม่มีการโอนเงินจริง"); await load(); }
@@ -88,7 +89,7 @@ export default function DemoWallet() {
     <ScreenHeader title={"Wallet เงินจำลอง"} titleStyle={styles.title} color={Colors.greenPrimary} />
     <Text style={styles.warning}>สำหรับสาธิตเท่านั้น · ไม่ใช่เงินบาทจริง · ห้ามใช้ QR นี้โอนผ่านแอปธนาคาร</Text>
     {loadError ? <Text style={styles.warning}>อัปเดตข้อมูลไม่สำเร็จ ดึงลงเพื่อลองใหม่</Text> : null}
-    {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : <>
+    {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : loadError&&!account ? <Text style={styles.warning}>ยังไม่สามารถแสดงยอดจำลองได้ กรุณาดึงลงเพื่อลองใหม่</Text> : <>
       <View style={styles.summary}><Text style={styles.label}>ยอดสำหรับสั่งซื้อ · เงินจำลอง</Text><Text style={styles.balance}>฿{Number(account?.wallet_balance ?? 0).toLocaleString()}</Text></View>
       <View style={styles.held}><Text style={styles.label}>ยอดชำระรอส่งมอบ · สาธิต</Text><Text style={styles.heldValue}>฿{sellerHeld.toLocaleString()}</Text><Text style={styles.label}>ผู้ซื้อชำระด้วยเงินจำลองแล้ว ยอดนี้จะย้ายไปยอดขายรอโอนเมื่อผู้ซื้อยืนยันรับสินค้า</Text></View>
       <View style={styles.row}><View style={styles.mini}><Text style={styles.label}>ยอดขายรอโอน · สาธิต</Text><Text style={styles.value}>฿{Number(account?.seller_pending ?? 0).toLocaleString()}</Text></View><View style={styles.mini}><Text style={styles.label}>บันทึกโอนแล้ว · สาธิต</Text><Text style={styles.value}>฿{Number(account?.seller_settled ?? 0).toLocaleString()}</Text></View></View>
