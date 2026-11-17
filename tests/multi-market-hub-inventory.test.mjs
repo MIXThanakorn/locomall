@@ -5,7 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { groupCartByMarket, canBuyerCancel } from "../src/lib/cartMarkets.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261015044841_multi_market_cart_hub_inventory.sql");
+const migration = read("supabase/migrations/20261015050235_multi_market_cart_hub_inventory.sql");
 const buyer = "00000000-0000-4000-8000-000000000001";
 const seller = "00000000-0000-4000-8000-000000000002";
 const seller2 = "00000000-0000-4000-8000-000000000003";
@@ -167,7 +167,7 @@ test("multi-market checkout, hub deductions, legacy orders, cancellation/refund 
       create function private.store_manager(sid bigint) returns boolean language sql stable as $$
         select exists(select 1 from public.stores where store_id=sid and manager_id=auth.uid()) $$;`);
     await uid("");
-    await db.exec(read("supabase/migrations/20261015120640_backend_consistency_security_hardening.sql"));
+    await db.exec(read("supabase/migrations/20261015121846_backend_consistency_security_hardening.sql"));
     await db.exec("set role authenticated"); await uid(buyer);
     // Selecting only one of two shops in the SAME market must preserve the other.
     await db.exec(`reset role;

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261015044841_multi_market_cart_hub_inventory.sql");
+const migration = read("supabase/migrations/20261015050235_multi_market_cart_hub_inventory.sql");
 const delivery = migration.split("create or replace function private.confirm_delivery")[1]?.split("create or replace function public.confirm_delivery")[0] ?? "";
 const cancellation = migration.split("create or replace function private.cancel_order")[1]?.split("create or replace function public.cancel_order")[0] ?? "";
 

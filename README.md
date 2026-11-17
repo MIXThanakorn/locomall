@@ -8,6 +8,9 @@ Locomall คือแพลตฟอร์ม Community Commerce สำหรั
 V1 รองรับ COD และ Wallet **เงินจำลองสำหรับโปรเจ็กต์สาธิตเท่านั้น** รวมถึงรีวิว,
 บันทึกและติดตามตลาด/ร้านที่อนุมัติแล้ว ไม่รับหรือโอนเงินจริง.
 
+Stripe Sandbox เพิ่มการชำระบัตร/PromptPay ทดสอบต่อออเดอร์ โดยแยกจาก Wallet
+เงินจำลอง ดูขั้นตอนใน [คู่มือ Stripe](docs/stripe-sandbox.md).
+
 ## Technology stack
 
 - React Native 0.86, React 19, Expo 57 และ Expo Router
@@ -284,6 +287,24 @@ audit log. Admin ลบถาวรได้เฉพาะ order ที่ย�
 - รายละเอียด provenance อยู่ที่ [`docs/thai-address-data.md`](docs/thai-address-data.md)
 
 ## Security model
+
+### Maintenance update (17 November 2026)
+
+- Migration 16 รายการปรับเลขเวอร์ชันของไฟล์ให้ตรงกับประวัติที่ติดตั้งบน Supabase แล้ว
+  โดยตรวจเทียบ SQL ก่อนเปลี่ยนชื่อ จุดอ้างอิงใน tests ใช้ชื่อเดียวกับเซิร์ฟเวอร์
+- RPC ที่ใช้สิทธิ์สูงเก็บ implementation ใน `private` ส่วนชื่อ API ใน `public`
+  ใช้ `SECURITY INVOKER` และให้สิทธิ์ caller ตามเดิม รวมถึง argument defaults
+  และรูปแบบข้อมูลที่ APK รุ่นก่อนใช้อยู่ การตรวจเจ้าของข้อมูลและ Admin อยู่ฝั่งฐานข้อมูล
+- ฟังก์ชันใหม่ที่สร้างโดย `postgres` ต้องประกาศสิทธิ์ผู้เรียกอย่างชัดเจน
+- Auth ใช้ `locomall://sign-in` เป็น fallback สำหรับ APK รหัสผ่านขั้นต่ำ 10 ตัว
+  พร้อมตัวพิมพ์เล็ก/ใหญ่ ตัวเลข และสัญลักษณ์ การเปลี่ยนรหัสผ่านต้องใช้ session ล่าสุด
+  หรือ reauthentication และยังเปิด refresh-token rotation
+- Leaked-password protection ต้องใช้ Supabase Pro ขึ้นไป การขอเปิดในแพ็กเกจปัจจุบัน
+  ตอบ HTTP 402 จึงยังต้องเปิดภายหลังเมื่อมีแพ็กเกจที่รองรับ
+- Dependencies ใช้ lockfile และมี override ของ `decode-uri-component` 0.5.1
+  กับ `minimatch` 11.0.9 สำหรับ dependencies ที่ยังติดรุ่นเก่า
+  `patches/query-string+7.1.3.patch` รองรับ default export ของ decoder ใหม่
+  โดย `npm ci` จะติดตั้ง patch อัตโนมัติ ต้องใช้ Node 22.16 ขึ้นไป
 
 ### Business guards (15 Oct 2026)
 

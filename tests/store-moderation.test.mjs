@@ -6,7 +6,7 @@ import { translateDatabaseError } from "../src/lib/databaseError.ts";
 import { auditActionLabel } from "../src/lib/displayText.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261012040048_admin_store_suspension.sql");
+const migration = read("supabase/migrations/20261012041314_admin_store_suspension.sql");
 const admin = "00000000-0000-4000-8000-000000000001";
 const manager = "00000000-0000-4000-8000-000000000002";
 const owner = "00000000-0000-4000-8000-000000000003";
@@ -67,7 +67,7 @@ test("moderation is admin-only, atomic, idempotent and preserves checkout/fulfil
       insert into auth.users select user_id from public.profiles;
       create table public.chat_rooms(room_id bigint primary key,buyer_id uuid,store_id bigint);
       create table public.chat_messages(message_id bigint primary key,room_id bigint,sender_id uuid,message text,created_at timestamptz);`);
-    await db.exec(read("supabase/migrations/20261013080347_reliability_order_chat.sql"));
+    await db.exec(read("supabase/migrations/20261013082026_reliability_order_chat.sql"));
     await db.exec("set role anon");
     await assert.rejects(moderate(true,initial), /permission denied/);
     await db.exec("reset role; set role authenticated");

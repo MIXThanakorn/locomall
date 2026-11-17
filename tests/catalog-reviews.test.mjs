@@ -5,7 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { mergeCatalogReviews, parseCatalogReviewPage, parseReviewRoute, reviewDateLabel } from "../src/lib/catalogReviews.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261012042505_catalog_review_details_pagination.sql");
+const migration = read("supabase/migrations/20261012043918_catalog_review_details_pagination.sql");
 const base = read("tests/demo-v1-db.test.mjs").match(/const base = `([\s\S]*?)`;/)[1];
 const buyer = "00000000-0000-4000-8000-000000000001";
 const seller = "00000000-0000-4000-8000-000000000002";

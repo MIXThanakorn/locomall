@@ -45,7 +45,7 @@ test("chat visual RPC returns only room partner avatar and public store image, n
       insert into profiles values('${buyer}','https://example.com/buyer.jpg','SECRET'),('${seller}','https://example.com/seller.jpg','SECRET');
       insert into stores values(1,'${seller}','https://example.com/product.jpg'),(2,'${other}',null);
       insert into chat_rooms values(1,'${buyer}',1),(2,'${other}',1),(3,'${buyer}',2);`);
-    await db.exec(readFileSync(new URL("../supabase/migrations/20261013074904_chat_visual_context.sql", import.meta.url), "utf8"));
+    await db.exec(readFileSync(new URL("../supabase/migrations/20261013075325_chat_visual_context.sql", import.meta.url), "utf8"));
     await db.exec(`set role authenticated; set test.uid='${buyer}'`);
     const visuals = (await db.query("select * from public.get_my_chat_visuals(array[1,2,999]::bigint[])")).rows;
     assert.deepEqual(visuals, [{ room_id: 1, partner_image_url: "https://example.com/seller.jpg", product_image_url: "https://example.com/product.jpg" }]);

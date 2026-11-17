@@ -4,7 +4,9 @@
 
 ## เตรียมก่อนบิลด์
 
-1. เปิด PowerShell ใน root โปรเจ็กต์ และติดตั้ง dependencies ด้วย `npm ci`
+1. ใช้ Node 22.16 ขึ้นไป เปิด PowerShell ใน root โปรเจ็กต์ และติดตั้ง dependencies ด้วย `npm ci`
+   ต้องให้ postinstall ทำงานเพื่อใช้ patch ของ `query-string` กับ decoder ที่แก้ช่องโหว่แล้ว
+   โปรไฟล์ preview กำหนด Node 24.20.0 สำหรับ EAS build
 2. ลงชื่อเข้าใช้ Expo account เจ้าของ EAS project: `npx eas-cli login` แล้วตรวจด้วย `npx eas-cli whoami`
 3. ตรวจว่า `app.json` มี `expo.extra.eas.projectId`, Android package `com.locomall.app`, และ `googleServicesFile` ชี้ไปยัง `./google-services.json`
 4. ตรวจว่า EAS environment `preview` มี `EXPO_PUBLIC_SUPABASE_URL` และ `EXPO_PUBLIC_SUPABASE_ANON_KEY` ตรงกับ Supabase project ที่ต้องการ ไม่ใส่ service-role key ลงในแอป และอย่า commit `.env.local` หรือ service-account private key

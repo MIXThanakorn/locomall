@@ -5,7 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { notificationPath } from "../src/lib/notificationRoute.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261014121901_apk_account_notifications_checkout.sql");
+const migration = read("supabase/migrations/20261014122656_apk_account_notifications_checkout.sql");
 const owner = "00000000-0000-4000-8000-000000000001";
 const seller = "00000000-0000-4000-8000-000000000002";
 const buyer = "00000000-0000-4000-8000-000000000003";

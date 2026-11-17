@@ -4,7 +4,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261015051617_home_nearby_catalog_filter.sql");
+const migration = read("supabase/migrations/20261015051937_home_nearby_catalog_filter.sql");
 const user = "00000000-0000-4000-8000-000000000001";
 
 test("nearby filters raw 10km boundary before pagination and composes category, search and own area", async () => {

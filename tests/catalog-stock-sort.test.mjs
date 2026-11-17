@@ -5,7 +5,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { CATALOG_SORT_OPTIONS } from "../src/lib/catalogSort.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261015054324_home_stock_price_rating_filters.sql");
+const migration = read("supabase/migrations/20261015054823_home_stock_price_rating_filters.sql");
 const user = "00000000-0000-4000-8000-000000000001";
 const id = (row) => `${row.entity_type}:${row.entity_id}`;
 

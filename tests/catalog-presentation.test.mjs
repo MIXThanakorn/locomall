@@ -61,7 +61,7 @@ test("product card RPC retains the bounded public boundary for anonymous clients
       end $$;
       create function public.get_store_catalog(bigint) returns jsonb language sql as $$
         select '{"product_name":"กล้วย","unit":"500 กรัม","markets":{"name":"ตลาด"}}'::jsonb where $1=1 $$;`);
-    await db.exec(read("supabase/migrations/20261016041604_catalog_card_product_details.sql"));
+    await db.exec(read("supabase/migrations/20261016041943_catalog_card_product_details.sql"));
     await db.exec("set role anon");
     const { rows } = await db.query("select * from public.get_catalog_card_details('{}',array[1]::bigint[])");
     assert.equal(rows[0].product_name, "กล้วย");

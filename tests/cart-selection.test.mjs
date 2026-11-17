@@ -40,5 +40,5 @@ test("UI selection reaches checkout and existing server deletes only explicitly 
   assert.doesNotMatch(cart, /group.total|totalQuantity|checkoutMarket/);
   assert.match(checkout, /selectedCartItems<any>\(cartResult.data\?\.cart_items \?\? \[\], parseCartSelection\(itemIds\), Number\(marketId\)\)/);
   assert.match(checkout, /p_items: items/);
-  assert.match(read("supabase/migrations/20261015044841_multi_market_cart_hub_inventory.sql"), /ci.store_id in \(select \(value->>'store_id'\)::bigint from jsonb_array_elements\(p_items\)\)/);
+  assert.match(read("supabase/migrations/20261015050235_multi_market_cart_hub_inventory.sql"), /ci.store_id in \(select \(value->>'store_id'\)::bigint from jsonb_array_elements\(p_items\)\)/);
 });

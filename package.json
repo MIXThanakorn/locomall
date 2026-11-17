@@ -2,7 +2,11 @@
   "name": "locomall",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.16.0"
+  },
   "scripts": {
+    "postinstall": "patch-package --error-on-fail",
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
@@ -51,7 +55,8 @@
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.10.1"
+    "react-native-worklets": "0.10.1",
+    "patch-package": "8.0.1"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
@@ -60,6 +65,14 @@
     "eslint-config-expo": "~57.0.2",
     "supabase": "^2.117.0",
     "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "query-string": {
+      "decode-uri-component": "0.5.1"
+    },
+    "@expo/fingerprint": {
+      "minimatch": "11.0.9"
+    }
   },
   "private": true
 }

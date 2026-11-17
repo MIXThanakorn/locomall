@@ -6,7 +6,7 @@ import { catalogPreferenceKey, parseSameAreaPreference } from "../src/lib/catalo
 import { getSettingsGroups } from "../src/lib/settingsMenu.ts";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
-const migration = read("supabase/migrations/20261012050435_catalog_same_area_filter.sql");
+const migration = read("supabase/migrations/20261012051119_catalog_same_area_filter.sql");
 const first = "00000000-0000-4000-8000-000000000001";
 const second = "00000000-0000-4000-8000-000000000002";
 const third = "00000000-0000-4000-8000-000000000003";

@@ -69,7 +69,7 @@ test("COD requests replay once, reject changed payload, isolate users and roll b
       create table chat_messages(message_id bigint primary key,room_id bigint,sender_id uuid,message text,created_at timestamptz);
       insert into stores values(1,'${seller}'); insert into chat_rooms values(1,'${buyer}',1);
       insert into chat_messages select i,1,'${buyer}','message '||i,'2026-10-13T00:00:00Z'::timestamptz from generate_series(1,90)i;`);
-    await db.exec(readFileSync(new URL("../supabase/migrations/20261013080347_reliability_order_chat.sql", import.meta.url), "utf8"));
+    await db.exec(readFileSync(new URL("../supabase/migrations/20261013082026_reliability_order_chat.sql", import.meta.url), "utf8"));
     await db.exec(`set role authenticated; set test.uid='${buyer}'`);
     const call = (id = request, market = 1) => db.query(`select public.create_cod_order_once('${id}',${market},null,'[]') id`);
     const first = (await call()).rows[0].id;

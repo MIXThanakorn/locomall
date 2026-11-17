@@ -4,7 +4,7 @@ import test from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { translateDatabaseError } from "../src/lib/databaseError.ts";
 const read = (path) => readFileSync(new URL(`../${path}`,import.meta.url),"utf8");
-const sql = read("supabase/migrations/20261015120640_backend_consistency_security_hardening.sql");
+const sql = read("supabase/migrations/20261015121846_backend_consistency_security_hardening.sql");
 const buyer="00000000-0000-4000-8000-000000000001";
 const seller="00000000-0000-4000-8000-000000000002";
 const other="00000000-0000-4000-8000-000000000003";

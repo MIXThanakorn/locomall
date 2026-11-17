@@ -8,7 +8,7 @@ test("AI quota is atomic across requests, server-only, bounded per user and proj
   try {
     await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema private; create schema auth;
       create table auth.users(id uuid primary key); insert into auth.users values ('${uid}'); grant usage on schema public to anon, authenticated, service_role;`);
-    await db.exec(readFileSync(new URL("../supabase/migrations/20261012031102_ai_listing_assistant_rate_limits.sql", import.meta.url), "utf8"));
+    await db.exec(readFileSync(new URL("../supabase/migrations/20261012032037_ai_listing_assistant_rate_limits.sql", import.meta.url), "utf8"));
     for (const role of ["anon","authenticated"]) {
       await db.exec(`set role ${role}`);
       await assert.rejects(db.query(`select public.reserve_listing_ai_request('${uid}')`), /permission denied/);

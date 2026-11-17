@@ -71,6 +71,8 @@ supabase/.temp/
 
 # Project outputs & temporary files
 outputs/
+/tmp/
+/docs/codex-export/
 output/
 reports/
 .codex-spreadsheet/
