@@ -6,13 +6,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from "../../src/constants/theme";
 import { HeaderGradient } from "../../src/components/HeaderGradient";
 import { Button } from "../../src/components/Button";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function SuccessPasswordScreen() {
   const styles = useResponsiveStyles(baseStyles, { compactPadding: ["card"] });
+  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1, paddingBottom: 32 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ flexGrow: 1, paddingBottom: Math.max(32, insets.bottom + 24) }}>
       <HeaderGradient
         title=""
         variant="green"

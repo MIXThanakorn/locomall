@@ -14,9 +14,11 @@ import { supabase } from "../../src/lib/supabase";
 import { passwordValidationError } from "../../src/lib/password";
 import { translateAuthError } from "../../src/lib/authError";
 import { emailValidationError, mobilePhoneError, normalizeMobilePhone } from "../../src/lib/fieldValidation";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function SignUpScreen() {
   const styles = useResponsiveStyles(baseStyles, { stack: ["genderRow"], fullWidth: ["genderBtn"], compactPadding: ["card"] });
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
@@ -90,7 +92,7 @@ export default function SignUpScreen() {
     <View style={styles.container}>
       <KeyboardAwareScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.pageScroll}
+        contentContainerStyle={[styles.pageScroll, { paddingBottom: Math.max(32, insets.bottom + 24) }]}
         showsVerticalScrollIndicator={false}
       >
       <HeaderGradient
@@ -230,7 +232,8 @@ const baseStyles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 140,
+    paddingBottom: Spacing.xxl,
+    marginTop: Spacing.md,
   },
   card: {
     backgroundColor: Colors.cardBackground,

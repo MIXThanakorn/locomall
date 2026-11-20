@@ -14,11 +14,13 @@ import { supabase } from "../../src/lib/supabase";
 import { translateAuthError } from "../../src/lib/authError";
 import { GOOGLE_OAUTH_CALLBACK_PATH, parseGoogleOAuthCallback, withGoogleOAuthTimeout } from "../../src/lib/googleOAuth";
 import { useAuth } from "../../src/context/AuthContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
   const styles = useResponsiveStyles(baseStyles, { compactPadding: ["card"] });
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { savedAccounts } = useAuth();
   const [email, setEmail] = useState("");
@@ -78,7 +80,7 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.container}>
-      <KeyboardAwareScrollView style={styles.scroll} contentContainerStyle={styles.pageScroll} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScrollView style={styles.scroll} contentContainerStyle={[styles.pageScroll, { paddingBottom: Math.max(32, insets.bottom + 24) }]} showsVerticalScrollIndicator={false}>
       <HeaderGradient
         title="สวัสดี!"
         subtitle="ยินดีต้อนรับสู่ Locomall"
@@ -187,6 +189,7 @@ const baseStyles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xxl,
+    marginTop: Spacing.md,
   },
   card: {
     backgroundColor: Colors.cardBackground,

@@ -14,10 +14,12 @@ import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
 import { passwordValidationError } from "../../src/lib/password";
 import { supabase } from "../../src/lib/supabase";
 import { translateAuthError } from "../../src/lib/authError";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function NewPasswordScreen() {
   const styles = useResponsiveStyles(baseStyles, { compactPadding: ["card"] });
   const router = useRouter(); const [password, setPassword] = useState(""); const [confirmation, setConfirmation] = useState(""); const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
   const { session } = useAuth();
   const [verifiedUser, setVerifiedUser] = useState<string | null>(null);
   const [linkError, setLinkError] = useState("กำลังตรวจสอบลิงก์กู้รหัสผ่าน…");
@@ -43,6 +45,6 @@ export default function NewPasswordScreen() {
     if (error) return Alert.alert("เปลี่ยนรหัสผ่านไม่สำเร็จ", translateAuthError(error));
     setVerifiedUser(null); router.replace("/(auth)/success-password" as never);
   };
-  return <View style={styles.container}><KeyboardAwareScrollView contentContainerStyle={styles.pageScroll}><HeaderGradient title="สร้างรหัสผ่านใหม่" subtitle="อย่างน้อย 10 ตัว พร้อมตัวพิมพ์เล็ก/ใหญ่ ตัวเลข และสัญลักษณ์" variant="gold" showBack onBackPress={() => router.back()} style={styles.header} /><View style={styles.content}><View style={styles.card}><Text style={styles.label}>รหัสผ่านใหม่</Text><AppTextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry /><Text style={styles.label}>ยืนยันรหัสผ่าน</Text><AppTextInput style={styles.input} value={confirmation} onChangeText={setConfirmation} secureTextEntry /><Button title="บันทึกรหัสผ่านใหม่" onPress={update} loading={loading} style={styles.button} /></View></View></KeyboardAwareScrollView></View>;
+  return <View style={styles.container}><KeyboardAwareScrollView contentContainerStyle={[styles.pageScroll, { paddingBottom: Math.max(32, insets.bottom + 24) }]}><HeaderGradient title="สร้างรหัสผ่านใหม่" subtitle="อย่างน้อย 10 ตัว พร้อมตัวพิมพ์เล็ก/ใหญ่ ตัวเลข และสัญลักษณ์" variant="gold" showBack onBackPress={() => router.back()} style={styles.header} /><View style={styles.content}><View style={styles.card}><Text style={styles.label}>รหัสผ่านใหม่</Text><AppTextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry /><Text style={styles.label}>ยืนยันรหัสผ่าน</Text><AppTextInput style={styles.input} value={confirmation} onChangeText={setConfirmation} secureTextEntry /><Button title="บันทึกรหัสผ่านใหม่" onPress={update} loading={loading} style={styles.button} /></View></View></KeyboardAwareScrollView></View>;
 }
-const baseStyles = StyleSheet.create({ pageScroll: { flexGrow: 1, paddingBottom: 32 }, container: { flex: 1, backgroundColor: Colors.background }, header: { paddingTop: 50, paddingBottom: 40 }, content: { marginTop: 0, paddingHorizontal: Spacing.lg }, card: { backgroundColor: "white", borderRadius: BorderRadius.xl, padding: Spacing.xl }, label: { fontFamily: "Kanit_500Medium", color: Colors.textMuted, marginTop: 12, marginBottom: 6 }, input: { backgroundColor: Colors.inputBackground, borderRadius: BorderRadius.md, padding: 14, fontFamily: "Kanit_400Regular" }, button: { backgroundColor: Colors.greenDark, marginTop: 24 } });
+const baseStyles = StyleSheet.create({ pageScroll: { flexGrow: 1 }, container: { flex: 1, backgroundColor: Colors.background }, header: { paddingTop: 50, paddingBottom: 40 }, content: { marginTop: Spacing.md, paddingHorizontal: Spacing.lg }, card: { backgroundColor: "white", borderRadius: BorderRadius.xl, padding: Spacing.xl }, label: { fontFamily: "Kanit_500Medium", color: Colors.textMuted, marginTop: 12, marginBottom: 6 }, input: { backgroundColor: Colors.inputBackground, borderRadius: BorderRadius.md, padding: 14, fontFamily: "Kanit_400Regular" }, button: { backgroundColor: Colors.greenDark, marginTop: 24 } });
