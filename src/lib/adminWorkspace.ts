@@ -5,7 +5,7 @@ export const ADMIN_SECTIONS = [
   { key: "stores", label: "ร้านค้า", route: "/admin/stores", icon: "storefront-outline" },
   { key: "orders", label: "คำสั่งซื้อ", route: "/admin/orders", icon: "cube-outline" },
   { key: "reviews", label: "รีวิว", route: "/admin/reviews", icon: "star-outline" },
-  { key: "finance", label: "ยอดเงินจำลอง", route: "/admin/finance", icon: "wallet-outline" },
+  { key: "finance", label: "Wallet", route: "/admin/finance", icon: "wallet-outline" },
   { key: "audit", label: "ประวัติ", route: "/admin/audit", icon: "document-text-outline" },
 ] as const;
 export type AdminSection = typeof ADMIN_SECTIONS[number]["key"];

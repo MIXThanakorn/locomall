@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1180" viewBox="0 0 1600 1180" role="img" aria-labelledby="title desc">
+  <title id="title">โครงสร้างฟังก์ชันหลักของระบบ LocoMall</title>
+  <desc id="desc">แผนภาพลำดับขั้นของผู้เยี่ยมชม สมาชิก และผู้ดูแลระบบ LocoMall</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#202020" />
+    </marker>
+    <style>
+      .frame { fill: #fff; stroke: #202020; stroke-width: 2; }
+      .node { fill: #fff; stroke: #202020; stroke-width: 2; }
+      .line { fill: none; stroke: #202020; stroke-width: 2; stroke-linecap: square; stroke-linejoin: round; }
+      .arrow { fill: none; stroke: #202020; stroke-width: 2; stroke-linecap: square; stroke-linejoin: round; marker-end: url(#arrow); }
+      .title { font: 700 32px Tahoma, "Noto Sans Thai", sans-serif; fill: #151515; }
+      .label { font: 500 24px Tahoma, "Noto Sans Thai", sans-serif; fill: #151515; text-anchor: middle; }
+      .small { font: 400 19px Tahoma, "Noto Sans Thai", sans-serif; fill: #333; text-anchor: middle; }
+      .person { fill: none; stroke: #202020; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <rect class="frame" x="20" y="20" width="1560" height="1140" />
+  <path class="line" d="M20 92 H1580" />
+  <text class="title" x="800" y="66" text-anchor="middle">ระบบ LocoMall</text>
+
+  <!-- entry -->
+  <rect class="node" x="690" y="125" width="220" height="78" rx="14" />
+  <text class="label" x="800" y="174">หน้าแรก</text>
+
+  <path class="line" d="M800 203 V236 H315 V272" />
+  <path class="arrow" d="M315 236 V272" />
+  <path class="arrow" d="M800 203 V272" />
+
+  <!-- guest and public browsing -->
+  <rect class="node" x="190" y="272" width="250" height="86" rx="14" />
+  <circle class="person" cx="225" cy="299" r="9" />
+  <path class="person" d="M225 309 V335 M213 319 H237 M225 335 L215 347 M225 335 L235 347" />
+  <text class="label" x="337" y="324">ผู้เยี่ยมชม</text>
+
+  <path class="line" d="M315 358 V390 H445 V912" />
+  <path class="arrow" d="M445 425 H405" />
+  <path class="arrow" d="M445 535 H405" />
+  <rect class="node" x="95" y="392" width="310" height="68" rx="12" />
+  <text class="label" x="250" y="434">สมัครสมาชิก</text>
+  <rect class="node" x="95" y="502" width="310" height="68" rx="12" />
+  <text class="label" x="250" y="544">ค้นหาตลาด ร้านค้า และสินค้า</text>
+
+  <!-- sign in -->
+  <rect class="node" x="690" y="272" width="220" height="86" rx="14" />
+  <text class="label" x="800" y="324">เข้าสู่ระบบ</text>
+  <path class="line" d="M800 358 V390 H750 V418" />
+  <path class="line" d="M800 390 H1190 V418" />
+  <path class="arrow" d="M750 390 V418" />
+  <path class="arrow" d="M1190 390 V418" />
+
+  <!-- member -->
+  <rect class="node" x="625" y="418" width="250" height="86" rx="14" />
+  <circle class="person" cx="660" cy="445" r="9" />
+  <path class="person" d="M660 455 V481 M648 465 H672 M660 481 L650 493 M660 481 L670 493" />
+  <text class="label" x="765" y="470">สมาชิก</text>
+
+  <path class="line" d="M750 504 V535 H545 V1073" />
+  <path class="arrow" d="M545 572 H585" />
+  <path class="arrow" d="M545 672 H585" />
+  <path class="arrow" d="M545 772 H585" />
+  <path class="arrow" d="M545 872 H585" />
+  <path class="arrow" d="M545 972 H585" />
+
+  <rect class="node" x="585" y="540" width="360" height="64" rx="12" />
+  <text class="label" x="765" y="581">จัดการบัญชีและที่อยู่</text>
+  <rect class="node" x="585" y="640" width="360" height="64" rx="12" />
+  <text class="label" x="765" y="681">ดูสินค้า บันทึก และติดตาม</text>
+  <rect class="node" x="585" y="740" width="360" height="64" rx="12" />
+  <text class="label" x="765" y="781">ตะกร้าและคำสั่งซื้อ</text>
+  <rect class="node" x="585" y="840" width="360" height="64" rx="12" />
+  <text class="label" x="765" y="881">แชตและการแจ้งเตือน</text>
+  <rect class="node" x="585" y="940" width="360" height="64" rx="12" />
+  <text class="label" x="765" y="981">ร้านค้า สต็อก และการส่งมอบ</text>
+
+  <!-- admin -->
+  <rect class="node" x="1065" y="418" width="250" height="86" rx="14" />
+  <circle class="person" cx="1100" cy="445" r="9" />
+  <path class="person" d="M1100 455 V481 M1088 465 H1112 M1100 481 L1090 493 M1100 481 L1110 493" />
+  <text class="label" x="1210" y="470">Admin</text>
+
+  <path class="line" d="M1190 504 V535 H1420 V970" />
+  <path class="arrow" d="M1420 572 H1380" />
+  <path class="arrow" d="M1420 672 H1380" />
+  <path class="arrow" d="M1420 772 H1380" />
+  <path class="arrow" d="M1420 872 H1380" />
+
+  <rect class="node" x="1020" y="540" width="360" height="64" rx="12" />
+  <text class="label" x="1200" y="581">จัดการผู้ใช้และสิทธิ์</text>
+  <rect class="node" x="1020" y="640" width="360" height="64" rx="12" />
+  <text class="label" x="1200" y="681">อนุมัติตลาด ร้านค้า และผู้ขาย</text>
+  <rect class="node" x="1020" y="740" width="360" height="64" rx="12" />
+  <text class="label" x="1200" y="781">ดูแลคำสั่งซื้อและรีวิว</text>
+  <rect class="node" x="1020" y="840" width="360" height="64" rx="12" />
+  <text class="label" x="1200" y="881">ตรวจสอบประวัติระบบ</text>
+
+  <text class="small" x="800" y="1110">สมาชิกอาจเป็นผู้ซื้อ ผู้ขาย หรือเจ้าของตลาดได้ตามสิทธิ์ของบัญชี</text>
+</svg>

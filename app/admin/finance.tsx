@@ -73,17 +73,17 @@ export default function AdminDemoFinance() {
   };
   const confirmAction = (title: string, message: string, action: () => void) => Alert.alert(title, `${message}\nระบบสาธิตเท่านั้น ไม่ใช่การโอนเงินจริง`, [{ text: "กลับ", style: "cancel" }, { text: "ยืนยัน", onPress: action }]);
   return <AdminGate><KeyboardAwareScrollView style={styles.root} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); void load().finally(() => setRefreshing(false)); }} tintColor={Colors.greenPrimary} />}>
-    <ScreenHeader title={"จัดการเงินจำลอง"} titleStyle={styles.title} />
+    <ScreenHeader title={"จัดการ Wallet"} titleStyle={styles.title} />
     <AdminSectionNav active="finance" />
     <Text style={styles.notice}>ระบบสาธิตเท่านั้น ไม่มีการรับหรือโอนเงินจริง QR ในแอปไม่ใช่ PromptPay</Text>
     <Text style={styles.sub}>แสดงรายการล่าสุดหมวดละไม่เกิน 100 รายการ</Text>
-    {loadError ? <LoadNotice onRetry={() => void load()} /> : refreshing ? <Text style={styles.sub}>กำลังโหลดยอดจำลอง…</Text> : null}
+    {loadError ? <LoadNotice onRetry={() => void load()} /> : refreshing ? <Text style={styles.sub}>กำลังโหลด Wallet…</Text> : null}
     <Text style={styles.heading}>คำขอเติมยอดที่รออนุมัติ ({requests.length})</Text>
     {requests.map((item) => <View key={item.request_id} style={styles.card}>
-      <Text style={styles.bold}>฿{Number(item.amount).toLocaleString()} · เงินจำลอง</Text>
+      <Text style={styles.bold}>฿{Number(item.amount).toLocaleString()} · ยอดทดสอบ</Text>
       <Text style={styles.sub}>ผู้ขอ: {item.user_id}</Text><Text style={styles.sub}>{formatThaiDateTime(item.created_at)}</Text>
       <AppTextInput maxLength={500} editable={busy === null} placeholder="หมายเหตุ / เหตุผลที่ไม่อนุมัติ" value={notes[item.request_id] ?? ""} onChangeText={(text) => setNotes({ ...notes, [item.request_id]: text })} style={styles.input} />
-      <View style={styles.row}><Button title="อนุมัติยอดทดสอบ" size="sm" disabled={busy !== null || loadError || refreshing} loading={busy === item.request_id} onPress={() => confirmAction("ยืนยันอนุมัติยอดจำลอง?", `฿${Number(item.amount).toLocaleString()}`, () => { void decide(item.request_id, true); })} style={styles.button} /><Button title="ไม่อนุมัติ" variant="outline" size="sm" disabled={busy !== null || loadError || refreshing} onPress={() => confirmAction("ยืนยันไม่อนุมัติคำขอ?", `฿${Number(item.amount).toLocaleString()}`, () => { void decide(item.request_id, false); })} style={styles.button} /></View>
+      <View style={styles.row}><Button title="อนุมัติยอดทดสอบ" size="sm" disabled={busy !== null || loadError || refreshing} loading={busy === item.request_id} onPress={() => confirmAction("ยืนยันอนุมัติคำขอเติมยอด?", `฿${Number(item.amount).toLocaleString()}`, () => { void decide(item.request_id, true); })} style={styles.button} /><Button title="ไม่อนุมัติ" variant="outline" size="sm" disabled={busy !== null || loadError || refreshing} onPress={() => confirmAction("ยืนยันไม่อนุมัติคำขอ?", `฿${Number(item.amount).toLocaleString()}`, () => { void decide(item.request_id, false); })} style={styles.button} /></View>
     </View>)}
     {!loadError && !refreshing && !requests.length ? <Text style={styles.sub}>ไม่มีคำขอค้าง</Text> : null}
     <Text style={styles.heading}>ยอดขายผู้ขายที่รอบันทึกโอน · สาธิต</Text>

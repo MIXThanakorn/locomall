@@ -100,12 +100,12 @@ function CheckoutContent() {
 
   const submit = async () => {
     if (submitting.current || initialLoading || loadError) return;
-    if(payment==='demo_wallet'&&balanceError)return Alert.alert('ยังโหลดยอดจำลองไม่ได้','กรุณารีเฟรชหรือเลือกวิธีชำระอื่น');
+    if(payment==='demo_wallet'&&balanceError)return Alert.alert('ยังโหลด Wallet ไม่ได้','กรุณารีเฟรชหรือเลือกวิธีชำระอื่น');
     if (!cart) return Alert.alert("ไม่พบสินค้าในตะกร้า");
     if (fulfillment === "delivery" && !addressId) return Alert.alert("กรุณาเลือกที่อยู่จัดส่ง");
     if (fulfillment === "pickup" && !pickup?.eligible) return Alert.alert("ไม่สามารถเลือกนัดรับได้", "นัดรับได้เมื่อคุณอยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร");
     const total = cart.cart_items.reduce((sum: number, item: any) => sum + Number(item.stores.unit_price) * item.quantity, 0);
-    if (payment === "demo_wallet" && demoBalance < total) return Alert.alert("ยอดจำลองไม่พอ", "กรุณาเติมยอดสาธิตหรือเลือกชำระเมื่อได้รับสินค้า", [
+    if (payment === "demo_wallet" && demoBalance < total) return Alert.alert("ยอด Wallet ไม่พอ", "กรุณาขอเติมยอดหรือเลือกชำระเมื่อได้รับสินค้า", [
       { text: "เลือก COD", onPress: () => setPayment("cod") },
       { text: "ไปหน้า Wallet", onPress: () => router.push("/profile/wallet" as never) },
     ]);
@@ -148,7 +148,7 @@ function CheckoutContent() {
       {loadError ? <LoadNotice onRetry={() => void refreshCheckout()} /> : null}
       {!initialLoading && !loadError && !cart?.cart_items?.length ? <Button title="กลับไปเลือกสินค้ารายตลาดในตะกร้า" variant="outline" onPress={() => router.replace("/order/cart" as never)} /> : null}
       {cart ? <Text style={styles.name}>สั่งซื้อจาก {cart.market_name}</Text> : null}
-      <ContextHelp title="เลือกวิธีรับสินค้าแบบไหนดี?" steps={["เลือกจัดส่งถึงที่อยู่ หากต้องการให้ส่งสินค้าถึงบ้าน", "เลือกนัดรับ เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร", "เลือกชำระเมื่อรับสินค้า หรือใช้ยอดจำลองสำหรับการสาธิต"]} />
+      <ContextHelp title="เลือกวิธีรับสินค้าแบบไหนดี?" steps={["เลือกจัดส่งถึงที่อยู่ หากต้องการให้ส่งสินค้าถึงบ้าน", "เลือกนัดรับ เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กิโลเมตร", "เลือกชำระเมื่อรับสินค้า หรือใช้ Wallet สำหรับทดสอบ"]} />
       <TouchableOpacity style={[styles.method, fulfillment === "delivery" && styles.selected]} onPress={() => setFulfillment("delivery")}><Ionicons name="car-outline" size={24} color={Colors.greenPrimary} /><View style={{ flex: 1 }}><Text style={styles.name}>จัดส่งถึงที่อยู่</Text><Text style={styles.detail}>รวมสินค้าจากผู้ขายในตลาดนี้เป็นพัสดุเดียว</Text></View></TouchableOpacity>
       <TouchableOpacity style={[styles.method, fulfillment === "pickup" && styles.selected, !pickup?.eligible && styles.disabled]} disabled={!pickup?.eligible} onPress={() => setFulfillment("pickup")}><Ionicons name="storefront-outline" size={24} color={pickup?.eligible ? Colors.greenPrimary : Colors.textMuted} /><View style={{ flex: 1 }}><Text style={styles.name}>นัดรับที่จุดรวมสินค้า</Text><Text style={styles.detail}>{pickup?.eligible ? `ห่างประมาณ ${pickup.distance_km} กม. · ${pickup.hub_address}` : "ใช้ได้เมื่ออยู่ห่างจุดรวมไม่เกิน 10 กม."}</Text></View></TouchableOpacity>
 
@@ -157,14 +157,14 @@ function CheckoutContent() {
       </> : <View style={styles.pickupInfo}><Text style={styles.name}>ขั้นตอนนัดรับ</Text><Text style={styles.detail}>รับคำสั่งซื้อ → ผู้ขายกำลังเตรียม → สินค้าถึงจุดรวมพร้อมรับ → คุณกดยืนยันหลังได้รับสินค้า</Text></View>}
 
       <Text style={styles.title}>การชำระเงิน</Text>
-      {balanceError?<Text style={styles.detail} accessibilityRole="alert">ยังโหลดยอด Wallet จำลองไม่ได้ กรุณาดึงลงเพื่อรีเฟรช</Text>:null}
+      {balanceError?<Text style={styles.detail} accessibilityRole="alert">ยังโหลด Wallet ไม่ได้ กรุณาดึงลงเพื่อรีเฟรช</Text>:null}
       <TouchableOpacity style={[styles.cod, payment === "cod" && styles.selected]} onPress={() => setPayment("cod")}><Text style={styles.name}>ชำระเงินเมื่อได้รับสินค้า (COD)</Text><Text style={styles.detail}>{fulfillment === "pickup" ? "ชำระเงินเมื่อมารับสินค้าที่จุดรวม" : "ชำระเงินกับผู้จัดส่งเมื่อได้รับสินค้า"}</Text></TouchableOpacity>
-      <TouchableOpacity style={[styles.cod, payment === "demo_wallet" && styles.selected]} onPress={() => setPayment("demo_wallet")}><Text style={styles.name}>ใช้ยอดจำลอง · ไม่ใช่เงินจริง</Text><Text style={styles.detail}>ยอดคงเหลือสาธิต ฿{demoBalance.toLocaleString()} · ไม่มีการตัดเงินจริง</Text></TouchableOpacity>
+      <TouchableOpacity style={[styles.cod, payment === "demo_wallet" && styles.selected]} onPress={() => setPayment("demo_wallet")}><Text style={styles.name}>ใช้ Wallet · ระบบทดสอบ</Text><Text style={styles.detail}>ยอดคงเหลือ ฿{demoBalance.toLocaleString()} · ไม่มีการตัดเงินจริง</Text></TouchableOpacity>
       <TouchableOpacity style={[styles.cod,payment==='stripe_test'&&styles.selected]} onPress={()=>setPayment('stripe_test')}><Text style={styles.name}>Stripe · โหมดทดสอบ</Text><Text style={styles.detail}>บัตรทดสอบ / PromptPay ตามช่องทางที่เปิดใช้ · ไม่มีการตัดเงินจริง</Text></TouchableOpacity>
-      {payment === "demo_wallet" ? <TouchableOpacity onPress={() => router.push("/profile/wallet" as never)}><Text style={styles.manage}>ดู Wallet / ขอยอดสาธิต</Text></TouchableOpacity> : null}
+      {payment === "demo_wallet" ? <TouchableOpacity onPress={() => router.push("/profile/wallet" as never)}><Text style={styles.manage}>ดู Wallet / ขอเติมยอด</Text></TouchableOpacity> : null}
       <Text style={styles.title}>รายการสินค้า</Text>{cart?.cart_items?.map((item: any) => <View key={item.store_id} style={styles.line}><Text style={styles.detail}>{item.stores.product_name} × {formatSaleQuantity(item.quantity, item.stores.unit)}</Text><Text style={styles.name}>฿{(Number(item.stores.unit_price) * item.quantity).toLocaleString()}</Text></View>)}
     </ScrollView>
-    <View onLayout={bottomAction.onLayout} style={[styles.bottom, { paddingBottom: bottomAction.paddingBottom }]}><Button title={payment==='stripe_test'?'สร้างออเดอร์และไปชำระเงินทดสอบ':payment === "demo_wallet" ? "ยืนยันและหักยอดจำลอง" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={initialLoading || loadError || !cart?.cart_items?.length || (fulfillment === "delivery" ? !addressId : !pickup?.eligible)} style={styles.button} /></View>
+    <View onLayout={bottomAction.onLayout} style={[styles.bottom, { paddingBottom: bottomAction.paddingBottom }]}><Button title={payment==='stripe_test'?'สร้างออเดอร์และไปชำระเงินทดสอบ':payment === "demo_wallet" ? "ยืนยันและใช้ยอด Wallet" : fulfillment === "pickup" ? "ยืนยันคำสั่งซื้อแบบนัดรับ" : "ยืนยันคำสั่งซื้อและชำระเมื่อได้รับสินค้า"} loading={loading} onPress={submit} disabled={initialLoading || loadError || !cart?.cart_items?.length || (fulfillment === "delivery" ? !addressId : !pickup?.eligible)} style={styles.button} /></View>
   </View>;
 }
 

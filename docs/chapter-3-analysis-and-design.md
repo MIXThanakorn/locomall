@@ -33,7 +33,7 @@
 3. ร้านหนึ่งร้านขายสินค้าหนึ่งชนิด ใช้ราคากลางและหน่วยขายเดียวกันสำหรับผู้ขายทุกรายในร้าน
 4. ผู้ขายระบุจำนวนสินค้าที่พร้อมขาย ระบบเป็นผู้กระจายจำนวนสั่งซื้อให้ผู้ขายอย่างเป็นธรรม
 5. การสร้างออเดอร์ การจองสต็อก การหักยอดจำลอง และการคืนยอดต้องทำในธุรกรรมฐานข้อมูลเดียวกัน
-6. V1 รองรับเก็บเงินปลายทางและ Wallet เงินจำลองเท่านั้น ไม่รับหรือโอนเงินจริง
+6. V1 รองรับเก็บเงินปลายทางและ Wallet สำหรับทดสอบเท่านั้น ไม่รับหรือโอนเงินจริง
 7. ตำแหน่ง GPS ที่ใช้ค้นหาใกล้เคียงไม่ถูกบันทึกเป็นตำแหน่งจริงถาวร โดยมีตำบลเป็นข้อมูลสำรอง
 
 ---
@@ -72,7 +72,7 @@
 | UC10 | เตรียม รวม และจัดส่งสินค้า | Seller, Market Owner |
 | UC11 | ติดตาม ยกเลิก ยืนยันรับ และรีวิวออเดอร์ | Buyer |
 | UC12 | สนทนาและจัดการการแจ้งเตือน | User, Store Manager |
-| UC13 | จัดการ Wallet เงินจำลองและกำกับดูแลระบบ | User, Seller, Platform Admin |
+| UC13 | จัดการ Wallet และกำกับดูแลระบบ | User, Seller, Platform Admin |
 
 ## รูปที่ 3.1 Use Case Diagram ของระบบ LocoMall
 
@@ -101,7 +101,7 @@ rectangle "LocoMall" {
   usecase "UC10 เตรียม รวม\nและจัดส่งสินค้า" as UC10
   usecase "UC11 ติดตาม ยกเลิก\nยืนยันรับ และรีวิว" as UC11
   usecase "UC12 สนทนาและ\nการแจ้งเตือน" as UC12
-  usecase "UC13 Wallet เงินจำลอง\nและกำกับดูแลระบบ" as UC13
+  usecase "UC13 จัดการ Wallet\nและกำกับดูแลระบบ" as UC13
 }
 
 Guest --> UC01
@@ -268,7 +268,7 @@ UC10 .> UC09 : <<extend>>
 | Primary Actors | Buyer |
 | Secondary Actors | Database, Location Service, Notification Service |
 | Preconditions | เข้าสู่ระบบ โปรไฟล์/เบอร์โทรครบ ร้าน approved และมี stock พร้อมใช้ |
-| Main Flow | 1. Buyer เพิ่มสินค้าและจำนวนลงตะกร้า<br>2. ระบบตรวจว่ารายการอยู่ตลาดเดียวกัน<br>3. Buyer เลือกจัดส่งหรือรับที่จุดรวม และเลือก COD หรือ Wallet เงินจำลอง<br>4. ระบบตรวจที่อยู่/ระยะรับสินค้า ยอดจำลอง และ stock<br>5. RPC lock listing, snapshot ราคา, กระจายจำนวนตาม fairness และเพิ่ม reserved quantity<br>6. ระบบสร้าง order, items, allocations ใน transaction เดียวและแจ้งผู้เกี่ยวข้อง |
+| Main Flow | 1. Buyer เพิ่มสินค้าและจำนวนลงตะกร้า<br>2. ระบบตรวจว่ารายการอยู่ตลาดเดียวกัน<br>3. Buyer เลือกจัดส่งหรือรับที่จุดรวม และเลือก COD หรือ Wallet<br>4. ระบบตรวจที่อยู่/ระยะรับสินค้า ยอดทดสอบ และ stock<br>5. RPC lock listing, snapshot ราคา, กระจายจำนวนตาม fairness และเพิ่ม reserved quantity<br>6. ระบบสร้าง order, items, allocations ใน transaction เดียวและแจ้งผู้เกี่ยวข้อง |
 | Post Condition | มีออเดอร์สมบูรณ์ สต็อกถูกจอง และตะกร้าถูกเคลียร์; กรณี Wallet ยอดถูกหักครั้งเดียว |
 | Alternation Flows | Buyer เปลี่ยนจำนวน/ลบสินค้า; เลือกรับที่จุดรวมเมื่อไม่เกิน 10 กม.; เลือก COD แทน Wallet |
 | Exception | stock หรือยอดไม่พอ ที่อยู่ไม่ใช่ของผู้ซื้อ ร้านต่างตลาด request UUID ซ้ำแต่ payload ต่าง หรือ transaction ล้มเหลว ซึ่งต้อง rollback ทั้งหมด |
@@ -318,11 +318,11 @@ UC10 .> UC09 : <<extend>>
 | Alternation Flows | Push ส่งไม่สำเร็จแต่ข้อความ/notification ในแอปยังคงอยู่; ผู้ใช้ปิด push device หรืออ่านทั้งหมด |
 | Exception | ไม่ใช่ participant ข้อความว่าง/ยาวเกิน token ไม่ถูกต้อง หรือ Realtime หลุด ซึ่งยังดึงใหม่ได้ |
 
-## ตารางที่ 3.14 รายละเอียด Use Case: จัดการ Wallet เงินจำลองและกำกับดูแลระบบ
+## ตารางที่ 3.14 รายละเอียด Use Case: จัดการ Wallet และกำกับดูแลระบบ
 
 | หัวข้อ | รายละเอียด |
 |---|---|
-| Use Case Name | จัดการ Wallet เงินจำลองและกำกับดูแลระบบ |
+| Use Case Name | จัดการ Wallet และกำกับดูแลระบบ |
 | Use Case ID | UC13 |
 | Brief Description | ผู้ใช้ขอเติมยอดจำลอง ผู้ขายดูยอด และ Admin อนุมัติยอด บันทึก settlement ดูแลรีวิว/ออเดอร์ และตรวจ audit |
 | Primary Actors | User, Seller, Platform Admin |
@@ -581,7 +581,7 @@ if (เพียงพอ?) then (ใช่)
   :snapshot ราคาและสร้าง order/items;
   :กระจายจำนวนอย่างเป็นธรรม;
   :สร้าง allocations และ reserve stock;
-  :หักยอดจำลองเมื่อเลือก Wallet;
+  :หักยอด Wallet เมื่อเลือกชำระ;
   :commit;
   |Notification|
   :แจ้ง Buyer/Seller/Owner;
@@ -686,7 +686,7 @@ stop
 
 คำอธิบาย: Push เป็นช่องทางเสริม หากส่งไม่สำเร็จข้อมูลในฐานข้อมูลและ Realtime ยังเป็นแหล่งข้อมูลหลักที่ดึงใหม่ได้
 
-## รูปที่ 3.14 Activity Diagram ของ UC13 จัดการ Wallet เงินจำลองและกำกับดูแลระบบ
+## รูปที่ 3.14 Activity Diagram ของ UC13 จัดการ Wallet และกำกับดูแลระบบ
 
 ```plantuml
 @startuml
@@ -1455,7 +1455,7 @@ stateDiagram-v2
 1. หมายเลขตารางและรูปในไฟล์นี้เป็นชุดใหม่ต่อเนื่องภายในเนื้อหาร่าง ควรปรับอีกครั้งหลังวางลงเอกสารจริง
 2. ใช้คำว่า “ตลาดชุมชน”, “ร้านหนึ่งสินค้า”, “ผู้ขาย”, “รายการขาย”, “ออเดอร์” และ “การกระจายออเดอร์” ให้สม่ำเสมอ
 3. ไม่ควรใช้โมเดลเดิมที่ออเดอร์ผูกกับร้านเดียวหรือให้ผู้ขายแต่ละรายกำหนดราคาต่างกัน
-4. ทุกหน้าที่กล่าวถึง Wallet, QR, ยอดเติม หรือยอดโอน ต้องระบุชัดว่า “เงินจำลองสำหรับสาธิต”
+4. ทุกหน้าที่กล่าวถึง Wallet, QR, ยอดเติม หรือยอดโอน ต้องระบุชัดว่าเป็น “ระบบทดสอบ ไม่ใช่เงินจริง”
 5. หากต้องส่งเป็นรูปภาพ แนะนำ export PlantUML/Mermaid เป็น SVG เพื่อรักษาความคมชัดก่อนนำเข้า Word
 
 ---
@@ -1482,7 +1482,7 @@ stateDiagram-v2
 | `gender` | varchar | - | - | เพศของผู้ใช้; nullable |
 | `role` | user_role | - | - | ค่า legacy enum `buyer/seller/admin`; ค่าเริ่มต้น `buyer` และไม่ใช้ตัดสิน Platform Admin |
 | `user_img_url` | text | - | - | URL รูปโปรไฟล์; nullable |
-| `wallet_balance` | numeric | - | - | ยอด legacy ค่าเริ่มต้น 0; ยอดจำลองจริงให้อ่านจาก `demo_accounts` |
+| `wallet_balance` | numeric | - | - | ยอด legacy ค่าเริ่มต้น 0; ยอด Wallet สำหรับทดสอบให้อ่านจาก `demo_accounts` |
 | `created_at` | timestamptz | - | - | เวลาสร้างข้อมูล; ค่าเริ่มต้น `now()` |
 | `updated_at` | timestamptz | - | - | เวลาแก้ไขล่าสุด; ค่าเริ่มต้น `now()` |
 | `display_name` | text | - | - | ชื่อที่ใช้แสดงในแอป; nullable |

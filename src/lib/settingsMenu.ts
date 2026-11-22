@@ -18,7 +18,7 @@ export function getSettingsGroups(access: SettingsAccess): SettingsGroup[] {
     { title: "การซื้อและ Wallet", actions: [
       { title: "คำสั่งซื้อของฉัน", description: "ติดตามสถานะและรีวิวหลังรับสินค้า", icon: "receipt-outline", route: "/(tabs)/orders" },
       { title: "ตะกร้าสินค้า", description: "ดูและแก้ไขสินค้าก่อนสั่งซื้อ", icon: "cart-outline", route: "/order/cart" },
-      { title: "Wallet เงินจำลอง", description: "ยอด ประวัติ และคำขอเติมเงินสำหรับสาธิต", icon: "wallet-outline", route: "/profile/wallet" },
+      { title: "Wallet", description: "ยอดคงเหลือ ประวัติ และคำขอเติมยอด", icon: "wallet-outline", route: "/profile/wallet" },
       { title: "รายการที่บันทึกและติดตาม", description: "ตลาดและร้านค้าที่คุณสนใจ", icon: "heart-outline", route: "/profile/saved" },
     ] },
     { title: "พื้นที่และการจัดส่ง", actions: [
@@ -47,7 +47,7 @@ export function getSettingsGroups(access: SettingsAccess): SettingsGroup[] {
     { title: "เกี่ยวกับ Locomall", description: "เวอร์ชันแอปและขอบเขตระบบสาธิต", icon: "information-circle-outline", route: "/settings/about" },
   ] });
   if (access.isAdmin) groups.push({ title: "สำหรับผู้ดูแลระบบ", actions: [
-    { title: "แผงผู้ดูแลระบบ", description: "อนุมัติคำขอ ดูแลร้าน ยอดจำลอง และรีวิว", icon: "shield-checkmark-outline", route: "/admin" },
+    { title: "แผงผู้ดูแลระบบ", description: "อนุมัติคำขอ ดูแลร้าน Wallet และรีวิว", icon: "shield-checkmark-outline", route: "/admin" },
   ] });
   return groups;
 }

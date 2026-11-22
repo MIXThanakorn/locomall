@@ -5,11 +5,11 @@ Locomall คือแพลตฟอร์ม Community Commerce สำหรั
 
 > Market ชุมชน → ร้านค้าหนึ่งสินค้า → ผู้ขายหลายราย → กระจายออเดอร์อย่างเป็นธรรม → รวมสินค้าที่ Market → ส่งหนึ่งพัสดุ
 
-V1 รองรับ COD และ Wallet **เงินจำลองสำหรับโปรเจ็กต์สาธิตเท่านั้น** รวมถึงรีวิว,
+V1 รองรับ COD และ Wallet **สำหรับทดสอบในโปรเจ็กต์สาธิตเท่านั้น** รวมถึงรีวิว,
 บันทึกและติดตามตลาด/ร้านที่อนุมัติแล้ว ไม่รับหรือโอนเงินจริง.
 
-Stripe Sandbox เพิ่มการชำระบัตร/PromptPay ทดสอบต่อออเดอร์ โดยแยกจาก Wallet
-เงินจำลอง ดูขั้นตอนใน [คู่มือ Stripe](docs/stripe-sandbox.md).
+Stripe Sandbox เพิ่มการชำระบัตร/PromptPay ทดสอบต่อออเดอร์ โดยแยกจากยอดทดสอบใน Wallet
+ดูขั้นตอนใน [คู่มือ Stripe](docs/stripe-sandbox.md).
 
 ## Technology stack
 
@@ -22,6 +22,8 @@ Stripe Sandbox เพิ่มการชำระบัตร/PromptPay ทด
 - Node test runner สำหรับ unit/contract tests
 
 ## Architecture
+
+แผนภาพโครงสร้างระบบแบบลำดับขั้นฉบับเต็มอยู่ที่ [`docs/system-hierarchical-chart.md`](docs/system-hierarchical-chart.md).
 
 ```mermaid
 flowchart LR
@@ -52,7 +54,7 @@ flowchart LR
 
 - Client รับ input, แสดงผล และ subscribe Realtime
 - Wallet, คำสั่งซื้อ, งานขาย, ตะกร้า และคิวงานสำคัญอัปเดตผ่าน Realtime; ทุกหน้าข้อมูลหลักยังดึงลงรีเฟรชได้เมื่อเครือข่ายสะดุด
-- Wallet เงินจำลองแยกยอดผู้ขายที่ชำระแล้วแต่ยังรอส่งมอบออกจากยอดขายรอโอน; COD ไม่สร้างเครดิตจำลอง
+- Wallet ในระบบทดสอบแยกยอดผู้ขายที่ชำระแล้วแต่ยังรอส่งมอบออกจากยอดขายรอโอน; COD ไม่สร้างเครดิต Wallet
 - การแจ้งเตือนออเดอร์แยกผู้ซื้อ/ผู้ขาย/เจ้าของตลาดตามผู้ที่ดำเนินการและขั้นตอนของออเดอร์
 - RLS ตัดสินว่าใครอ่าน/เขียน row ใดได้
 - RPC ตรวจ identity, ownership, state transition และทำ transaction/row locking
@@ -80,7 +82,7 @@ flowchart LR
 RPC ตรวจ `platform_roles` ฝั่งฐานข้อมูลและตรวจเวอร์ชันข้อมูลร้าน ไม่ให้คำสั่งจากหน้าเก่า
 เปลี่ยนสถานะที่ผู้ดูแลอื่นเพิ่งแก้ ทุกการเปลี่ยนบันทึกใน `approval_events` และ `admin_audit_logs`.
 
-ร้านที่ถูกระงับไม่แสดงใน catalog สาธารณะและรับคำสั่งซื้อใหม่ไม่ได้ทั้ง COD/Wallet เงินจำลอง
+ร้านที่ถูกระงับไม่แสดงใน catalog สาธารณะและรับคำสั่งซื้อใหม่ไม่ได้ทั้ง COD/Wallet สำหรับทดสอบ
 แต่ออเดอร์เดิม สต็อก การจอง และประวัติยอดเงินยังอยู่เพื่อดำเนินการต่อ
 ผู้ดูแลร้าน ผู้ขายร่วม และเจ้าของตลาดได้รับการแจ้งเตือนระบบเมื่อสถานะเปลี่ยน
 ยกเว้นผู้ที่ทำรายการเอง การคืนสิทธิ์ไม่เปลี่ยนสถานะพักขายของผู้ขายร่วมและไม่ประกาศเป็นร้านใหม่.
@@ -485,7 +487,7 @@ concurrent database test หรือการทดสอบ role boundary ก�
 - Run migrations and regenerate TypeScript types
 - ตรวจว่าการบันทึกและติดตามแสดงเฉพาะตลาด/ร้านที่อนุมัติแล้ว (ระบบแชร์พักไว้ก่อน)
 - Rebuild APK after adding QR/native dependencies; test demo top-up, refund, seller settlement and review with Buyer/Seller/Admin accounts
-- Check every wallet/QR amount visibly says “เงินจำลอง” and no real bank-app payment is possible
+- Check every wallet/QR amount visibly says “ระบบทดสอบ · ไม่ใช่เงินจริง” and no real bank-app payment is possible
 - Run Security/Performance Advisors and record accepted warnings
 - Verify Auth production settings and redirect URLs
 - Link EAS project, configure Android FCM V1/iOS APNs credentials และสร้าง Development/Production Build
@@ -531,7 +533,7 @@ These provider diagnostics do not exercise authenticated end-to-end app permissi
 ขั้นตอนตั้งค่า ใช้งาน เปลี่ยนโมเดล และข้อจำกัดการทดสอบอยู่ใน
 [`docs/ai-google-ai-studio-setup.md`](docs/ai-google-ai-studio-setup.md).
 
-ระบบ Wallet, QR อ้างอิง, การคืนยอด และการบันทึกโอนผู้ขายใน V1 เป็น **ข้อมูลจำลอง**
+ระบบ Wallet, QR อ้างอิง, การคืนยอด และการบันทึกโอนผู้ขายใน V1 เป็น **ข้อมูลทดสอบเท่านั้น**
 เท่านั้น คู่มือการติดตั้ง migration/Edge Function, การทดสอบและรีเซ็ตข้อมูลทดสอบอยู่ที่
 [`docs/demo-v1.md`](docs/demo-v1.md). ยอดจริงไม่อ่านจาก `profiles.wallet_balance`;
 รายการใหม่เก็บใน `demo_accounts`/`demo_ledger` และแก้ได้ผ่าน RPC ที่ตรวจสิทธิ์เท่านั้น.

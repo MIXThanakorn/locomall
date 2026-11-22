@@ -17,8 +17,8 @@ import { RealtimeWatch, useRealtimeRefresh } from "../../src/hooks/useRealtimeRe
 import type { Tables } from "../../src/types/database";
 
 const labels: Record<string, string> = {
-  topup: "ผู้ดูแลเติมยอดสาธิต", purchase: "ใช้ยอดสาธิตสั่งซื้อ", refund: "คืนยอดจากออเดอร์ที่ยกเลิก",
-  seller_sale: "ยอดขายรอโอน (สาธิต)", seller_settlement: "บันทึกโอนยอดขายแล้ว (สาธิต)",
+  topup: "เติมยอด Wallet", purchase: "ใช้ Wallet สั่งซื้อ", refund: "คืนยอดจากออเดอร์ที่ยกเลิก",
+  seller_sale: "ยอดขายรอโอน", seller_settlement: "บันทึกโอนยอดขายแล้ว",
 };
 
 export default function DemoWallet() {
@@ -76,27 +76,27 @@ export default function DemoWallet() {
   const request = async () => {
     const value = Number(amount);
     if (!Number.isFinite(value) || value < 1 || value > 10000 || Math.round(value * 100) !== value * 100)
-      return Alert.alert("จำนวนไม่ถูกต้อง", "กรอกยอดสาธิต 1–10,000 บาท และไม่เกิน 2 ตำแหน่งทศนิยม");
+      return Alert.alert("จำนวนไม่ถูกต้อง", "กรอกยอด 1–10,000 บาท และไม่เกิน 2 ตำแหน่งทศนิยม");
     setBusy(true);
     const { error } = await supabase.rpc("request_demo_topup", { p_request_id: Crypto.randomUUID(), p_amount: value });
     setBusy(false);
     if (error) Alert.alert("ส่งคำขอไม่สำเร็จ", translateDatabaseError(error));
-    else { Alert.alert("ส่งคำขอสาธิตแล้ว", "ผู้ดูแลต้องกดยืนยันในระบบก่อนยอดจะเพิ่ม ไม่มีการโอนเงินจริง"); await load(); }
+    else { Alert.alert("ส่งคำขอแล้ว", "ผู้ดูแลต้องยืนยันก่อนยอดจะเข้า Wallet ไม่มีการโอนเงินจริง"); await load(); }
   };
   const latestPending = requests.find((item) => item.status === "pending");
 
   return <View style={styles.root}><KeyboardAwareScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} />}>
-    <ScreenHeader title={"Wallet เงินจำลอง"} titleStyle={styles.title} color={Colors.greenPrimary} />
-    <Text style={styles.warning}>สำหรับสาธิตเท่านั้น · ไม่ใช่เงินบาทจริง · ห้ามใช้ QR นี้โอนผ่านแอปธนาคาร</Text>
+    <ScreenHeader title={"Wallet"} titleStyle={styles.title} color={Colors.greenPrimary} />
+    <Text style={styles.warning}>Wallet นี้ใช้ทดสอบเท่านั้น · ไม่ใช่เงินจริง · ห้ามใช้ QR นี้โอนผ่านแอปธนาคาร</Text>
     {loadError ? <Text style={styles.warning}>อัปเดตข้อมูลไม่สำเร็จ ดึงลงเพื่อลองใหม่</Text> : null}
-    {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : loadError&&!account ? <Text style={styles.warning}>ยังไม่สามารถแสดงยอดจำลองได้ กรุณาดึงลงเพื่อลองใหม่</Text> : <>
-      <View style={styles.summary}><Text style={styles.label}>ยอดสำหรับสั่งซื้อ · เงินจำลอง</Text><Text style={styles.balance}>฿{Number(account?.wallet_balance ?? 0).toLocaleString()}</Text></View>
-      <View style={styles.held}><Text style={styles.label}>ยอดชำระรอส่งมอบ · สาธิต</Text><Text style={styles.heldValue}>฿{sellerHeld.toLocaleString()}</Text><Text style={styles.label}>ผู้ซื้อชำระด้วยเงินจำลองแล้ว ยอดนี้จะย้ายไปยอดขายรอโอนเมื่อผู้ซื้อยืนยันรับสินค้า</Text></View>
-      <View style={styles.row}><View style={styles.mini}><Text style={styles.label}>ยอดขายรอโอน · สาธิต</Text><Text style={styles.value}>฿{Number(account?.seller_pending ?? 0).toLocaleString()}</Text></View><View style={styles.mini}><Text style={styles.label}>บันทึกโอนแล้ว · สาธิต</Text><Text style={styles.value}>฿{Number(account?.seller_settled ?? 0).toLocaleString()}</Text></View></View>
+    {loading ? <ActivityIndicator color={Colors.greenPrimary} /> : loadError&&!account ? <Text style={styles.warning}>ยังไม่สามารถแสดงยอด Wallet ได้ กรุณาดึงลงเพื่อลองใหม่</Text> : <>
+      <View style={styles.summary}><Text style={styles.label}>ยอดคงเหลือ</Text><Text style={styles.balance}>฿{Number(account?.wallet_balance ?? 0).toLocaleString()}</Text></View>
+      <View style={styles.held}><Text style={styles.label}>ยอดชำระรอส่งมอบ</Text><Text style={styles.heldValue}>฿{sellerHeld.toLocaleString()}</Text><Text style={styles.label}>ยอดจากคำสั่งซื้อผ่าน Wallet จะย้ายไปยอดขายรอโอนเมื่อผู้ซื้อยืนยันรับสินค้า</Text></View>
+      <View style={styles.row}><View style={styles.mini}><Text style={styles.label}>ยอดขายรอโอน</Text><Text style={styles.value}>฿{Number(account?.seller_pending ?? 0).toLocaleString()}</Text></View><View style={styles.mini}><Text style={styles.label}>บันทึกโอนแล้ว</Text><Text style={styles.value}>฿{Number(account?.seller_settled ?? 0).toLocaleString()}</Text></View></View>
       <Text style={styles.heading}>ขอยอดทดสอบ</Text>
-      <AppTextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={styles.input} placeholder="จำนวนเงินจำลอง" />
-      <Button title="ส่งคำขอเติมยอดสาธิต" onPress={request} loading={busy} />
-      {latestPending ? <View style={styles.qrCard}><Text style={styles.heading}>QR อ้างอิงคำขอสาธิต</Text><QRCode value={`LOCOMALL-DEMO-TOPUP:${latestPending.request_id}`} size={170} /><Text selectable style={styles.reference}>{latestPending.request_id}</Text><Text style={styles.warning}>ไม่ใช่ PromptPay · ใช้โอนเงินจริงไม่ได้</Text></View> : null}
+      <AppTextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={styles.input} placeholder="จำนวนเงินที่ต้องการ" />
+      <Button title="ขอเติมยอด Wallet" onPress={request} loading={busy} />
+      {latestPending ? <View style={styles.qrCard}><Text style={styles.heading}>QR อ้างอิงคำขอ</Text><QRCode value={`LOCOMALL-DEMO-TOPUP:${latestPending.request_id}`} size={170} /><Text selectable style={styles.reference}>{latestPending.request_id}</Text><Text style={styles.warning}>ไม่ใช่ PromptPay · ใช้โอนเงินจริงไม่ได้</Text></View> : null}
       <Text style={styles.heading}>คำขอเติมยอด</Text>
       {requests.length ? requests.map((item) => <View key={item.request_id} style={styles.entry}><Text style={styles.value}>฿{Number(item.amount).toLocaleString()} · {item.status === "pending" ? "รอตรวจสอบ" : item.status === "approved" ? "อนุมัติแล้ว" : "ไม่อนุมัติ"}</Text><Text style={styles.label}>{formatThaiDateTime(item.created_at)}</Text>{item.decision_note ? <Text style={styles.label}>{item.decision_note}</Text> : null}</View>) : <Text style={styles.label}>ยังไม่มีคำขอ</Text>}
       <Text style={styles.heading}>รายการเคลื่อนไหว</Text>
