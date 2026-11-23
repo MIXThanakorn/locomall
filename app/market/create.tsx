@@ -1,7 +1,7 @@
 import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../src/components/ScreenHeader";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { AppTextInput } from "../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -21,6 +21,9 @@ export default function CreateMarket() {
   const [area, setArea] = useState("");
   const [image, setImage] = useState<SelectedImage | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const nameError = (submitted || name.length > 0) && !name.trim() ? "กรุณากรอกชื่อตลาดชุมชน" : null;
+  const hubError = (submitted || hub.length > 0) && !hub.trim() ? "กรุณากรอกที่อยู่จุดรวมสินค้า" : null;
 
   useEffect(() => {
     supabase.from("user_locations")
@@ -39,6 +42,7 @@ export default function CreateMarket() {
   };
 
   const submit = async () => {
+    setSubmitted(true);
     if (!subdistrict) return Alert.alert("กรุณาตั้งค่าพื้นที่หลักก่อน");
     if (!name.trim() || !hub.trim()) return Alert.alert("กรอกข้อมูลให้ครบ");
     setLoading(true);
@@ -67,9 +71,9 @@ export default function CreateMarket() {
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปตลาดชุมชน</Text>}
     </TouchableOpacity>
-    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} maxLength={120} />
+    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} maxLength={120} validationError={nameError} /><InputError message={nameError} />
     <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="เรื่องราวและรายละเอียดชุมชน" value={description} onChangeText={setDescription} maxLength={1500} />
-    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} maxLength={500} />
+    <AppTextInput style={[styles.input, styles.multiline]} multiline placeholder="ที่อยู่จุดรวมสินค้า" value={hub} onChangeText={setHub} maxLength={500} validationError={hubError} /><InputError message={hubError} />
     <Button title="ส่งคำขอให้ผู้ดูแลระบบตรวจสอบ" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary }} />
   </KeyboardAwareScrollView>;
 }

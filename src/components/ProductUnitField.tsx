@@ -1,9 +1,9 @@
 import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { StyleSheet, Text, View } from "react-native";
-import { AppTextInput } from "./AppTextInput";
+import { AppTextInput, InputError } from "./AppTextInput";
 import { DropdownOption, SearchableDropdown } from "./SearchableDropdown";
 import { BorderRadius, Colors } from "../constants/theme";
-import { PRODUCT_UNITS, isWeightUnit, normalizeWeightInput } from "../lib/productUnit";
+import { PRODUCT_UNITS, formatProductUnit, isWeightUnit, normalizeWeightInput } from "../lib/productUnit";
 
 type Props = {
   kind: string;
@@ -15,6 +15,7 @@ type Props = {
 
 export function ProductUnitField({ kind, amount, onKindChange, onAmountChange, disabled = false }: Props) {
   const styles = useResponsiveStyles(baseStyles, {});
+  const amountError = isWeightUnit(kind) && amount.length ? formatProductUnit(kind, amount).error : null;
   const options: DropdownOption[] = PRODUCT_UNITS.map((unit) => ({ value: unit, label: unit }));
   if (kind && !PRODUCT_UNITS.some((unit) => unit === kind)) {
     options.push({ value: kind, label: `${kind} (หน่วยเดิม)` });
@@ -31,7 +32,9 @@ export function ProductUnitField({ kind, amount, onKindChange, onAmountChange, d
         keyboardType={kind === "กรัม" ? "number-pad" : "decimal-pad"}
         placeholder={kind === "กรัม" ? "เช่น 500" : "เช่น 0.5 หรือ 1.25"}
         accessibilityLabel={`ปริมาณ${kind}ต่อ 1 หน่วยสั่งซื้อ`}
+        validationError={amountError}
       />
+      <InputError message={amountError} />
     </> : null}
     {disabled ? <Text style={styles.locked}>ร้านที่อนุมัติแล้วเปลี่ยนหน่วยขายไม่ได้ เพราะจะทำให้สต็อกและตะกร้าที่มีอยู่ถูกตีความผิด หากต้องขายขนาดใหม่ให้ขอเปิดร้านสินค้าใหม่</Text> : null}
     <Text style={styles.hint}>{isWeightUnit(kind)

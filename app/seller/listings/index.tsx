@@ -4,7 +4,7 @@ import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useMemo, useState } from "react";
 import { Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { AppTextInput } from "../../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { Button } from "../../../src/components/Button";
 import { PermissionGate } from "../../../src/components/PermissionGate";
@@ -45,7 +45,7 @@ export default function Stock() {
 
   const save = async (listing: any) => {
     const quantity = Number(listing.draft ?? listing.stock_quantity);
-    if (!Number.isInteger(quantity) || quantity < listing.reserved_quantity) {
+    if (!String(listing.draft ?? listing.stock_quantity).trim() || !Number.isInteger(quantity) || quantity < 0 || quantity < listing.reserved_quantity) {
       return Alert.alert("จำนวนสินค้าไม่ถูกต้อง", `จำนวนต้องไม่น้อยกว่าสินค้าที่มีลูกค้าสั่งไว้ ${formatSaleQuantity(listing.reserved_quantity, listing.stores?.unit)}`);
     }
     const { error } = await supabase.rpc("update_my_listing_stock", {
@@ -68,12 +68,21 @@ export default function Stock() {
         <Text style={styles.available}>พร้อมให้สั่ง {formatSaleQuantity(listing.status === "active" && listing.stores?.approval_status === "approved" ? Math.max(0, listing.stock_quantity - listing.reserved_quantity) : 0, listing.stores?.unit)}{listing.status !== "active" ? " (หยุดขายชั่วคราว)" : ""}</Text>
         {listing.stores?.approval_status === "suspended" ? <Text style={styles.suspension}>{approvalStatusLabel("suspended")} · {listing.stores.approval_note || "ติดต่อผู้ดูแลระบบ"} · ออเดอร์เดิมยังดำเนินการต่อได้</Text> : null}
         <Text style={styles.inputLabel}>แก้ไขจำนวนคงเหลือทั้งหมด (รวมที่จองแล้ว)</Text>
+        {(() => {
+          const value = String(listing.draft ?? listing.stock_quantity);
+          const quantity = Number(value);
+          const error = !value.trim() ? "กรุณากรอกจำนวนสินค้า" : !/^\d+$/.test(value) ? "จำนวนสินค้าต้องเป็นเลขจำนวนเต็มตั้งแต่ 0 ขึ้นไป" : quantity < listing.reserved_quantity ? `จำนวนต้องไม่น้อยกว่าสินค้าที่จองไว้ ${formatSaleQuantity(listing.reserved_quantity, listing.stores?.unit)}` : null;
+          return <>
         <AppTextInput
           style={styles.input}
           keyboardType="number-pad"
-          value={String(listing.draft ?? listing.stock_quantity)}
+          value={value}
           onChangeText={(value) => setList((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, draft: value } : item))}
+          validationError={error}
         />
+          <InputError message={error} />
+          </>;
+        })()}
         <Button title="บันทึกจำนวนคงเหลือ" size="sm" onPress={() => save(listing)} />
       </View>)}
     </KeyboardAwareScrollView>

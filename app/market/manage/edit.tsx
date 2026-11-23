@@ -3,7 +3,7 @@ import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { AppTextInput } from "../../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../../src/components/AppTextInput";
 import { Button } from "../../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
@@ -18,8 +18,12 @@ export default function EditMarket() {
   const [market, setMarket] = useState<any>();
   const [name, setName] = useState(""); const [description, setDescription] = useState(""); const [hubAddress, setHubAddress] = useState("");
   const [image, setImage] = useState<SelectedImage | null>(null); const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const nameError = (submitted || name.length > 0) && !name.trim() ? "กรุณากรอกชื่อตลาดชุมชน" : null;
+  const hubError = (submitted || hubAddress.length > 0) && !hubAddress.trim() ? "กรุณากรอกที่อยู่จุดรวมสินค้า" : null;
   useEffect(() => { supabase.from("markets").select("*").eq("market_id", Number(marketId)).single().then(({ data }) => { setMarket(data); setName(data?.name ?? ""); setDescription(data?.description ?? ""); setHubAddress(data?.hub_address ?? ""); }); }, [marketId]);
   const save = async () => {
+    setSubmitted(true);
     if (!name.trim() || !hubAddress.trim()) return Alert.alert("กรุณากรอกชื่อและจุดรวมสินค้า");
     setSaving(true);
     try {
@@ -36,9 +40,9 @@ export default function EditMarket() {
     <TouchableOpacity style={styles.imageBox} onPress={async () => { try { setImage(await selectSquareImage()); } catch { Alert.alert("เลือกรูปไม่สำเร็จ", "กรุณาตรวจสอบสิทธิ์เข้าถึงรูปภาพแล้วลองใหม่อีกครั้ง"); } }}>
       {image?.uri || market?.image_url ? <Image source={{ uri: image?.uri ?? market.image_url }} style={styles.image} /> : <Text style={styles.imageText}>+ เปลี่ยนรูปตลาดชุมชน</Text>}
     </TouchableOpacity>
-    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} maxLength={120} />
+    <AppTextInput style={styles.input} placeholder="ชื่อตลาดชุมชน" value={name} onChangeText={setName} maxLength={120} validationError={nameError} /><InputError message={nameError} />
     <AppTextInput style={[styles.input, styles.multiline]} placeholder="รายละเอียด" value={description} onChangeText={setDescription} multiline maxLength={1500} />
-    <AppTextInput style={[styles.input, styles.multiline]} placeholder="ที่อยู่จุดรวมสินค้า" value={hubAddress} onChangeText={setHubAddress} multiline maxLength={500} />
+    <AppTextInput style={[styles.input, styles.multiline]} placeholder="ที่อยู่จุดรวมสินค้า" value={hubAddress} onChangeText={setHubAddress} multiline maxLength={500} validationError={hubError} /><InputError message={hubError} />
     <Button title="บันทึกการแก้ไข" onPress={save} loading={saving} style={styles.button} />
   </KeyboardAwareScrollView>;
 }

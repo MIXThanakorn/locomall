@@ -1,9 +1,9 @@
 import { useResponsiveStyles } from "../../../src/hooks/useResponsiveStyles";
 import { ScreenHeader } from "../../../src/components/ScreenHeader";
 import { Alert, Image, StyleSheet, Text, TouchableOpacity } from "react-native";
-import { AppTextInput } from "../../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../../src/components/KeyboardAware";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Button } from "../../../src/components/Button";
 import { BorderRadius, Colors, Spacing } from "../../../src/constants/theme";
@@ -13,6 +13,7 @@ import { translateDatabaseError } from "../../../src/lib/databaseError";
 import { ProductUnitField } from "../../../src/components/ProductUnitField";
 import { formatProductUnit } from "../../../src/lib/productUnit";
 import { ListingAssistant } from "../../../src/components/ListingAssistant";
+import { positiveMoneyError } from "../../../src/lib/fieldValidation";
 
 export default function CreateStore() {
   const styles = useResponsiveStyles(baseStyles, {});
@@ -26,6 +27,8 @@ export default function CreateStore() {
   const [price, setPrice] = useState("");
   const [image, setImage] = useState<SelectedImage | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const priceError = positiveMoneyError(price) ?? (submitted && !price.trim() ? "กรุณากรอกราคาที่มากกว่า 0" : null);
 
   const chooseImage = async () => {
     try { setImage(await selectSquareImage()); }
@@ -33,6 +36,7 @@ export default function CreateStore() {
   };
 
   const submit = async () => {
+    setSubmitted(true);
     const numericPrice = Number(price);
     if (!marketId || !name.trim() || !product.trim() || !Number.isFinite(numericPrice) || numericPrice <= 0) return Alert.alert("กรอกข้อมูลให้ครบและราคาต้องมากกว่า 0");
     const formattedUnit = formatProductUnit(unitKind, unitAmount);
@@ -68,10 +72,13 @@ export default function CreateStore() {
     <TouchableOpacity style={styles.imagePicker} onPress={chooseImage}>
       {image ? <Image source={{ uri: image.uri }} style={styles.image} /> : <Text style={styles.imageText}>+ เพิ่มรูปสินค้า/ร้าน</Text>}
     </TouchableOpacity>
-    {inputs.map(([label, value, setter]) => <AppTextInput key={label} style={styles.input} placeholder={label} value={value} onChangeText={setter} maxLength={label === "รายละเอียด" ? 1500 : 120} multiline={label === "รายละเอียด"} />)}
+    {inputs.map(([label, value, setter]) => {
+      const error = submitted && label !== "รายละเอียด" && !value.trim() ? `กรุณากรอก${label}` : null;
+      return <React.Fragment key={label}><AppTextInput style={styles.input} placeholder={label} value={value} onChangeText={setter} maxLength={label === "รายละเอียด" ? 1500 : 120} multiline={label === "รายละเอียด"} validationError={error} /><InputError message={error} /></React.Fragment>;
+    })}
     <ListingAssistant marketId={Number(marketId)} productName={product} description={description} image={image} disabled={loading} onApply={(nextProduct, nextDescription) => { setProduct(nextProduct); setDescription(nextDescription); }} />
     <ProductUnitField kind={unitKind} amount={unitAmount} onKindChange={(value) => { setUnitKind(value); setUnitAmount(""); }} onAmountChange={setUnitAmount} />
-    <AppTextInput style={styles.input} placeholder="ราคากลางต่อ 1 หน่วยสั่งซื้อ" value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
+    <AppTextInput style={styles.input} placeholder="ราคากลางต่อ 1 หน่วยสั่งซื้อ" value={price} onChangeText={setPrice} keyboardType="decimal-pad" validationError={priceError} /><InputError message={priceError} />
     <Button title="ส่งคำขอเปิดร้าน" onPress={submit} loading={loading} style={{ backgroundColor: Colors.goldPrimary, marginTop: 16 }} />
   </KeyboardAwareScrollView>;
 }

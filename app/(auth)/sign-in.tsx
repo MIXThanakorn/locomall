@@ -1,7 +1,7 @@
 import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { AppTextInput } from "../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +15,7 @@ import { translateAuthError } from "../../src/lib/authError";
 import { GOOGLE_OAUTH_CALLBACK_PATH, parseGoogleOAuthCallback, withGoogleOAuthTimeout } from "../../src/lib/googleOAuth";
 import { useAuth } from "../../src/context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { emailValidationError } from "../../src/lib/fieldValidation";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,14 +27,19 @@ export default function SignInScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const emailError = (submitted || email.length > 0) ? emailValidationError(email) : null;
+  const passwordError = submitted && !password ? "กรุณากรอกรหัสผ่าน" : null;
 
   const handleSignIn = async () => {
+    setSubmitted(true);
     if (!email || !password) {
       Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกอีเมลและรหัสผ่าน");
       return;
     }
+    if (emailValidationError(email)) return;
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -99,7 +105,9 @@ export default function SignInScreen() {
             autoComplete="email"
             autoCapitalize="none"
             placeholder="name@example.com"
+            validationError={emailError}
           />
+          <InputError message={emailError} />
 
           <Text style={styles.inputLabel}>รหัสผ่าน</Text>
           <View style={styles.passwordContainer}>
@@ -110,6 +118,7 @@ export default function SignInScreen() {
               secureTextEntry={!showPassword}
               autoComplete="current-password"
               placeholder="กรอกรหัสผ่าน"
+              validationError={passwordError}
             />
             <TouchableOpacity style={styles.iconButton} onPress={() => setShowPassword(!showPassword)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons
@@ -119,6 +128,7 @@ export default function SignInScreen() {
               />
             </TouchableOpacity>
           </View>
+          <InputError message={passwordError} />
 
           <TouchableOpacity
             style={styles.forgotBtn}

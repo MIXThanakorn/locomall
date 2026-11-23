@@ -2,7 +2,7 @@ import { useResponsiveStyles } from "../hooks/useResponsiveStyles";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo, useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { AppTextInput } from "./AppTextInput";
+import { AppTextInput, InputError } from "./AppTextInput";
 import { BorderRadius, Colors, Spacing } from "../constants/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { KeyboardAwareView } from "./KeyboardAware";
@@ -17,10 +17,11 @@ type Props = {
   disabled?: boolean;
   searchPlaceholder?: string;
   autoFocusSearch?: boolean;
+  validationError?: string | null;
   onChange: (value: string) => void;
 };
 
-export function SearchableDropdown({ label, placeholder, options, value, disabled, searchPlaceholder, autoFocusSearch = true, onChange }: Props) {
+export function SearchableDropdown({ label, placeholder, options, value, disabled, searchPlaceholder, autoFocusSearch = true, validationError, onChange }: Props) {
   const styles = useResponsiveStyles(baseStyles, {});
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -39,7 +40,7 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
       accessibilityRole="button"
       accessibilityLabel={label ?? placeholder}
       disabled={disabled}
-      style={[styles.dropdown, disabled && styles.disabled]}
+      style={[styles.dropdown, disabled && styles.disabled, validationError && styles.invalid]}
       onPress={() => setOpen(true)}
     >
       <View style={styles.selectedCopy}>
@@ -48,6 +49,7 @@ export function SearchableDropdown({ label, placeholder, options, value, disable
       </View>
       <Ionicons name="chevron-down" size={20} color={disabled ? Colors.textMuted : Colors.greenPrimary} />
     </TouchableOpacity>
+    <InputError message={validationError} />
 
     <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
       <KeyboardAwareView style={styles.overlay}>
@@ -86,6 +88,7 @@ const baseStyles = StyleSheet.create({
   label: { fontFamily: "Kanit_700Bold", fontSize: 15, color: Colors.textDark, marginBottom: 8 },
   dropdown: { minHeight: 54, borderRadius: BorderRadius.md, backgroundColor: "white", borderWidth: 1, borderColor: Colors.inputBorder, paddingHorizontal: 16, paddingVertical: 9, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   disabled: { opacity: 0.5, backgroundColor: "#F2F2EE" },
+  invalid: { borderColor: Colors.danger, borderWidth: 1.5 },
   selectedCopy: { flex: 1 },
   dropdownText: { fontFamily: "Kanit_500Medium", fontSize: 16, color: Colors.textDark },
   placeholder: { color: Colors.textMuted, fontFamily: "Kanit_400Regular" },

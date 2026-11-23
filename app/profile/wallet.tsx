@@ -5,7 +5,7 @@ import * as Crypto from "expo-crypto";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, RefreshControl, StyleSheet, Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
-import { AppTextInput } from "../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../src/components/AppTextInput";
 import { Button } from "../../src/components/Button";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { BorderRadius, Colors, Spacing } from "../../src/constants/theme";
@@ -30,6 +30,12 @@ export default function DemoWallet() {
   const [requests, setRequests] = useState<Tables<'demo_topup_requests'>[]>([]);
   const [entries, setEntries] = useState<Tables<'demo_ledger'>[]>([]);
   const [amount, setAmount] = useState("100");
+  const [topupAttempted, setTopupAttempted] = useState(false);
+  const topupError = !amount.trim()
+    ? topupAttempted ? "กรุณากรอกจำนวนเงิน" : null
+    : (!/^(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(amount) || Number(amount) < 1 || Number(amount) > 10000)
+      ? "กรอกยอด 1–10,000 บาท และไม่เกิน 2 ตำแหน่งทศนิยม"
+      : null;
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,6 +80,7 @@ export default function DemoWallet() {
   }, [load]);
 
   const request = async () => {
+    setTopupAttempted(true);
     const value = Number(amount);
     if (!Number.isFinite(value) || value < 1 || value > 10000 || Math.round(value * 100) !== value * 100)
       return Alert.alert("จำนวนไม่ถูกต้อง", "กรอกยอด 1–10,000 บาท และไม่เกิน 2 ตำแหน่งทศนิยม");
@@ -94,7 +101,8 @@ export default function DemoWallet() {
       <View style={styles.held}><Text style={styles.label}>ยอดชำระรอส่งมอบ</Text><Text style={styles.heldValue}>฿{sellerHeld.toLocaleString()}</Text><Text style={styles.label}>ยอดจากคำสั่งซื้อผ่าน Wallet จะย้ายไปยอดขายรอโอนเมื่อผู้ซื้อยืนยันรับสินค้า</Text></View>
       <View style={styles.row}><View style={styles.mini}><Text style={styles.label}>ยอดขายรอโอน</Text><Text style={styles.value}>฿{Number(account?.seller_pending ?? 0).toLocaleString()}</Text></View><View style={styles.mini}><Text style={styles.label}>บันทึกโอนแล้ว</Text><Text style={styles.value}>฿{Number(account?.seller_settled ?? 0).toLocaleString()}</Text></View></View>
       <Text style={styles.heading}>ขอยอดทดสอบ</Text>
-      <AppTextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={styles.input} placeholder="จำนวนเงินที่ต้องการ" />
+      <AppTextInput value={amount} onChangeText={setAmount} keyboardType="decimal-pad" style={styles.input} placeholder="จำนวนเงินที่ต้องการ" validationError={topupError} />
+      <InputError message={topupError} />
       <Button title="ขอเติมยอด Wallet" onPress={request} loading={busy} />
       {latestPending ? <View style={styles.qrCard}><Text style={styles.heading}>QR อ้างอิงคำขอ</Text><QRCode value={`LOCOMALL-DEMO-TOPUP:${latestPending.request_id}`} size={170} /><Text selectable style={styles.reference}>{latestPending.request_id}</Text><Text style={styles.warning}>ไม่ใช่ PromptPay · ใช้โอนเงินจริงไม่ได้</Text></View> : null}
       <Text style={styles.heading}>คำขอเติมยอด</Text>

@@ -2,7 +2,7 @@ import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 /* eslint-disable react-hooks/immutability */
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from "react-native";
-import { AppTextInput } from "../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useRouter } from "expo-router";
 import { Colors, Typography, Spacing, BorderRadius } from "../../src/constants/theme";
@@ -28,6 +28,11 @@ export default function EditProfileScreen() {
   const [existingAvatarUrl, setExistingAvatarUrl] = useState<string | null>(null);
   const [newAvatar, setNewAvatar] = useState<SelectedImage | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const fullNameError = (submitted || fullName.length > 0) && !fullName.trim() ? "กรุณากรอกชื่อ–นามสกุล" : null;
+  const usernameError = (submitted || username.length > 0) && !username.trim() ? "กรุณากรอกชื่อผู้ใช้" : null;
+  const phoneError = (submitted || phone.length > 0) ? mobilePhoneError(phone) : null;
+  const ageError = age && (!/^\d+$/.test(age) || Number(age) < 1 || Number(age) > 120) ? "อายุต้องเป็นตัวเลขระหว่าง 1–120 ปี" : null;
 
   useEffect(() => {
     fetchUserData();
@@ -65,9 +70,11 @@ export default function EditProfileScreen() {
   };
 
   const handleUpdateProfile = async () => {
+    setSubmitted(true);
     if (!userId) return;
-  const phoneError = mobilePhoneError(phone);
+    if (!fullName.trim() || !username.trim()) return Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกชื่อและชื่อผู้ใช้");
     if (phoneError) return Alert.alert("เบอร์มือถือไม่ถูกต้อง", phoneError);
+    if (ageError) return Alert.alert("อายุไม่ถูกต้อง", ageError);
     
     setUpdating(true);
     try {
@@ -149,19 +156,23 @@ export default function EditProfileScreen() {
       <View style={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>ชื่อ-นามสกุล</Text>
-          <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} />
+          <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} validationError={fullNameError} />
+          <InputError message={fullNameError} />
 
           <Text style={styles.inputLabel}>ชื่อผู้ใช้</Text>
-          <AppTextInput style={styles.input} value={username} onChangeText={setUsername} />
+          <AppTextInput style={styles.input} value={username} onChangeText={setUsername} validationError={usernameError} />
+          <InputError message={usernameError} />
 
           <Text style={styles.inputLabel}>อีเมล (แก้ไขไม่ได้)</Text>
           <AppTextInput style={[styles.input, { opacity: 0.7 }]} value={email} editable={false} />
 
           <Text style={styles.inputLabel}>เบอร์มือถือ *</Text>
-          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="phone-pad" autoComplete="tel" maxLength={10} placeholder="เช่น 0812345678" />
+          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="phone-pad" autoComplete="tel" maxLength={10} placeholder="เช่น 0812345678" validationError={phoneError} />
+          <InputError message={phoneError} />
 
           <Text style={styles.inputLabel}>อายุ</Text>
-          <AppTextInput style={styles.input} value={age} onChangeText={(value) => setAge(value.replace(/\D/g, ""))} keyboardType="number-pad" />
+          <AppTextInput style={styles.input} value={age} onChangeText={(value) => setAge(value.replace(/\D/g, ""))} keyboardType="number-pad" validationError={ageError} />
+          <InputError message={ageError} />
 
           <Button
             title="บันทึกข้อมูลส่วนตัว"

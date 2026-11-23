@@ -30,3 +30,13 @@ export function emailValidationError(value: string): string | null {
   }
   return null;
 }
+
+export function positiveMoneyError(value: string, maximum?: number): string | null {
+  const amount = value.trim();
+  if (!amount) return null;
+  if (!/^(?:\d+(?:\.\d{0,2})?|\.\d{1,2})$/.test(amount)) return "กรอกจำนวนเป็นตัวเลขและทศนิยมไม่เกิน 2 ตำแหน่ง";
+  const number = Number(amount);
+  if (!Number.isFinite(number) || number <= 0) return "จำนวนต้องมากกว่า 0";
+  if (maximum !== undefined && number > maximum) return `จำนวนต้องไม่เกิน ${maximum.toLocaleString()} บาท`;
+  return null;
+}

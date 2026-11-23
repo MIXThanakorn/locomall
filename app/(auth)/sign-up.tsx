@@ -1,7 +1,7 @@
 import { useResponsiveStyles } from "../../src/hooks/useResponsiveStyles";
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
-import { AppTextInput } from "../../src/components/AppTextInput";
+import { AppTextInput, InputError } from "../../src/components/AppTextInput";
 import { KeyboardAwareScrollView } from "../../src/components/KeyboardAware";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -30,10 +30,20 @@ export default function SignUpScreen() {
   const [phone, setPhone] = useState("");
   const [age, setAge] = useState("");
   const [gender, setGender] = useState<GenderType>("man");
+  const [submitted, setSubmitted] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
+  const fullNameError = submitted && !fullName.trim() ? "กรุณากรอกชื่อ–นามสกุล" : fullName.trim() && fullName.trim().length < 2 ? "กรุณากรอกชื่ออย่างน้อย 2 ตัวอักษร" : null;
+  const usernameError = submitted && !username.trim() ? "กรุณากรอกชื่อผู้ใช้" : username.trim() && username.trim().length < 3 ? "ชื่อผู้ใช้ควรมีอย่างน้อย 3 ตัวอักษร" : null;
+  const emailError = (submitted || email.length > 0) ? emailValidationError(email) : null;
+  const passwordError = password ? passwordValidationError(password) : submitted ? "กรุณาสร้างรหัสผ่าน" : null;
+  const confirmationError = passwordConfirmation && password !== passwordConfirmation ? "รหัสผ่านไม่ตรงกัน" : submitted && !passwordConfirmation ? "กรุณายืนยันรหัสผ่าน" : null;
+  const phoneError = (submitted || phone.length > 0) ? mobilePhoneError(phone) : null;
+  const ageError = age && (!/^\d+$/.test(age) || Number(age) < 1 || Number(age) > 120) ? "กรุณากรอกอายุเป็นตัวเลขระหว่าง 1–120 ปี" : null;
+
   const handleSignUp = async () => {
+    setSubmitted(true);
     if (!fullName.trim()) return Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกชื่อ–นามสกุล");
     if (!username.trim()) return Alert.alert("กรอกข้อมูลไม่ครบ", "กรุณากรอกชื่อผู้ใช้");
     const emailError = emailValidationError(email);
@@ -110,36 +120,43 @@ export default function SignUpScreen() {
       <View style={styles.scrollContent}>
         <View style={styles.card}>
           <Text style={styles.inputLabel}>ชื่อ–นามสกุล</Text>
-          <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="ชื่อและนามสกุลจริง" />
+          <AppTextInput style={styles.input} value={fullName} onChangeText={setFullName} placeholder="ชื่อและนามสกุลจริง" validationError={fullNameError} />
+          <InputError message={fullNameError} />
 
           <Text style={styles.inputLabel}>ชื่อผู้ใช้</Text>
-          <AppTextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="ชื่อที่ใช้แสดงในระบบ" />
+          <AppTextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="ชื่อที่ใช้แสดงในระบบ" validationError={usernameError} />
+          <InputError message={usernameError} />
 
           <Text style={styles.inputLabel}>อีเมล</Text>
-          <AppTextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" autoCapitalize="none" placeholder="name@example.com" />
+          <AppTextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoComplete="email" autoCapitalize="none" placeholder="name@example.com" validationError={emailError} />
+          <InputError message={emailError} />
 
           <Text style={styles.inputLabel}>รหัสผ่าน</Text>
           <Text style={styles.passwordHint}>อย่างน้อย 10 ตัว และต้องมีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์</Text>
           <View style={styles.passwordContainer}>
-            <AppTextInput style={styles.passwordInput} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoComplete="new-password" autoCapitalize="none" placeholder="สร้างรหัสผ่าน" />
+            <AppTextInput style={styles.passwordInput} value={password} onChangeText={setPassword} secureTextEntry={!showPassword} autoComplete="new-password" autoCapitalize="none" placeholder="สร้างรหัสผ่าน" validationError={passwordError} />
             <TouchableOpacity style={styles.iconButton} onPress={() => setShowPassword((value) => !value)} accessibilityLabel={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
               <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
+          <InputError message={passwordError} />
 
           <Text style={styles.inputLabel}>ยืนยันรหัสผ่าน</Text>
           <View style={styles.passwordContainer}>
-            <AppTextInput style={styles.passwordInput} value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry={!showPasswordConfirmation} autoComplete="new-password" autoCapitalize="none" placeholder="กรอกรหัสผ่านอีกครั้ง" />
+            <AppTextInput style={styles.passwordInput} value={passwordConfirmation} onChangeText={setPasswordConfirmation} secureTextEntry={!showPasswordConfirmation} autoComplete="new-password" autoCapitalize="none" placeholder="กรอกรหัสผ่านอีกครั้ง" validationError={confirmationError} />
             <TouchableOpacity style={styles.iconButton} onPress={() => setShowPasswordConfirmation((value) => !value)} accessibilityLabel={showPasswordConfirmation ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}>
               <Ionicons name={showPasswordConfirmation ? "eye-off-outline" : "eye-outline"} size={21} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
+          <InputError message={confirmationError} />
 
           <Text style={styles.inputLabel}>เบอร์มือถือ *</Text>
-          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="phone-pad" autoComplete="tel" maxLength={10} placeholder="ต้องกรอก เช่น 0812345678 (10 หลัก)" />
+          <AppTextInput style={styles.input} value={phone} onChangeText={(value) => setPhone(normalizeMobilePhone(value))} keyboardType="phone-pad" autoComplete="tel" maxLength={10} placeholder="ต้องกรอก เช่น 0812345678 (10 หลัก)" validationError={phoneError} />
+          <InputError message={phoneError} />
 
           <Text style={styles.inputLabel}>อายุ</Text>
-          <AppTextInput style={styles.input} value={age} onChangeText={(value) => setAge(value.replace(/\D/g, ""))} keyboardType="number-pad" placeholder="อายุ (ปี)" />
+          <AppTextInput style={styles.input} value={age} onChangeText={(value) => setAge(value.replace(/\D/g, ""))} keyboardType="number-pad" placeholder="อายุ (ปี)" validationError={ageError} />
+          <InputError message={ageError} />
 
           {/* Gender Selector with Vector Icons */}
           <Text style={styles.sectionTitle}>เพศ</Text>
